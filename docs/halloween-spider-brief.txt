@@ -1,0 +1,45 @@
+Halloween 2026 giant alley spider
+Brief for a 3D visualizer. All locked sizes are multiples of full body length (front of the head to the back of the
+abdomen). Lengths in meters are not locked yet: the spider must span an alley about 3 m wide and still leave
+a walking path underneath.
+
+What it is
+A giant two-segment spider hung over an alley so people can walk underneath it. The proportion study is a
+black silhouette with no eyes, fangs, hair, or texture. Last year a ghost about 5 m long with a 3 m arm span
+hung in the same alley. The body hangs in the middle, about 2.3 m up. Four legs go to each building at
+staggered heights, one visible knee on each leg. Feet land on the two alley walls.
+
+Site
+Impasse du Rossignol, off 1 Rue de Trousse Chemise, 17880 Les Portes-en-Re, France (Ile de Re). IGN
+Lambert-93 about x 353752.51, y 6582086.15. Measured from an IGN orthophoto at 5 cm per pixel: the
+roof-to-roof gap is about 3 m along the stretch to be used (about 3.3 m at the street, about 2.9 m in the tighter
+part). Walking width is about the same, because the walls sit close to the roof edges. Two-story buildings
+stand on both sides.
+
+Locked proportions (units of body length)
+Full body length is 1. Legs are 3.25. Two body segments only. Abdomen: length 0.76, width 0.494. Head
+(cephalothorax): length 0.30, width 0.326, which is 0.66 of the abdomen width. The segments overlap by
+0.06, so 0.30 + 0.76 - 0.06 = 1. The body is a cylinder: in front view the abdomen height equals its width
+(0.494) and the head height equals its width (0.326). The visible front-view cross-section is the abdomen, not
+the head. The head may peek above the abdomen, but the circle you see is the abdomen.
+
+Legs and joints
+Eight legs. Each leg is one straight segment from the body to a knee, then one straight segment from the
+knee to the foot. The knee sits at 48 percent of the leg length (a drawing constant, not a chosen design
+value). Knees are lifted and feet are on the walls, so the legs reach across rather than stand. The front pair is
+straighter than the back pair. Bend is measured in degrees off a straight leg (0 means straight). The front pair
+uses half the back-pair bend. If the back pair is 60 degrees off straight (interior angle about 120 degrees), the
+front pair is 30 degrees off straight. The numbered bend has not been chosen. The series under
+consideration is back-leg bends of 15, 30, 45, 60, 75, 90, and 105 degrees, with the front pair at half of each.
+A working suggestion, not locked, is about 60 degrees off straight on the back pair. Leg thickness is not
+chosen. Sketches used a thin stroke.
+
+Not locked
+Knee angle (the series above). Leg thickness. Absolute size in meters, once the 3 m alley and walk-under
+clearance are applied. Construction materials are out of scope for the visualizer.
+
+Suggested model
+Place two opposing walls 3 m apart. Hang the cylindrical body on the centerline. Attach four legs per side.
+Bend the back pair more than the front pair, using the half-angle rule above, and show the abdomen as the
+front cross-section. Keep every locked ratio above. Leave the knee angle and leg thickness as parameters.
+

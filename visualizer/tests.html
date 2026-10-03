@@ -1,0 +1,104 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>spider.js tests</title>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+</head>
+<body><pre id="out">running…</pre>
+<script type="module">
+import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, flatWalls, rootToFootDistance,
+         lowerSegmentFor, solveFeetForLength, bendFactor } from './spider.js';
+import { loadSite, wallsFromSite } from './site.js';
+
+const out = [];
+let failed = 0;
+function check(name, cond, detail = '') {
+  out.push((cond ? 'PASS ' : 'FAIL ') + name + (cond ? '' : '  ' + detail));
+  if (!cond) failed++;
+}
+const near = (a, b, tol = 1e-6) => Math.abs(a - b) <= tol;
+const dist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+
+try {
+  // Locked ratios are consistent.
+  check('segments sum to 1', near(LOCKED.headLength + LOCKED.abdomenLength - LOCKED.overlap, 1));
+  check('head is 0.66 of abdomen width', near(LOCKED.headWidth / LOCKED.abdomenWidth, 0.66, 0.002));
+
+  // Brief preset at L = 0.8 reproduces the ratios.
+  const L = 0.8;
+  const p = briefPreset(L);
+  check('preset body length', near(bodyLength(p), L));
+  check('preset abdomen', near(p.abdomenLength, 0.76 * L) && near(p.abdomenWidth, 0.494 * L) && near(p.abdomenHeight, 0.494 * L));
+  check('preset head', near(p.headLength, 0.30 * L) && near(p.headWidth, 0.326 * L));
+  check('preset bends halve toward the front', p.pairs[0].bend === 30 && p.pairs[3].bend === 60);
+  check('bend factors', near(bendFactor(0), 0.5) && near(bendFactor(3), 1));
+
+  // Law of cosines round trip.
+  const a = 1.248, b = 1.352;
+  for (const bend of [0, 15, 60, 105, 140]) {
+    const d = rootToFootDistance(a, b, bend);
+    const b2 = lowerSegmentFor(a, d, bend);
+    check(`lower segment recovered at ${bend}°`, b2 !== null && near(b2, b, 1e-9), String(b2));
+  }
+  check('infeasible foot gives null', lowerSegmentFor(1.0, 0.5, 30) === null);
+
+  // Flat walls: feet on the walls, segment lengths as derived, knees lifted.
+  const walls = flatWalls(2.94); // the preset places its feet for a 2.94 m alley
+  const m = buildSpider(p, walls);
+  check('8 legs', m.legs.length === 8);
+  for (const leg of m.legs) {
+    check(`leg ${leg.pair}${leg.side > 0 ? 'R' : 'L'} foot on wall`, near(Math.abs(leg.foot[2]), 1.47));
+    check(`leg ${leg.pair} upper length`, near(dist(leg.root, leg.knee), leg.a, 1e-9));
+    check(`leg ${leg.pair} lower length`, near(dist(leg.knee, leg.foot), leg.b, 1e-9));
+    check(`leg ${leg.pair} knee above root-foot line`, leg.knee[1] >= Math.min(leg.root[1], leg.foot[1]) - 1e-9);
+    // Bend angle recovered from the joint geometry.
+    const u = [leg.knee[0] - leg.root[0], leg.knee[1] - leg.root[1], leg.knee[2] - leg.root[2]];
+    const v = [leg.foot[0] - leg.knee[0], leg.foot[1] - leg.knee[1], leg.foot[2] - leg.knee[2]];
+    const cos = (u[0] * v[0] + u[1] * v[1] + u[2] * v[2]) / (leg.a * leg.b);
+    check(`leg ${leg.pair} bend is ${leg.bend}°`, near(Math.acos(Math.max(-1, Math.min(1, cos))) * 180 / Math.PI, leg.bend, 1e-6));
+    check(`leg ${leg.pair} status ok`, leg.status === 'ok', leg.status);
+  }
+  // Preset feet were placed so the lower segment matches the brief at 1.5 m walls.
+  for (const q of m.stats.pairs) {
+    check(`pair ${q.pair} total leg is 3.25 L`, near(q.totalInL, 3.25, 0.01), q.totalInL.toFixed(4));
+    check(`pair ${q.pair} knee at 48 %`, near(q.kneeFraction, 0.48, 0.003), q.kneeFraction.toFixed(4));
+    check(`pair ${q.pair} foot height kept`, near(q.footHeight, p.pairs[q.pair - 1].footHeight));
+  }
+  check('front view circle is the abdomen', m.abdomen.height > m.head.height);
+
+  // Facing flips the body along x but keeps the feet mirrored.
+  const back = buildSpider({ ...p, facing: 1 }, walls);
+  check('facing flips head side', Math.sign(m.head.x0 - m.abdomen.x0) === -Math.sign(back.head.x0 - back.abdomen.x0));
+  check('facing keeps leg lengths', back.legs.every((l, i) => near(l.b, m.legs[i].b, 1e-9)));
+
+  // Narrow walls make a foot too close: flagged, not crashed.
+  const tight = buildSpider({ ...p, pairs: p.pairs.map(q => ({ ...q, footAlong: 0, footHeight: p.bodyHeight })) }, flatWalls(1.0));
+  check('too-close feet are flagged', tight.legs.some(l => l.status === 'folded'));
+
+  // Solver puts the lower segment at the target on wider walls.
+  const wide = flatWalls(3.6);
+  const solved = { ...p, pairs: solveFeetForLength(p, wide, b) };
+  const ms = buildSpider(solved, wide);
+  for (const q of ms.stats.pairs) check(`solved pair ${q.pair} lower = ${b}`, near(q.lower, b, 0.002), q.lower.toFixed(4));
+
+  // Site: alley frame round trip and real walls about 3 m apart near the body.
+  const site = await loadSite();
+  const [e, n] = site.frame.toSite(10, 0.5);
+  const [x, z] = site.frame.toAlley(e, n);
+  check('alley frame round trip', near(x, 10, 1e-9) && near(z, 0.5, 1e-9));
+  check('alley runs about south', Math.abs(site.frame.along[1] + 1) < 0.01, JSON.stringify(site.frame.along));
+  const sw = wallsFromSite(site);
+  const gaps = [3, 5, 8, 12].map(xx => { const r = sw(xx, 1, 0), l = sw(xx, -1, 0); return r !== null && l !== null ? r - l : null; });
+  check('walls found along the alley', gaps.every(g => g !== null), JSON.stringify(gaps));
+  check('gap about 3 m along the used stretch', gaps.slice(1).every(g => g > 2.6 && g < 3.3), JSON.stringify(gaps));
+  check('gap wider at the mouth', gaps[0] > gaps[1], JSON.stringify(gaps));
+  const real = buildSpider(DEFAULTS, sw);
+  check('real-site legs all placed', real.legs.every(l => l.status === 'ok'), real.legs.map(l => l.status).join(','));
+  for (const leg of real.legs) check(`real leg ${leg.pair} foot on a building edge`, near(dist(leg.knee, leg.foot), leg.b, 1e-9));
+  out.push('gaps along the alley at x = 3, 5, 8, 12 m: ' + gaps.map(g => g.toFixed(2)).join(', '));
+} catch (err) {
+  failed++;
+  out.push('ERROR ' + (err.stack || err));
+}
+out.push(failed ? `${failed} FAILED` : 'ALL PASSED');
+document.getElementById('out').textContent = out.join('\n');
+document.title = failed ? 'FAILED' : 'PASSED';
+</script></body></html>

@@ -1,9 +1,12 @@
 # CLAUDE.md
 
 Halloween Display is a project for Daniel (GitHub user danchap), started
-2026-10-03. Nothing about it is decided yet, not even what kind of display.
-The first job is to ask Daniel what he wants to make, before buying anything,
-writing code or designing anything.
+2026-10-03. The display is a giant two-segment spider hung over Impasse du
+Rossignol, Les Portes-en-Ré (Île de Ré), so people walk under it; its legs
+reach the houses on both sides of the 3 m alley. Daniel's brief is in
+`docs/halloween-spider-brief.pdf` (text in the .txt next to it): it locks
+the proportions in units of body length and leaves the knee bend, leg
+thickness and absolute size open.
 
 ## Deadline
 
@@ -11,16 +14,24 @@ Halloween is 2026-10-31, four weeks after the start. Plan back from that date:
 parts that have to be ordered need shipping time, and anything built needs a
 test run before the night.
 
-## Open questions (ask Daniel; do not assume)
+## Visualizer (visualizer/)
 
-- What the display is. It could be a physical prop with lights, sound or
-  movement (a microcontroller such as an Arduino, ESP32 or Raspberry Pi
-  driving LEDs, a speaker, a motion sensor or servos), a projection or screen
-  display, something printed or built by hand, or software.
-- Where it goes (indoors, a window, the yard), what power is available there,
-  and whether it must survive weather.
-- Budget, and what Daniel already owns (boards, LEDs, speakers, a 3D printer,
-  a projector).
+- Run: `python3 visualizer/run.py` (stdlib web server + browser). Chrome is
+  installed on feta; the page is three.js (vendored) with no build step.
+- `spider.js` is the geometry (pure functions, tested by `tests.html`);
+  `site.js` the site model; `app.js` the UI. Site data comes from IGN open
+  services via `site/fetch_site.py` and is cached in `site/`.
+- Headless check: serve, then
+  `google-chrome --headless=new --no-sandbox --use-angle=swiftshader
+  --enable-unsafe-swiftshader --virtual-time-budget=15000 --dump-dom
+  http://127.0.0.1:8765/tests.html` and look for ALL PASSED; the same flags
+  with `--screenshot` render the page.
+
+## Still open (ask Daniel)
+
+- Absolute size (L), knee bend and leg thickness: the visualizer exists to
+  decide these. Materials and construction are not started.
+- Power, weather, how the spider is hung and how the feet fix to the walls.
 
 ## This machine (feta)
 
@@ -39,3 +50,4 @@ test run before the night.
 
 - Created 2026-10-03 with README.md, CLAUDE.md and .gitignore; pushed to
   git@github.com:danchap/halloween_display.git (Daniel created the GitHub repo).
+- 2026-10-03: visualizer added (see above) with the site data and the brief.
