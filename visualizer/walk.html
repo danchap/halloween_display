@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Path</title>
+<style>
+  :root { --bg: #1b1b1f; --panel: #26262c; --panel2: #2f2f36; --text: #e8e6e1; --muted: #9a978f; --accent: #e8822a; --border: #3a3a42; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; }
+  #app { display: grid; grid-template-rows: 1fr auto; height: 100%; }
+  #stage { position: relative; display: flex; align-items: center; justify-content: center; background: #000; min-height: 0; }
+  canvas { max-width: 100%; max-height: 100%; }
+  #panel { background: var(--panel); border-top: 1px solid var(--border); padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+  label { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  input[type=range] { accent-color: var(--accent); }
+  input[type=number], select { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; font: inherit; width: 64px; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; font: inherit; cursor: pointer; }
+  button.primary { background: var(--accent); color: #1b1b1f; border-color: var(--accent); font-weight: 600; }
+  #time { width: 100%; }
+  #status { color: var(--muted); }
+  #hud { position: absolute; left: 10px; bottom: 8px; color: #fff; text-shadow: 0 1px 2px #000; font-size: 12px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage"><div id="hud"></div></div>
+  <div id="panel">
+    <button id="play" class="primary">Play</button>
+    <input id="time" type="range" min="0" max="30" step="0.01" value="0">
+    <span id="clock">0.0 s</span>
+    <label>Lens <input id="vfov" type="range" min="40" max="100" step="1"> <span id="fovText"></span></label>
+    <label>Eye height <input id="eye" type="number" step="0.01"> m</label>
+    <label>Pace <input id="pace" type="number" step="0.05"> m/s</label>
+    <label><input id="bob" type="checkbox"> Head bob</label>
+    <label>Size <select id="size"><option value="1280x720">1280×720</option><option value="1920x1080">1920×1080</option></select></label>
+    <button id="record">Record MP4</button>
+    <span id="status"></span>
+    <a id="back" href="./">Back to the design</a>
+  </div>
+</div>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { DEFAULTS, buildSpider, flatWalls } from './spider.js';
+import { wallsFromSite } from './site.js';
+import { createWorld, loadWorldSite, rebuildSpiderMeshes } from './scene.js';
+import { WALK_DEFAULTS, buildPath, cameraAt } from './walk.js';
+import { Muxer, ArrayBufferTarget } from './vendor/mp4-muxer.mjs';
+
+const q = new URLSearchParams(location.search);
+const walk = { ...WALK_DEFAULTS };
+for (const k of ['vfov', 'eyeHeight', 'speed']) if (q.has(k)) walk[k] = parseFloat(q.get(k));
+if (q.has('bob')) walk.bob = q.get('bob') !== '0';
+
+// The spider design travels in the URL hash, as the design page writes it.
+let params = { ...DEFAULTS };
+try {
+  const h = location.hash.slice(1);
+  if (h) { const s = JSON.parse(decodeURIComponent(h)); params = { ...DEFAULTS, ...(s.params || {}) }; }
+} catch (e) { console.warn('bad design in URL', e); }
+document.getElementById('back').href = './' + location.hash;
+
+const [W0, H0] = (q.get('size') || '1280x720').split('x').map(Number);
+const FPS = parseInt(q.get('fps') || '30', 10);
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(W0, H0, false);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const canvas = renderer.domElement;
+document.getElementById('stage').prepend(canvas);
+const camera = new THREE.PerspectiveCamera(walk.vfov, W0 / H0, 0.05, 400);
+
+const world = createWorld();
+let path = null;
+let textureReady = new Promise(r => { world._tex = r; });
+const site = await loadWorldSite(world, { onTexture: () => world._tex() });
+if (!site) { document.getElementById('status').textContent = 'Site data missing: run site/fetch_site.py'; }
+const walls = site ? wallsFromSite(site) : flatWalls(3);
+rebuildSpiderMeshes(world, buildSpider(params, walls), params, { showJoints: false });
+
+function rebuildPath() {
+  path = buildPath(site, params, walk);
+  const t = document.getElementById('time');
+  t.max = path.duration.toFixed(2);
+}
+rebuildPath();
+
+function poseCamera(t) {
+  const c = cameraAt(path, params, t);
+  const pos = world.alleyGroup.localToWorld(c.position.clone());
+  const target = world.alleyGroup.localToWorld(c.position.clone().add(c.direction));
+  camera.position.copy(pos);
+  camera.up.set(0, 1, 0);
+  camera.lookAt(target);
+  camera.fov = walk.vfov;
+  camera.updateProjectionMatrix();
+  return c;
+}
+function hfov() {
+  const v = walk.vfov * Math.PI / 180;
+  return 2 * Math.atan(Math.tan(v / 2) * camera.aspect) * 180 / Math.PI;
+}
+function renderAt(t) {
+  const c = poseCamera(t);
+  renderer.render(world.scene, camera);
+  document.getElementById('hud').textContent = `${t.toFixed(1)} s · ${c.distance.toFixed(1)} m along · ${c.speed.toFixed(2)} m/s · lens ${walk.vfov}° × ${hfov().toFixed(0)}°`;
+  document.getElementById('clock').textContent = t.toFixed(1) + ' s / ' + path.duration.toFixed(1) + ' s';
+  document.getElementById('time').value = t;
+}
+
+// ---------------------------------------------------------------- playback
+
+let playing = false, t0 = 0, tStart = 0;
+function tick() {
+  if (!playing) return;
+  const t = tStart + (performance.now() - t0) / 1000;
+  if (t >= path.duration) { renderAt(path.duration); playing = false; document.getElementById('play').textContent = 'Replay'; return; }
+  renderAt(t);
+  requestAnimationFrame(tick);
+}
+document.getElementById('play').addEventListener('click', () => {
+  if (playing) { playing = false; document.getElementById('play').textContent = 'Play'; return; }
+  let t = parseFloat(document.getElementById('time').value);
+  if (t >= path.duration - 0.05) t = 0;
+  tStart = t; t0 = performance.now(); playing = true;
+  document.getElementById('play').textContent = 'Pause';
+  tick();
+});
+document.getElementById('time').addEventListener('input', e => { playing = false; document.getElementById('play').textContent = 'Play'; renderAt(parseFloat(e.target.value)); });
+
+const ui = {
+  vfov: document.getElementById('vfov'), eye: document.getElementById('eye'), pace: document.getElementById('pace'),
+  bob: document.getElementById('bob'), size: document.getElementById('size'),
+};
+ui.vfov.value = walk.vfov; ui.eye.value = walk.eyeHeight; ui.pace.value = walk.speed; ui.bob.checked = walk.bob;
+ui.size.value = `${W0}x${H0}`;
+const current = () => parseFloat(document.getElementById('time').value);
+ui.vfov.addEventListener('input', () => { walk.vfov = parseFloat(ui.vfov.value); document.getElementById('fovText').textContent = `${walk.vfov}° tall, ${hfov().toFixed(0)}° wide`; renderAt(current()); });
+ui.eye.addEventListener('change', () => { walk.eyeHeight = parseFloat(ui.eye.value); rebuildPath(); renderAt(current()); });
+ui.pace.addEventListener('change', () => { walk.speed = parseFloat(ui.pace.value); rebuildPath(); renderAt(current()); });
+ui.bob.addEventListener('change', () => { walk.bob = ui.bob.checked; rebuildPath(); renderAt(current()); });
+ui.size.addEventListener('change', () => { const u = new URL(location.href); u.searchParams.set('size', ui.size.value); location.href = u; });
+document.getElementById('fovText').textContent = `${walk.vfov}° tall, ${hfov().toFixed(0)}° wide`;
+
+// ---------------------------------------------------------------- recording
+
+const log = m => { document.getElementById('status').textContent = m; if (q.get('upload')) fetch('/log?m=' + encodeURIComponent(m)).catch(() => {}); };
+window.addEventListener('error', e => log('error: ' + e.message));
+window.addEventListener('unhandledrejection', e => log('rejection: ' + (e.reason && e.reason.message || e.reason)));
+
+async function record({ upload = null, maxSeconds = Infinity } = {}) {
+  let last = '';
+  const status = { set textContent(m) { last = m; log(m); }, get textContent() { return last; } };
+  const btn = document.getElementById('record');
+  btn.disabled = true; playing = false;
+  const W = canvas.width, H = canvas.height;
+  const muxer = new Muxer({ target: new ArrayBufferTarget(), video: { codec: 'avc', width: W, height: H }, fastStart: 'in-memory' });
+  const encoder = new VideoEncoder({
+    output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+    error: e => { status.textContent = 'encoder error: ' + e.message; console.error(e); },
+  });
+  encoder.configure({ codec: 'avc1.640028', width: W, height: H, bitrate: W >= 1920 ? 12e6 : 7e6, framerate: FPS, latencyMode: 'quality' });
+  const seconds = Math.min(path.duration, maxSeconds);
+  const frames = Math.ceil(seconds * FPS);
+  const started = performance.now();
+  let renderMs = 0, grabMs = 0, waitMs = 0;
+  status.textContent = `recording ${frames} frames at ${W}x${H}`;
+  for (let i = 0; i < frames; i++) {
+    const t = i / FPS;
+    const t0 = performance.now();
+    renderAt(t);
+    const t1 = performance.now();
+    const frame = new VideoFrame(canvas, { timestamp: Math.round(t * 1e6), duration: Math.round(1e6 / FPS) });
+    encoder.encode(frame, { keyFrame: i % (FPS * 4) === 0 });
+    frame.close();
+    const t2 = performance.now();
+    while (encoder.encodeQueueSize > 4) await new Promise(r => setTimeout(r, 5));
+    const t3 = performance.now();
+    renderMs += t1 - t0; grabMs += t2 - t1; waitMs += t3 - t2;
+    if (i % 10 === 0) {
+      const el = (performance.now() - started) / 1000;
+      status.textContent = `recording ${i}/${frames} frames, ${el.toFixed(0)} s elapsed, ${(el / (i + 1) * (frames - i)).toFixed(0)} s left (render ${(renderMs / (i + 1)).toFixed(0)} ms, grab ${(grabMs / (i + 1)).toFixed(0)} ms, encode wait ${(waitMs / (i + 1)).toFixed(0)} ms per frame)`;
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  status.textContent = 'flushing encoder';
+  await encoder.flush();
+  encoder.close();
+  muxer.finalize();
+  const blob = new Blob([muxer.target.buffer], { type: 'video/mp4' });
+  status.textContent = `done: ${frames} frames, ${(blob.size / 1e6).toFixed(1)} MB`;
+  btn.disabled = false;
+  if (upload) {
+    const r = await fetch('/upload?name=' + encodeURIComponent(upload), { method: 'POST', body: blob });
+    status.textContent += r.ok ? ', saved to out/' + upload : ', upload failed ' + r.status;
+    document.title = r.ok ? 'UPLOADED' : 'UPLOAD-FAILED';
+  } else {
+    const a = document.createElement('a');
+    a.download = 'the-path.mp4';
+    a.href = URL.createObjectURL(blob);
+    a.click();
+    document.title = 'RECORDED';
+  }
+  return blob;
+}
+document.getElementById('record').addEventListener('click', () => record());
+
+// ---------------------------------------------------------------- start
+
+await textureReady;
+renderAt(parseFloat(q.get('t') || '0'));
+window.walk = { walk, path, params, renderAt, record, camera, cameraAt };
+document.title = 'The Path (ready)';
+if (q.get('record') === '1') {
+  record({ upload: q.get('upload') || null, maxSeconds: q.has('seconds') ? parseFloat(q.get('seconds')) : Infinity });
+}
+</script>
+</body>
+</html>

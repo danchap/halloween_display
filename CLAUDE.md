@@ -21,6 +21,12 @@ test run before the night.
 - `spider.js` is the geometry (pure functions, tested by `tests.html`);
   `site.js` the site model; `app.js` the UI. Site data comes from IGN open
   services via `site/fetch_site.py` and is cached in `site/`.
+- `walk.js` + `walk.html` are "the path": the scripted camera walk and its
+  MP4 recorder (WebCodecs + mp4-muxer, vendored). `scene.js` holds the
+  world shared by both pages. Headless recording: launch Chrome with the
+  walk URL as its first tab (`?record=1&upload=<name>`); a tab opened
+  through the debugging port is throttled and never finishes. The page
+  posts progress to the server's stdout via /log. feta has no ffmpeg.
 - Headless check: serve, then
   `google-chrome --headless=new --no-sandbox --use-angle=swiftshader
   --enable-unsafe-swiftshader --virtual-time-budget=15000 --dump-dom

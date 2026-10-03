@@ -8,12 +8,16 @@ is installed. Stop it with Ctrl-C.
     python3 run.py              serve and open the browser
     python3 run.py --no-browser serve only (prints the URL)
     python3 run.py --port 8123  pick the port (default: first free from 8765)
+
+Recorded videos from the walk page land in out/ next to this script when
+the page is opened with ?record=1&upload=<name>.
 """
 import argparse
 import functools
 import http.server
 import socket
 import threading
+import urllib.parse
 import webbrowser
 from pathlib import Path
 
@@ -41,6 +45,41 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, fmt, *args):  # only report errors
         if args and str(args[1]).startswith(("4", "5")):
             super().log_message(fmt, *args)
+
+    def do_GET(self):
+        """/log?m=<text> prints a line from the page; everything else is a file."""
+        url = urllib.parse.urlparse(self.path)
+        if url.path == "/log":
+            msg = urllib.parse.parse_qs(url.query).get("m", [""])[0]
+            print("page:", msg, flush=True)
+            self.send_response(204)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        super().do_GET()
+
+    def do_POST(self):
+        """The walk page posts a recorded video to /upload?name=<file>."""
+        url = urllib.parse.urlparse(self.path)
+        name = Path(urllib.parse.parse_qs(url.query).get("name", ["recording.mp4"])[0]).name
+        if url.path != "/upload" or not name:
+            self.send_error(404)
+            return
+        length = int(self.headers.get("Content-Length", 0))
+        out = HERE / "out"
+        out.mkdir(exist_ok=True)
+        with open(out / name, "wb") as f:
+            remaining = length
+            while remaining > 0:
+                chunk = self.rfile.read(min(1 << 20, remaining))
+                if not chunk:
+                    break
+                f.write(chunk)
+                remaining -= len(chunk)
+        print("saved", out / name, "(%d bytes)" % length, flush=True)
+        self.send_response(200)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
 
 def main():

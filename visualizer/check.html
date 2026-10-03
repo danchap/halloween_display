@@ -1,0 +1,22 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>video check</title>
+<style>body{margin:0;background:#111;color:#ddd;font:13px system-ui} video{display:block;max-width:100%} #info{padding:6px}</style>
+</head>
+<body>
+<!-- Plays a recorded video and seeks to ?t= seconds, for a headless screenshot
+     that proves the file decodes. Example: check.html?src=out/the-path.mp4&t=17 -->
+<video id="v" muted playsinline></video>
+<div id="info">loading</div>
+<script>
+const q = new URLSearchParams(location.search);
+const v = document.getElementById('v');
+const info = document.getElementById('info');
+v.src = q.get('src') || 'out/the-path.mp4';
+v.addEventListener('loadedmetadata', () => {
+  info.textContent = `duration ${v.duration.toFixed(2)} s, ${v.videoWidth}x${v.videoHeight}`;
+  v.currentTime = parseFloat(q.get('t') || '0');
+});
+v.addEventListener('seeked', () => { info.textContent += ` · frame at ${v.currentTime.toFixed(2)} s`; document.title = 'SEEKED'; });
+v.addEventListener('error', () => { info.textContent = 'error: ' + (v.error && v.error.message); document.title = 'ERROR'; });
+</script>
+</body></html>

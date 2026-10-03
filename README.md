@@ -39,6 +39,27 @@ What it shows:
 - Views: street (eye height at the alley mouth), front, side, top, under,
   overview. Save PNG, and copy a link that holds the whole design.
 
+### The path (video walk-through)
+
+"Walk the path (video)" on the design page, or `walk.html` directly, walks
+a camera at adult eye height from the Rue du Gros Jonc / Rue de Trousse
+Chemise junction east along the street, right into Impasse du Rossignol
+and down the alley, slowing and looking up at the spider while passing
+under it. The lens is wide (65° tall, 97° wide at 16:9) to match what a
+person takes in. Play previews it in the browser; Record MP4 encodes it in
+the browser (H.264, WebCodecs) and downloads `the-path.mp4`; lens, eye
+height, pace and head bob are adjustable. The design travels in the URL
+hash, so the walk shows whatever is on the design page.
+
+To record without a window, headless Chrome works on Linux:
+
+    google-chrome --headless=new --use-angle=swiftshader --enable-unsafe-swiftshader \
+      "http://127.0.0.1:8765/walk.html?record=1&upload=the-path.mp4"
+
+The file lands in `visualizer/out/` (ignored by git), about 5 minutes for
+a 30 s walk at 1280×720 in software rendering. `check.html?t=17` shows a
+frame of the recording to confirm it decodes.
+
 Tests: open `tests.html` from the same server and read the PASS/FAIL list.
 CLAUDE.md has the headless Chrome command for the same check.
 

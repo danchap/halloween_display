@@ -13,3 +13,6 @@ node_modules/
 
 # macOS
 .DS_Store
+
+# Recorded videos
+visualizer/out/
