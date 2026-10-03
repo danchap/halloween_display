@@ -37,6 +37,5 @@ test run before the night.
 
 ## Repo status
 
-- Created 2026-10-03 with README.md, CLAUDE.md and .gitignore.
-- The remote is git@github.com:danchap/halloween_display.git. Once Daniel
-  has created that repo on GitHub (empty, private), run `git push -u origin main`.
+- Created 2026-10-03 with README.md, CLAUDE.md and .gitignore; pushed to
+  git@github.com:danchap/halloween_display.git (Daniel created the GitHub repo).
