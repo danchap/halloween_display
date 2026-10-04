@@ -186,6 +186,14 @@ export function buildSiteMeshes(site, textureLoader, opts = {}) {
     group.add(m);
   }
 
+  // The alley has a narrow drain line of setts down its middle.
+  {
+    const line = [site.frame.toSite(2.6, 0), site.frame.toSite(24, 0)];
+    const m = new THREE.Mesh(ribbonGeometry(line, 0.3, 0), mats.setts);
+    m.position.y = 0.012; m.receiveShadow = true; m.name = 'strips';
+    group.add(m);
+  }
+
   // Sett strips along the streets (not the alleys), offset to the right of
   // the west-to-east direction as in the photo of Rue de Trousse Chemise.
   for (const road of site.roads) {
@@ -257,17 +265,37 @@ export function buildSiteMeshes(site, textureLoader, opts = {}) {
   const out = [-0.9996, 0.0276];                 // outward (west) normal
   const at = (s, d, y) => V(corner[0] + along[0] * s + out[0] * d, y, corner[1] + along[1] * s + out[1] * d);
   const plaque = new THREE.Mesh(new THREE.PlaneGeometry(...PLAQUE_SIZE), mats.plaque);
-  plaque.position.copy(at(0.75, 0.02, 2.3));
+  plaque.position.copy(at(0.55, 0.02, 2.65));
   plaque.lookAt(plaque.position.clone().add(new THREE.Vector3(out[0], 0, -out[1])));
   plaque.name = 'facade'; group.add(plaque);
   const sign = new THREE.Mesh(new THREE.CircleGeometry(0.3, 32), mats.noParking);
-  sign.position.copy(at(0.3, 0.32, 2.95));
+  sign.position.copy(at(0.3, 0.32, 3.3));
   sign.lookAt(sign.position.clone().add(new THREE.Vector3(along[0], 0, -along[1])));
   sign.castShadow = true; sign.name = 'facade'; group.add(sign);
   const post = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 8), mats.pipe);
-  post.position.copy(at(0.3, 0.16, 2.95));
+  post.position.copy(at(0.3, 0.16, 3.3));
   post.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(out[0], 0, -out[1]));
   post.name = 'facade'; group.add(post);
+
+  // A bench against the east wall of the alley.
+  {
+    const wood = new THREE.MeshStandardMaterial({ color: 0x6f5a44, roughness: 0.9 });
+    const bench = new THREE.Group();
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 0.4), wood);
+    seat.position.y = 0.45;
+    bench.add(seat);
+    for (const dx of [-0.6, 0.6]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 0.36), wood);
+      leg.position.set(dx, 0.225, 0);
+      bench.add(leg);
+    }
+    bench.traverse(o => { o.castShadow = true; });
+    const [be, bn] = site.frame.toSite(7.8, -1.28);
+    bench.position.copy(V(be, 0, bn));
+    bench.rotation.y = site.frame.yaw;
+    bench.name = 'facade';
+    group.add(bench);
+  }
 
   // Plants from the photo, placed along the alley and at its mouth.
   if (textureLoader) loads.push(addPlants(site, group, textureLoader, opts.onTexture));
@@ -322,14 +350,16 @@ function layoutOpenings(b, edge, eave, rnd, alley) {
     // The double door sits on the chamfered face looking north-east toward
     // the square; the street face has one small window upstairs; the rest
     // is blank.
-    if (edge.ne > 0.4 && edge.nn > 0.4) return fit([{ s: len / 2, w: GARAGE_SIZE[0], y0: 0, y1: GARAGE_SIZE[1], kind: 'garage' }], eave);
-    if (edge.nn > 0.9 && len > 4) return fit([{ s: len * 0.35, w: 0.7, y0: 3.7, y1: 4.4, kind: 'light' }], eave);
+    if (edge.ne > 0.4 && edge.nn > 0.4) return fit([
+      { s: len / 2, w: GARAGE_SIZE[0], y0: 0, y1: GARAGE_SIZE[1], kind: 'garage' },
+      { s: len * 0.42, w: 0.7, y0: 3.9, y1: 4.7, kind: 'light' },   // the small window above the door
+    ], eave);
     return [];
   }
   if (b.id.endsWith(EAST_HOUSE) && edge.ne < -0.9) {
     // The alley wall: two grey-shuttered windows near the corner, then an
     // ordinary two-storey run further in.
-    const list = [window(2.1, 1.0, 1.3, 'grey'), window(4.9, 1.0, 1.3, 'grey')];
+    const list = [window(1.6, 1.0, 1.3, 'grey'), window(4.6, 1.0, 1.3, 'grey')];
     for (let s = 8.0; s + 1.0 < len - 0.5; s += 3.0) list.push(window(s, 0.9, 1.2, 'grey'), window(s, 2.4, 1.0, 'grey'));
     return fit(list, eave);
   }
@@ -585,6 +615,7 @@ function addPlants(site, group, loader, onLoaded) {
     const walls = wallsFromSite(site);
     const spots = [
       ['shrub', 2.45, -1.28, 1.25],   // the vine on the east house's corner at the mouth
+      ['shrub', 5.6, -1.25, 1.1],     // the climber up the east wall further in
       ['flowers', 1.4, -3.4, 0.9], ['hollyhock', 1.7, -5.6, 1.0], ['bush', 1.6, -7.6, 1.0],
       ['hollyhock', 1.6, 6.5, 0.9], ['bush', 1.6, 10.5, 1.1],
     ];
