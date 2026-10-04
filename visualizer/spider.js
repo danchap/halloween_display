@@ -94,8 +94,8 @@ export function briefPreset(L, options = {}) {
     bodyHeight: o.bodyHeight,
     across: 0,
     facing: -1,                      // -1: head toward the street, +1: into the alley
-    upperDiameter: 0.04 * L,
-    lowerDiameter: 0.03 * L,
+    upperDiameter: 0.06 * L,
+    lowerDiameter: 0.045 * L,
     pairs: [],
   };
   // Feet: at the brief's bends and lengths, each foot sits at the wanted

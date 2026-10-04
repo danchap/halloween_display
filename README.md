@@ -47,7 +47,7 @@ What it shows:
   L = 0.8 m, back-pair knee bend 60°, front pair 30°, feet on the real
   walls at staggered heights), with Daniel's choices of position and
   thickness: body axis 2.5 m up, 6.5 m into the alley with the head toward
-  the street, legs 3.2 cm and 2.4 cm thick. Pick another L or bend and
+  the street, legs 4.8 cm and 3.6 cm thick. Pick another L or bend and
   press "Apply brief ratios at L".
 - Sliders for the abdomen (length, width, height), the head (same), their
   overlap and lift, the body's position along, across and above the alley,
@@ -71,9 +71,9 @@ What it shows:
 
 "Walk the path (video)" on the design page, or `walk.html` directly, walks
 a camera at adult eye height from the Rue du Gros Jonc / Rue de Trousse
-Chemise junction east along the street, right into Impasse du Rossignol
-and down the alley, slowing and looking up at the spider while passing
-under it. The lens is wide (65° tall, 97° wide at 16:9) to match what a
+Chemise junction (starting 3.3 m along, just past the corner) east along
+the street, right into Impasse du Rossignol and down the alley, slowing
+and looking up at the spider while passing under it. The lens is wide (65° tall, 97° wide at 16:9) to match what a
 person takes in. Play previews it in the browser; Record MP4 encodes it in
 the browser (H.264, WebCodecs) and downloads `the-path.mp4`; lens, eye
 height, pace and head bob are adjustable. The design travels in the URL
