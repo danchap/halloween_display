@@ -32,7 +32,7 @@
     <span id="clock">0.0 s</span>
     <label>Lens <input id="vfov" type="range" min="40" max="100" step="1"> <span id="fovText"></span></label>
     <label>Eye height <input id="eye" type="number" step="0.01"> m</label>
-    <label>Pace <input id="pace" type="number" step="0.05"> m/s</label>
+    <label>Pace <input id="pace" type="number" step="0.05" min="0.1"> m/s</label>
     <label><input id="bob" type="checkbox"> Head bob</label>
     <label>Size <select id="size"><option value="1280x720">1280×720</option><option value="1920x1080">1920×1080</option></select></label>
     <button id="record">Record MP4</button>
@@ -52,6 +52,7 @@ import { Muxer, ArrayBufferTarget } from './vendor/mp4-muxer.mjs';
 const q = new URLSearchParams(location.search);
 const walk = { ...WALK_DEFAULTS };
 for (const k of ['vfov', 'eyeHeight', 'speed']) if (q.has(k)) walk[k] = parseFloat(q.get(k));
+walk.speed = Math.max(0.1, walk.speed || WALK_DEFAULTS.speed);
 if (q.has('bob')) walk.bob = q.get('bob') !== '0';
 
 // The spider design travels in the URL hash, as the design page writes it.
@@ -141,7 +142,7 @@ ui.size.value = `${W0}x${H0}`;
 const current = () => parseFloat(document.getElementById('time').value);
 ui.vfov.addEventListener('input', () => { walk.vfov = parseFloat(ui.vfov.value); document.getElementById('fovText').textContent = `${walk.vfov}° tall, ${hfov().toFixed(0)}° wide`; renderAt(current()); });
 ui.eye.addEventListener('change', () => { walk.eyeHeight = parseFloat(ui.eye.value); rebuildPath(); renderAt(current()); });
-ui.pace.addEventListener('change', () => { walk.speed = parseFloat(ui.pace.value); rebuildPath(); renderAt(current()); });
+ui.pace.addEventListener('change', () => { walk.speed = Math.max(0.1, parseFloat(ui.pace.value) || WALK_DEFAULTS.speed); ui.pace.value = walk.speed; rebuildPath(); renderAt(current()); });
 ui.bob.addEventListener('change', () => { walk.bob = ui.bob.checked; rebuildPath(); renderAt(current()); });
 ui.size.addEventListener('change', () => { const u = new URL(location.href); u.searchParams.set('size', ui.size.value); location.href = u; });
 document.getElementById('fovText').textContent = `${walk.vfov}° tall, ${hfov().toFixed(0)}° wide`;

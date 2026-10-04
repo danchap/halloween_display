@@ -140,7 +140,7 @@ export const DEFAULTS = Object.freeze(briefPreset(0.8));
 // walls: function (xAlong, side) -> z of the wall on that side (sign included),
 // or null when there is none. side is +1 or -1.
 export function flatWalls(width) {
-  return (x, side, fromZ = 0) => fromZ + side * width / 2;
+  return (x, side) => side * width / 2;
 }
 
 // Build the whole spider from a parameter object (see briefPreset/DEFAULTS).
@@ -192,7 +192,7 @@ export function buildSpider(params, walls = flatWalls(3.0)) {
         // The foot is too close for this upper segment and bend: fold the
         // leg flat on the root-foot line so the problem is visible.
         if (status === 'ok') status = 'folded';
-        b = Math.abs(a - d) + 0.02;
+        b = Math.abs(a - d);
         knee = add(root, scale(u, a));
       } else {
         // Knee in the vertical plane through root and foot, lifted upward.
@@ -217,7 +217,7 @@ export function buildSpider(params, walls = flatWalls(3.0)) {
 
 function computeStats({ p, L, abdomen, head, legs }) {
   const kneeYs = legs.map(l => l.knee[1]);
-  const topY = Math.max(abdomen.y + abdomen.height / 2, head.y + head.height / 2, ...kneeYs);
+  const topY = Math.max(abdomen.y + abdomen.height / 2, head.y + head.height / 2, ...kneeYs, ...legs.map(l => l.foot[1]));
   const bodyBottom = Math.min(abdomen.y - abdomen.height / 2, head.y - head.height / 2);
   const footXs = legs.map(l => l.foot[0]);
   const footZs = legs.map(l => l.foot[2]);
@@ -240,7 +240,8 @@ function computeStats({ p, L, abdomen, head, legs }) {
   const pairs = [0, 1, 2, 3].map(i => {
     const l = legs.find(x => x.pair === i && x.side === 1);
     const r = legs.find(x => x.pair === i && x.side === -1);
-    const total = l.a + l.b;
+    const total = l.a + l.b, totalOther = r.a + r.b;
+    const worse = (x, y, target) => Math.abs(x - target) >= Math.abs(y - target) ? x : y;
     return {
       pair: i + 1,
       bend: l.bend,
@@ -249,8 +250,12 @@ function computeStats({ p, L, abdomen, head, legs }) {
       lower: l.b,
       lowerOtherSide: r.b,
       total,
+      totalOtherSide: totalOther,
       totalInL: total / L,
+      // The side further from the brief, for the comparison table.
+      totalInLWorst: worse(total / L, totalOther / L, LOCKED.legLength),
       kneeFraction: l.a / total,
+      kneeFractionWorst: worse(l.a / total, r.a / totalOther, LOCKED.kneeFraction),
       rootToFoot: l.d,
       footHeight: l.foot[1],
       footAlong: p.pairs[i].footAlong,
@@ -297,12 +302,13 @@ export function solveFeetForLength(p, walls, lowerTarget) {
       const footX = cx + f * footAlong;
       const dzs = [1, -1].map(side => {
         const w = walls(footX, side, p.across);
-        return (w === null || w === undefined) ? 1.5 : Math.abs(w - p.across) - p.headWidth / 2;
+        return (w === null || w === undefined) ? 1.5 - p.headWidth / 2 : Math.abs(w - p.across) - p.headWidth / 2;
       });
       const dz = Math.max(...dzs); // the longer side decides, so both reach
       const dy = q.footHeight - rootY;
       const dx2 = d * d - dz * dz - dy * dy;
-      footAlong = rootAlong + forward * (dx2 > 0 ? Math.sqrt(dx2) : 0);
+      if (dx2 <= 0) { footAlong = q.footAlong; break; } // cannot reach: leave the foot where it was
+      footAlong = rootAlong + forward * Math.sqrt(dx2);
     }
     q.footAlong = round(footAlong);
   }

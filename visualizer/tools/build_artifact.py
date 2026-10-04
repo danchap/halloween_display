@@ -30,8 +30,12 @@ def build():
     style = re.search(r"<style>.*?</style>", html, re.S).group(0)
     body = re.search(r"<body>(.*)</body>", html, re.S).group(1)
     # Hosted: no URL hash, no downloads; app.js hides the local-only buttons.
-    body = body.replace('<script type="importmap">', '<script>window.HOSTED = true;</script>\n<script type="importmap">', 1)
-    return title + "\n" + style + "\n" + body.strip() + "\n"
+    tag = '<script type="importmap">'
+    assert tag in body, "index.html: importmap tag not found; the hosted flag would be missing"
+    body = body.replace(tag, '<script>window.HOSTED = true;</script>\n' + tag, 1)
+    out = title + "\n" + style + "\n" + body.strip() + "\n"
+    assert 'window.HOSTED' in out
+    return out
 
 
 if __name__ == "__main__":

@@ -96,6 +96,7 @@ function segmentMesh(a, b, diameter, mat) {
   const from = new THREE.Vector3(...a), to = new THREE.Vector3(...b);
   const dir = to.clone().sub(from);
   const len = dir.length();
+  if (len < 1e-4) return new THREE.Group(); // a folded leg can have a zero-length segment
   const m = new THREE.Mesh(unitCyl, mat);
   m.position.copy(from);
   m.scale.set(diameter / 2, len, diameter / 2);
@@ -180,7 +181,7 @@ export function rebuildExtras(world, params, { showPerson = true, wallMode = 'si
     for (const side of [1, -1]) {
       const wall = new THREE.Mesh(new THREE.PlaneGeometry(40, 7), flatWallMat);
       wall.rotation.y = Math.PI / 2;
-      wall.position.set(p.along, 3.5, p.across + side * flatWidth / 2);
+      wall.position.set(p.along, 3.5, side * flatWidth / 2);
       world.extrasGroup.add(wall);
     }
   }

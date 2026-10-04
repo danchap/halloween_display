@@ -15,6 +15,7 @@ the page is opened with ?record=1&upload=<name>.
 import argparse
 import functools
 import http.server
+import re
 import socket
 import threading
 import urllib.parse
@@ -62,21 +63,29 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
         """The walk page posts a recorded video to /upload?name=<file>."""
         url = urllib.parse.urlparse(self.path)
         name = Path(urllib.parse.parse_qs(url.query).get("name", ["recording.mp4"])[0]).name
-        if url.path != "/upload" or not name:
-            self.send_error(404)
+        if url.path != "/upload" or not re.fullmatch(r"[A-Za-z0-9][\w.-]*", name):
+            self.send_error(400, "upload name must be a plain file name")
             return
-        length = int(self.headers.get("Content-Length", 0))
+        try:
+            length = int(self.headers.get("Content-Length", ""))
+        except ValueError:
+            self.send_error(411, "Content-Length required")
+            return
         out = HERE / "out"
         out.mkdir(exist_ok=True)
+        written = 0
         with open(out / name, "wb") as f:
-            remaining = length
-            while remaining > 0:
-                chunk = self.rfile.read(min(1 << 20, remaining))
+            while written < length:
+                chunk = self.rfile.read(min(1 << 20, length - written))
                 if not chunk:
                     break
                 f.write(chunk)
-                remaining -= len(chunk)
-        print("saved", out / name, "(%d bytes)" % length, flush=True)
+                written += len(chunk)
+        if written != length:
+            (out / name).unlink(missing_ok=True)
+            self.send_error(400, "upload truncated: %d of %d bytes" % (written, length))
+            return
+        print("saved", out / name, "(%d bytes)" % written, flush=True)
         self.send_response(200)
         self.send_header("Content-Length", "0")
         self.end_headers()

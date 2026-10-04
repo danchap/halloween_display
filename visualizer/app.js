@@ -231,6 +231,7 @@ function posePath(t) {
 
 let mode = 'orbit';
 let lastFrame = 0;
+let looping = false; // one animation loop at a time
 function setMode(m) {
   if (mode === m) return;
   if (mode === 'path' && m === 'walk' && path) {
@@ -249,10 +250,10 @@ function setMode(m) {
   renderer.domElement.style.cursor = m === 'walk' ? 'crosshair' : 'grab';
   updateHud();
   if (m === 'orbit') { orbit.update(); render(); }
-  else { lastFrame = performance.now(); requestAnimationFrame(loop); }
+  else if (!looping) { looping = true; lastFrame = performance.now(); requestAnimationFrame(loop); }
 }
 function loop(now) {
-  if (mode === 'orbit') return;
+  if (mode === 'orbit') { looping = false; return; }
   const dt = Math.min(0.1, (now - lastFrame) / 1000);
   lastFrame = now;
   if (mode === 'walk') {
@@ -273,7 +274,8 @@ function updateHud() {
   if (!model) return;
   const s = model.stats;
   let text = `L ${fmt(s.bodyLength)} m · legs ${s.pairs.map(q => fmt(q.total, 2)).join(' / ')} m · back bend ${s.pairs[3].bend}°` + (s.allOk ? '' : ' · some legs cannot be placed');
-  if (mode === 'walk') text = (walker.fly ? 'Flying (Space up, C down): ' : 'Walking: ') + 'W A S D or arrows, Shift to hurry, drag or click the view to look, F to fly, Esc frees the mouse · ' + text;
+  const locked = document.pointerLockElement === renderer.domElement;
+  if (mode === 'walk') text = (walker.fly ? 'Flying (Space up, C down): ' : 'Walking: ') + 'W A S D or arrows, Shift to hurry, ' + (locked ? 'move the mouse to look, Esc frees it' : 'drag the view to look (a click captures the mouse where the browser allows it)') + ', F to fly · ' + text;
   if (mode === 'path') text = `The path: ${pathT.toFixed(1)} s of ${path.duration.toFixed(0)} s · any move key takes over on foot · ` + text;
   hud.textContent = text;
 }
@@ -284,13 +286,14 @@ function updateHud() {
   const el = renderer.domElement;
   let drag = null;
   el.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('pointerlockchange', updateHud);
   el.addEventListener('pointerdown', e => {
     el.focus();
     if (mode === 'path') setMode('walk');
     if (mode === 'walk' && e.pointerType === 'touch') {
-      const half = el.clientWidth / 2;
+      const rect = el.getBoundingClientRect();
       const t = { id: e.pointerId, x: e.clientX, y: e.clientY };
-      if (e.clientX < half && !walker.touchMove) walker.touchMove = { ...t, f: 0, s: 0 };
+      if (e.clientX - rect.left < rect.width / 2 && !walker.touchMove) walker.touchMove = { ...t, f: 0, s: 0 };
       else if (!walker.touchLook) walker.touchLook = t;
       el.setPointerCapture(e.pointerId);
       return;
@@ -356,7 +359,7 @@ function updateHud() {
     if (mode === 'path' && /^(Key[WASD]|Arrow)/.test(e.code)) setMode('walk');
     if (mode === 'walk') {
       walker.keys.add(e.code);
-      if (e.code === 'KeyF') { walker.fly = !walker.fly; walker.pos.y = walker.fly ? walker.eye : 0; updateHud(); }
+      if (e.code === 'KeyF' && !e.repeat) { walker.fly = !walker.fly; walker.pos.y = walker.fly ? walker.eye : 0; updateHud(); }
       if (/^(Key[WASDC]|Arrow|Space)/.test(e.code)) e.preventDefault();
       return;
     }
@@ -381,7 +384,8 @@ function rebuildSpider() {
 }
 
 function applyWallMode() {
-  if (state.wallMode === 'site' && site) walls = wallsFromSite(site);
+  if (!site) state.wallMode = 'flat'; // nothing else to land on
+  if (state.wallMode === 'site') walls = wallsFromSite(site);
   else walls = flatWalls(state.flatWidth);
 }
 
@@ -406,7 +410,8 @@ function updateStats() {
   for (const q of s.pairs) {
     const cls = q.status === 'ok' ? '' : 'warn';
     const lower = Math.abs(q.lower - q.lowerOtherSide) > 0.005 ? `${fmt(q.lower)}/${fmt(q.lowerOtherSide)}` : fmt(q.lower);
-    h += `<tr class="${cls}"><td>${q.pair}${q.status === 'ok' ? '' : ' ' + q.status}</td><td>${q.bend}°</td><td>${fmt(q.upper)}</td><td>${lower}</td><td>${fmt(q.total)}</td><td>${fmt(q.totalInL)}</td><td>${fmt(q.kneeFraction * 100, 0)}%</td><td>${fmt(q.footHeight)}</td></tr>`;
+    const total = Math.abs(q.total - q.totalOtherSide) > 0.005 ? `${fmt(q.total)}/${fmt(q.totalOtherSide)}` : fmt(q.total);
+    h += `<tr class="${cls}"><td>${q.pair}${q.status === 'ok' ? '' : ' ' + q.status}</td><td>${q.bend}°</td><td>${fmt(q.upper)}</td><td>${lower}</td><td>${total}</td><td>${fmt(q.totalInL)}</td><td>${fmt(q.kneeFraction * 100, 0)}%</td><td>${fmt(q.footHeight)}</td></tr>`;
   }
   h += '</table><div class="muted" style="margin-top:4px">Lower segment is derived so the foot lands where it is put. Two values mean the two walls are at different distances. Red: the foot is too close for that bend, or no wall was found.</div>';
 
@@ -420,15 +425,17 @@ function updateStats() {
   h += cmp('Head height', s.headInL[2], LOCKED.headWidth);
   h += cmp('Overlap', s.overlapInL, LOCKED.overlap);
   h += cmp('Head / abdomen width', s.headToAbdomenWidth, 0.66);
-  for (const q of s.pairs) h += cmp(`Leg ${q.pair} length`, q.totalInL, LOCKED.legLength, 0.03);
-  for (const q of s.pairs) h += cmp(`Leg ${q.pair} knee at`, q.kneeFraction, LOCKED.kneeFraction, 0.01);
+  for (const q of s.pairs) h += cmp(`Leg ${q.pair} length`, q.totalInLWorst, LOCKED.legLength, 0.03);
+  for (const q of s.pairs) h += cmp(`Leg ${q.pair} knee at`, q.kneeFractionWorst, LOCKED.kneeFraction, 0.01);
   h += cmp('Front bend / back bend', s.pairs[0].bend / (s.pairs[3].bend || 1), LOCKED.frontBendFactor, 0.02);
   h += '</table>';
 
   if (site) {
     const w = wallsFromSite(site);
-    const left = w(p.along, 1, p.across), right = w(p.along, -1, p.across);
-    const lb = left !== null ? w.last : null; w(p.along, -1, p.across); const rb = right !== null ? w.last : null;
+    const left = w(p.along, 1, p.across);
+    const lb = left !== null ? w.last : null;
+    const right = w(p.along, -1, p.across);
+    const rb = right !== null ? w.last : null;
     h += '<h2>Site at the body</h2><table>';
     h += row('Wall to wall here', left !== null && right !== null ? fmt(left - right) + ' m' : 'no wall found');
     if (lb) h += row('Right wall eave', fmt(lb.building.eaveHeight ?? NaN, 1) + ' m' + (lb.building.floors ? `, ${lb.building.floors} floor(s)` : ''));
@@ -634,7 +641,7 @@ async function main() {
   const hadSaved = readState();
   site = await loadWorldSite(world, { onTexture: render, ground: state.ground });
   if (!site) {
-    document.getElementById('loading').textContent = 'Site data missing (run site/fetch_site.py); showing flat walls.';
+    document.getElementById('loading').textContent = HOSTED ? 'The site data could not be loaded; showing flat walls.' : 'Site data missing (run site/fetch_site.py); showing flat walls.';
     state.wallMode = 'flat';
   }
   if (site) document.getElementById('loading').remove();

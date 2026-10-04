@@ -212,13 +212,18 @@ export function buildSiteMeshes(site, textureLoader, opts = {}) {
         const edge = edgeInfo(outer[i], outer[i + 1]);
         if (edge.len < 2.2) continue;
         const mid = [(edge.p[0] + edge.q[0]) / 2 + edge.ne * 2.5, (edge.p[1] + edge.q[1]) / 2 + edge.nn * 2.5];
+        if (insideBuilding(site, mid[0], mid[1], 0)) continue; // a party wall, not a facade
         const road = nearestRoad(site, mid);
-        if (!road || road.dist > 3.2) continue;
+        // The shop's wall onto the square is further from a road centreline
+        // than the test allows; the square is paved up to it.
+        const ontoSquare = b.id.endsWith(CORNER_SHOP) && edge.ne < -0.6;
+        if (!road || (road.dist > 3.2 && !ontoSquare)) continue;
         const alley = /impasse/i.test(road.name || '') || road.nature === 'Sentier';
         gutters.push(gutterGeometry(edge, alley ? 0.45 : 0.25));
         const list = layoutOpenings(b, edge, eave, rnd, alley);
         if (list.length) openings.set(i, list);
-        if (rnd() < 0.45) extras.push(downpipe(edge, eave, rnd() < 0.5 ? 0.2 : edge.len - 0.2, mats));
+        const sPipe = rnd() < 0.5 ? 0.2 : edge.len - 0.2;
+        if (rnd() < 0.45 && !list.some(o => Math.abs(o.s - sPipe) < o.w / 2 + 0.15)) extras.push(downpipe(edge, eave, sPipe, mats));
       }
       walls.push(wallGeometry(outer, eave, openings));
       for (const h of holes) walls.push(wallGeometry(h, eave, new Map()));
@@ -247,7 +252,7 @@ export function buildSiteMeshes(site, textureLoader, opts = {}) {
   // on the alley-facing wall of the east house, right at its north corner,
   // with the no-parking disc above it standing out from the wall so it
   // faces the street.
-  const corner = [3.8, -1.9];                    // the house's north-west corner
+  const corner = [3.79, -1.95];                  // the house's north-west corner, from the footprint
   const along = [-0.0276, -0.9996];              // its west wall, going south
   const out = [-0.9996, 0.0276];                 // outward (west) normal
   const at = (s, d, y) => V(corner[0] + along[0] * s + out[0] * d, y, corner[1] + along[1] * s + out[1] * d);
@@ -306,6 +311,9 @@ function layoutOpenings(b, edge, eave, rnd, alley) {
   const door = s => ({ s, w: DOOR_SIZE[0], y0: 0, y1: DOOR_SIZE[1], kind: 'door', door: colours.door });
   const upperSill = Math.min(2.5, eave - 0.45 - 1.1);
   const upper = (s, shutter) => window(s, upperSill, 1.1, shutter);
+  // Openings must end below the eave; the upper row needs room above the ground row.
+  const fit = (list, h) => list.filter(o => o.y1 <= h - 0.15);
+  const upperFits = upperSill >= 2.5;
   const residential = b.usage === 'Résidentiel' || b.usage === 'Indifférencié' || !b.usage;
   const annexe = b.usage === 'Annexe' || b.light;
   const floors = b.floors || 1;
@@ -314,22 +322,22 @@ function layoutOpenings(b, edge, eave, rnd, alley) {
     // The double door sits on the chamfered face looking north-east toward
     // the square; the street face has one small window upstairs; the rest
     // is blank.
-    if (edge.ne > 0.4 && edge.nn > 0.4) return [{ s: len / 2, w: GARAGE_SIZE[0], y0: 0, y1: GARAGE_SIZE[1], kind: 'garage' }];
-    if (edge.nn > 0.9 && len > 4) return [{ s: len * 0.35, w: 0.7, y0: 3.7, y1: 4.4, kind: 'light' }];
+    if (edge.ne > 0.4 && edge.nn > 0.4) return fit([{ s: len / 2, w: GARAGE_SIZE[0], y0: 0, y1: GARAGE_SIZE[1], kind: 'garage' }], eave);
+    if (edge.nn > 0.9 && len > 4) return fit([{ s: len * 0.35, w: 0.7, y0: 3.7, y1: 4.4, kind: 'light' }], eave);
     return [];
   }
   if (b.id.endsWith(EAST_HOUSE) && edge.ne < -0.9) {
     // The alley wall: two grey-shuttered windows near the corner, then an
     // ordinary two-storey run further in.
-    const list = [window(1.6, 1.0, 1.3, 'grey'), window(4.6, 1.0, 1.3, 'grey')];
-    for (let s = 8.0; s + 1.0 < len - 0.5; s += 3.0) list.push(window(s, 1.0, 1.3, 'grey'), upper(s, 'grey'));
-    return list;
+    const list = [window(2.1, 1.0, 1.3, 'grey'), window(4.9, 1.0, 1.3, 'grey')];
+    for (let s = 8.0; s + 1.0 < len - 0.5; s += 3.0) list.push(window(s, 0.9, 1.2, 'grey'), window(s, 2.4, 1.0, 'grey'));
+    return fit(list, eave);
   }
   if (b.id.endsWith(CORNER_SHOP) && edge.ne < -0.6) {
-    return [{ s: len / 2, w: SHOPFRONT_SIZE[0], y0: 0.05, y1: 0.05 + SHOPFRONT_SIZE[1], kind: 'shop' }];
+    return fit([{ s: len / 2, w: SHOPFRONT_SIZE[0], y0: 0.05, y1: 0.05 + SHOPFRONT_SIZE[1], kind: 'shop' }], eave);
   }
   if (annexe || alley) {
-    return len >= 2.6 && rnd() < 0.7 ? [door(len / 2)] : [];
+    return len >= 2.6 && rnd() < 0.7 ? fit([door(len / 2)], eave) : [];
   }
   const slots = [];
   for (let s = 1.3; s + 1.0 < len - 0.5; s += 2.8) slots.push(s);
@@ -339,9 +347,9 @@ function layoutOpenings(b, edge, eave, rnd, alley) {
   for (const s of slots) {
     if (s === doorSlot) list.push(door(s));
     else if (rnd() < 0.85) list.push(window(s));
-    if (floors >= 2 && eave >= 3.7 && rnd() < 0.9) list.push(upper(s));
+    if (floors >= 2 && upperFits && rnd() < 0.9) list.push(upper(s));
   }
-  return list;
+  return fit(list, eave);
 }
 
 // The reveal (jambs, head and sill, in limewash), the pane at the back of
@@ -557,7 +565,7 @@ function ribbonGeometry(points, w, offset) {
     if (i > 0) s += Math.hypot(points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]);
     pos.push(c[0] - rx * w / 2, 0, -(c[1] - ry * w / 2), c[0] + rx * w / 2, 0, -(c[1] + ry * w / 2));
     uv.push(s, 0, s, w);
-    if (i > 0) { const k = 2 * i; idx.push(k - 2, k, k - 1, k - 1, k, k + 1); }
+    if (i > 0) { const k = 2 * i; idx.push(k - 2, k - 1, k, k - 1, k + 1, k); }
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));

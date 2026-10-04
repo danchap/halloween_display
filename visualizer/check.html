@@ -11,7 +11,9 @@
 const q = new URLSearchParams(location.search);
 const v = document.getElementById('v');
 const info = document.getElementById('info');
-v.src = q.get('src') || 'out/the-path.mp4';
+// The whole file is fetched first: the plain server has no byte ranges,
+// without which the video would not be seekable and ?t= would be ignored.
+fetch(q.get('src') || 'out/the-path.mp4').then(r => r.blob()).then(b => { v.src = URL.createObjectURL(b); }).catch(e => { info.textContent = 'fetch failed: ' + e; document.title = 'ERROR'; });
 v.addEventListener('loadedmetadata', () => {
   info.textContent = `duration ${v.duration.toFixed(2)} s, ${v.videoWidth}x${v.videoHeight}`;
   v.currentTime = parseFloat(q.get('t') || '0');

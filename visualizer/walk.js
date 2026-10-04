@@ -28,6 +28,7 @@ function smoothstep(a, b, x) {
 // Junction of two named streets in the site's road data, in alley-frame
 // coordinates, or null.
 export function junction(site, nameA, nameB) {
+  if (!site) return null;
   const pts = name => new Set(site.roads.filter(r => r.name === name).flatMap(r => r.points.map(p => p.join(','))));
   const a = pts(nameA), b = pts(nameB);
   for (const k of a) if (b.has(k)) { const [e, n] = k.split(',').map(Number); return site.frame.toAlley(e, n); }
@@ -37,24 +38,28 @@ export function junction(site, nameA, nameB) {
 // Build the path for a spider at params.along / params.across.
 export function buildPath(site, params, opts = {}) {
   const o = { ...WALK_DEFAULTS, ...opts };
+  o.speed = Math.max(0.1, o.speed);
+  o.slowSpeed = Math.max(0.1, Math.min(o.slowSpeed, o.speed));
   const y = o.eyeHeight;
   const start = junction(site, 'Rue du Gros Jonc', 'Rue de Trousse Chemise') || [-1.8, 14.9];
-  // The street centreline nodes between the junction and the alley mouth,
-  // shifted a little toward the alley side (+x) as a walker aiming for a
-  // right turn would.
-  const street = site.roads.filter(r => r.name === 'Rue de Trousse Chemise')
-    .flatMap(r => r.points.map(p => site.frame.toAlley(p[0], p[1])))
+  // The street centreline nodes between the junction and the alley mouth
+  // (each once, since road segments share their end nodes), shifted a
+  // little toward the alley side (+x) as a walker aiming for a right turn
+  // would.
+  const nodeKeys = new Set((site ? site.roads : []).filter(r => r.name === 'Rue de Trousse Chemise').flatMap(r => r.points.map(p => p.join(','))));
+  const street = [...nodeKeys].map(k => site.frame.toAlley(...k.split(',').map(Number)))
     .filter(([x, z]) => z > 2.5 && z < start[1] - 2.5 && Math.abs(x) < 3)
     .sort((p, q) => q[1] - p[1])
     .map(([x, z]) => [x + 0.4, z]);
   const sx = params.along, sz = params.across;
+  // The approach waypoints only while they lie before the body.
+  const approach = [[2.8, sz * 0.5], [5.5, sz]].filter(([x]) => x < sx - 1);
   const pts2 = [
     start,
     ...street,
     [0.9, 3.2],
     [1.6, 1.3],
-    [2.8, sz * 0.5],
-    [5.5, sz],
+    ...approach,
     [sx, sz],
     [sx + o.afterSpider, sz],
   ];
@@ -123,9 +128,10 @@ export function cameraAt(path, params, t) {
   }
 
   if (o.bob) {
+    // Phase from distance walked, so slowing down does not jitter the bob:
+    // one stride is speed / 1.9 m at any pace.
     const v = path.speedAt(s);
-    const stepHz = 1.9 * v / o.speed;
-    const phase = 2 * Math.PI * stepHz * t;
+    const phase = 2 * Math.PI * 1.9 * s / o.speed;
     pos.y += 0.02 * Math.sin(phase) * (v / o.speed);
     const side = new THREE.Vector3(-ahead.z, 0, ahead.x);
     pos.addScaledVector(side, 0.012 * Math.sin(phase / 2) * (v / o.speed));
