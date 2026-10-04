@@ -258,23 +258,24 @@ export function buildSiteMeshes(site, textureLoader, opts = {}) {
 
   // The corner of the impasse, as Street View shows it: the street plaque
   // on the alley-facing wall of the east house, right at its north corner,
-  // with the no-parking disc above it standing out from the wall so it
-  // faces the street.
+  // and the no-parking disc on a bracket that sticks out north from the
+  // corner, its face toward the west so drivers coming along the street
+  // see it.
   const corner = [3.79, -1.95];                  // the house's north-west corner, from the footprint
   const along = [-0.0276, -0.9996];              // its west wall, going south
   const out = [-0.9996, 0.0276];                 // outward (west) normal
   const at = (s, d, y) => V(corner[0] + along[0] * s + out[0] * d, y, corner[1] + along[1] * s + out[1] * d);
   const plaque = new THREE.Mesh(new THREE.PlaneGeometry(...PLAQUE_SIZE), mats.plaque);
-  plaque.position.copy(at(0.55, 0.02, 2.65));
+  plaque.position.copy(at(0.45, 0.02, 2.65));
   plaque.lookAt(plaque.position.clone().add(new THREE.Vector3(out[0], 0, -out[1])));
   plaque.name = 'facade'; group.add(plaque);
   const sign = new THREE.Mesh(new THREE.CircleGeometry(0.3, 32), mats.noParking);
-  sign.position.copy(at(0.3, 0.32, 3.3));
-  sign.lookAt(sign.position.clone().add(new THREE.Vector3(along[0], 0, -along[1])));
+  sign.position.copy(at(-0.42, 0.10, 3.2));   // 0.42 m north of the corner
+  sign.lookAt(sign.position.clone().add(new THREE.Vector3(out[0], 0, -out[1])));
   sign.castShadow = true; sign.name = 'facade'; group.add(sign);
-  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 8), mats.pipe);
-  post.position.copy(at(0.3, 0.16, 3.3));
-  post.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(out[0], 0, -out[1]));
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.42, 8), mats.pipe);
+  post.position.copy(at(-0.21, 0.10, 3.2));
+  post.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(along[0], 0, -along[1]));
   post.name = 'facade'; group.add(post);
 
   // A bench against the east wall of the alley.
@@ -356,10 +357,11 @@ function layoutOpenings(b, edge, eave, rnd, alley) {
     ], eave);
     return [];
   }
+  if (b.id.endsWith(EAST_HOUSE) && edge.nn > 0.9) return []; // the gable end on the street is plain
   if (b.id.endsWith(EAST_HOUSE) && edge.ne < -0.9) {
     // The alley wall: two grey-shuttered windows near the corner, then an
     // ordinary two-storey run further in.
-    const list = [window(1.6, 1.0, 1.3, 'grey'), window(4.6, 1.0, 1.3, 'grey')];
+    const list = [window(1.4, 1.0, 1.3, 'grey'), window(3.8, 1.0, 1.3, 'grey')];
     for (let s = 8.0; s + 1.0 < len - 0.5; s += 3.0) list.push(window(s, 0.9, 1.2, 'grey'), window(s, 2.4, 1.0, 'grey'));
     return fit(list, eave);
   }
@@ -614,8 +616,9 @@ function addPlants(site, group, loader, onLoaded) {
     if (!meta) return;
     const walls = wallsFromSite(site);
     const spots = [
-      ['shrub', 2.45, -1.28, 1.25],   // the vine on the east house's corner at the mouth
-      ['shrub', 5.6, -1.25, 1.1],     // the climber up the east wall further in
+      ['shrub', 1.5, -2.15, 1.25],    // the bush against the east house's north face, just east of the corner
+      ['bush', 2.35, -1.3, 0.45],     // grass at the foot of the alley wall by the corner
+      ['shrub', 5.0, -1.25, 1.1],     // the climber up the east wall further in
       ['flowers', 1.4, -3.4, 0.9], ['hollyhock', 1.7, -5.6, 1.0], ['bush', 1.6, -7.6, 1.0],
       ['hollyhock', 1.6, 6.5, 0.9], ['bush', 1.6, 10.5, 1.1],
     ];
