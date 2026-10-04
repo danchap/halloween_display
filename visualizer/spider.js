@@ -67,8 +67,8 @@ export function briefPreset(L, options = {}) {
   const o = {
     backBend: 60,
     footHeights: [2.9, 1.9, 2.7, 1.6],
-    bodyHeight: 2.3,
-    along: 7.0,
+    bodyHeight: 2.5,
+    along: 6.5,
     wallDistance: 1.47, // half the alley width used to place the default feet
     ...options,
   };
@@ -94,8 +94,8 @@ export function briefPreset(L, options = {}) {
     bodyHeight: o.bodyHeight,
     across: 0,
     facing: -1,                      // -1: head toward the street, +1: into the alley
-    upperDiameter: 0.025 * L,
-    lowerDiameter: 0.02 * L,
+    upperDiameter: 0.04 * L,
+    lowerDiameter: 0.03 * L,
     pairs: [],
   };
   // Feet: at the brief's bends and lengths, each foot sits at the wanted

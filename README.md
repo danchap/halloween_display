@@ -45,8 +45,10 @@ What it shows:
   orthophoto remains available as the ground ("Ground" in Display).
 - The spider in the brief's locked proportions by default (body length
   L = 0.8 m, back-pair knee bend 60°, front pair 30°, feet on the real
-  walls at staggered heights). Pick another L or bend and press
-  "Apply brief ratios at L".
+  walls at staggered heights), with Daniel's choices of position and
+  thickness: body axis 2.5 m up, 6.5 m into the alley with the head toward
+  the street, legs 3.2 cm and 2.4 cm thick. Pick another L or bend and
+  press "Apply brief ratios at L".
 - Sliders for the abdomen (length, width, height), the head (same), their
   overlap and lift, the body's position along, across and above the alley,
   which way it faces, and for each leg pair the knee bend, the upper segment

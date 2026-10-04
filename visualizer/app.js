@@ -9,7 +9,7 @@ import { buildPath, cameraAt } from './walk.js';
 // Hosted on claude.ai the page cannot use the URL hash or start downloads;
 // the design is then remembered in the browser instead.
 const HOSTED = Boolean(window.HOSTED) || /claude\.ai$/.test(location.hostname);
-const STORAGE_KEY = 'alley-spider-design';
+const STORAGE_KEY = 'alley-spider-design-v2';
 
 // ---------------------------------------------------------------- parameters
 

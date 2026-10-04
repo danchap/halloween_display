@@ -13,10 +13,20 @@
 import * as THREE from 'three';
 import { villageMaterials, WINDOW_SIZE, SHUTTER_SIZE, DOOR_SIZE, PLAQUE_SIZE, GARAGE_SIZE, SHOPFRONT_SIZE } from './textures.js';
 
+// Corrections to the IGN data from what Daniel knows of the place, by the
+// end of the building id: the garage on the south-west corner of the alley
+// mouth is two storeys high, not one.
+const OVERRIDES = {
+  '292742702': { floors: 2, eaveHeight: 5.6 },
+};
+
 export async function loadSite(url = './site/site.json') {
   const res = await fetch(url);
   if (!res.ok) throw new Error('site data not found: ' + url);
   const site = await res.json();
+  for (const b of site.buildings) {
+    for (const [suffix, fix] of Object.entries(OVERRIDES)) if (b.id.endsWith(suffix)) Object.assign(b, fix);
+  }
   const [sx, sy] = site.alley.start;
   const [ex, ey] = site.alley.end;
   const len = Math.hypot(ex - sx, ey - sy);
@@ -302,8 +312,10 @@ function layoutOpenings(b, edge, eave, rnd, alley) {
 
   if (b.id.endsWith(GARAGE)) {
     // The double door sits on the chamfered face looking north-east toward
-    // the square; the other faces are blank.
+    // the square; the street face has one small window upstairs; the rest
+    // is blank.
     if (edge.ne > 0.4 && edge.nn > 0.4) return [{ s: len / 2, w: GARAGE_SIZE[0], y0: 0, y1: GARAGE_SIZE[1], kind: 'garage' }];
+    if (edge.nn > 0.9 && len > 4) return [{ s: len * 0.35, w: 0.7, y0: 3.7, y1: 4.4, kind: 'light' }];
     return [];
   }
   if (b.id.endsWith(EAST_HOUSE) && edge.ne < -0.9) {
@@ -373,6 +385,8 @@ function openingMeshes(edge, o, mats) {
       m.castShadow = true;
       meshes.push(m);
     }
+  } else if (o.kind === 'light') {
+    meshes.push(plane(o.s, yc, o.w, h, depth - 0.01, mats.glazing));
   } else if (o.kind === 'door') {
     meshes.push(plane(o.s, yc, o.w, h, depth - 0.01, mats.doors[o.door]));
   } else if (o.kind === 'garage') {
