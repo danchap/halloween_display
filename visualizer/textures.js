@@ -261,6 +261,47 @@ export function noParkingTexture() {
   }, { anisotropy: 4 });
 }
 
+// A climber on a wall: a thin stem from the ground with the foliage
+// spreading sideways along the wall near the top, and pale blue flowers
+// in it (the plumbago on the alley's east wall). The plane is `width` m
+// wide and `height` m tall; the canopy leans toward -x (the corner side).
+export const CLIMBER_SIZE = [2.4, 4.4];
+export function climberTexture() {
+  return canvasTexture(480, 880, (g, w, h) => {
+    const rnd = rng(61);
+    g.clearRect(0, 0, w, h);
+    // the stem and two branches
+    g.strokeStyle = '#4a3a28'; g.lineWidth = 7; g.lineCap = 'round';
+    const sx = w * 0.64;
+    g.beginPath(); g.moveTo(sx, h); g.quadraticCurveTo(sx - 14, h * 0.7, sx + 4, h * 0.3); g.stroke();
+    g.lineWidth = 4;
+    g.beginPath(); g.moveTo(sx, h * 0.5); g.quadraticCurveTo(sx - 40, h * 0.42, w * 0.35, h * 0.28); g.stroke();
+    g.beginPath(); g.moveTo(sx + 2, h * 0.36); g.quadraticCurveTo(sx + 40, h * 0.3, w * 0.8, h * 0.24); g.stroke();
+    // foliage: dense in the canopy, sparse along the stem
+    const greens = ['#3f6b2a', '#5a8a3a', '#76a04a', '#2f5520', '#86ad55'];
+    const leaf = (x, y, r) => {
+      g.fillStyle = greens[Math.floor(rnd() * greens.length)];
+      g.beginPath(); g.ellipse(x, y, r, r * 0.6, rnd() * Math.PI, 0, Math.PI * 2); g.fill();
+    };
+    // The canopy: several lumps strung along the wall just under the eave,
+    // thinning toward their edges, so the outline is ragged.
+    const lumps = [[0.52, 0.27, 0.2, 0.11], [0.3, 0.24, 0.16, 0.09], [0.72, 0.3, 0.13, 0.08], [0.42, 0.36, 0.14, 0.07], [0.18, 0.3, 0.09, 0.06], [0.6, 0.18, 0.12, 0.06]];
+    const inLump = () => {
+      const [cx, cy, rx, ry] = lumps[Math.floor(rnd() * lumps.length)];
+      const a = rnd() * Math.PI * 2, r = Math.pow(rnd(), 0.6);
+      return [w * cx + Math.cos(a) * r * w * rx, h * cy + Math.sin(a) * r * h * ry];
+    };
+    for (let i = 0; i < 2200; i++) { const [x, y] = inLump(); leaf(x, y, 6 + rnd() * 8); }
+    for (let i = 0; i < 380; i++) leaf(sx + (rnd() - 0.5) * w * 0.12, h * (0.36 + rnd() * 0.58), 5 + rnd() * 6);
+    // flowers
+    for (let i = 0; i < 150; i++) {
+      const [x, y] = inLump();
+      g.fillStyle = rnd() < 0.5 ? '#9fc3e8' : '#bcd6f2';
+      g.beginPath(); g.arc(x, y, 3 + rnd() * 3, 0, Math.PI * 2); g.fill();
+    }
+  }, { anisotropy: 4 });
+}
+
 // All materials at once, built lazily and shared.
 let cache = null;
 export function villageMaterials() {
@@ -279,6 +320,7 @@ export function villageMaterials() {
     doors: Object.fromEntries(Object.entries(DOOR_COLOURS).map(([k, c]) => [k, std(doorTexture(c), { roughness: 0.7 })])),
     garage: std(garageDoorTexture(), { roughness: 0.7 }),
     shopfront: std(shopfrontTexture(), { roughness: 0.6 }),
+    climber: std(climberTexture(), { alphaTest: 0.5, side: THREE.DoubleSide, roughness: 1 }),
     plaque: std(plaqueTexture(), { roughness: 0.5 }),
     noParking: std(noParkingTexture(), { transparent: true, alphaTest: 0.5, roughness: 0.4, side: THREE.DoubleSide }),
   };

@@ -11,7 +11,7 @@
 // into the dead end, y up, z across to the right when looking in.
 
 import * as THREE from 'three';
-import { villageMaterials, WINDOW_SIZE, SHUTTER_SIZE, DOOR_SIZE, PLAQUE_SIZE, GARAGE_SIZE, SHOPFRONT_SIZE } from './textures.js';
+import { villageMaterials, WINDOW_SIZE, SHUTTER_SIZE, DOOR_SIZE, PLAQUE_SIZE, GARAGE_SIZE, SHOPFRONT_SIZE, CLIMBER_SIZE } from './textures.js';
 
 // Corrections to the IGN data from what Daniel knows of the place, by the
 // end of the building id: the garage on the south-west corner of the alley
@@ -277,6 +277,25 @@ export function buildSiteMeshes(site, textureLoader, opts = {}) {
   post.position.copy(at(-0.21, 0.10, 3.2));
   post.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(along[0], 0, -along[1]));
   post.name = 'facade'; group.add(post);
+
+  // The climber on the east wall, 3.3 m in from the corner: two planes flat
+  // against the wall, the second a little further out for some depth.
+  {
+    const wallZ = wallsFromSite(site)(5.3, -1, 0);
+    if (wallZ !== null) {
+      const depth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: mats.climber.map, alphaTest: 0.5 });
+      for (const [dx, dz] of [[0, 0.07], [0, 0.26]]) {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(...CLIMBER_SIZE), mats.climber);
+        m.customDepthMaterial = depth;
+        const [e, n] = site.frame.toSite(4.9 + dx, wallZ + dz);
+        m.position.copy(V(e, CLIMBER_SIZE[1] / 2, n));
+        m.rotation.y = site.frame.yaw;
+        m.castShadow = true;
+        m.name = 'plants';
+        group.add(m);
+      }
+    }
+  }
 
   // A bench against the east wall of the alley.
   {
@@ -618,7 +637,7 @@ function addPlants(site, group, loader, onLoaded) {
     const spots = [
       ['shrub', 1.5, -2.15, 1.25],    // the bush against the east house's north face, just east of the corner
       ['bush', 2.35, -1.3, 0.45],     // grass at the foot of the alley wall by the corner
-      ['shrub', 5.0, -1.25, 1.1],     // the climber up the east wall further in
+      ['bush', 3.7, -1.3, 0.4], ['bush', 5.4, -1.3, 0.35], ['bush', 6.6, -1.3, 0.4],   // dry tufts at the wall's foot
       ['flowers', 1.4, -3.4, 0.9], ['hollyhock', 1.7, -5.6, 1.0], ['bush', 1.6, -7.6, 1.0],
       ['hollyhock', 1.6, 6.5, 0.9], ['bush', 1.6, 10.5, 1.1],
     ];
