@@ -76,9 +76,10 @@ To record without a window, headless Chrome works on Linux:
     google-chrome --headless=new --use-angle=swiftshader --enable-unsafe-swiftshader \
       "http://127.0.0.1:8765/walk.html?record=1&upload=the-path.mp4"
 
-The file lands in `visualizer/out/` (ignored by git), about 5 minutes for
-a 30 s walk at 1280×720 in software rendering. `check.html?t=17` shows a
-frame of the recording to confirm it decodes.
+The file lands in `visualizer/out/` (ignored by git), about 10 minutes
+for a 30 s walk at 1280×720 in software rendering. Add `&bitrate=3200000`
+for a smaller copy (about 12 MB instead of 25 MB at the default 7 Mb/s).
+`check.html?t=17` shows a frame of the recording to confirm it decodes.
 
 Tests: open `tests.html` from the same server and read the PASS/FAIL list.
 CLAUDE.md has the headless Chrome command for the same check.

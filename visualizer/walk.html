@@ -64,6 +64,7 @@ document.getElementById('back').href = './' + location.hash;
 
 const [W0, H0] = (q.get('size') || '1280x720').split('x').map(Number);
 const FPS = parseInt(q.get('fps') || '30', 10);
+const BITRATE = parseFloat(q.get('bitrate') || '0') || null; // bits per second; default depends on size
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(1);
 renderer.setSize(W0, H0, false);
@@ -162,7 +163,7 @@ async function record({ upload = null, maxSeconds = Infinity } = {}) {
     output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
     error: e => { status.textContent = 'encoder error: ' + e.message; console.error(e); },
   });
-  encoder.configure({ codec: 'avc1.640028', width: W, height: H, bitrate: W >= 1920 ? 12e6 : 7e6, framerate: FPS, latencyMode: 'quality' });
+  encoder.configure({ codec: 'avc1.640028', width: W, height: H, bitrate: BITRATE || (W >= 1920 ? 12e6 : 7e6), framerate: FPS, latencyMode: 'quality' });
   const seconds = Math.min(path.duration, maxSeconds);
   const frames = Math.ceil(seconds * FPS);
   const started = performance.now();
