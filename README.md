@@ -30,12 +30,18 @@ What it shows:
   building footprints with their eave heights. The alley runs south from
   Rue de Trousse Chemise for 45 m; the walls are 2.94 m apart along the
   stretch to be used and about 3.7 m at the mouth.
-- Materials taken from Daniel's photo of Rue de Trousse Chemise
-  (`visualizer/site/photos/`): limewashed walls with the dark plinth,
-  grey-green shutters and doors on street-facing walls, canal-tile roofs
-  and eaves, the gravel lane with its strip of pale setts and gutters, the
-  corner plaque, and plants cut out of the photo along the alley. Walls
-  facing the alley are left blank, since nothing shows them. The IGN
+- Materials and layout from Daniel's photo of Rue de Trousse Chemise
+  (`visualizer/site/photos/`) and from his Street View screenshots of the
+  junction and the alley, used as reference only: limewashed walls with
+  the dark plinth, window and door openings cut into the walls with
+  reveals and shutters hung open beside them (grey-blue mostly, some pale
+  blue, some sage), canal-tile roofs with eaves and chimneys, downpipes,
+  the gravel lane with its strip of pale setts, sett borders in the alley,
+  the square at Rue du Gros Jonc paved edge to edge, the garage with its
+  sage double door west of the alley mouth, the east house's shuttered
+  alley wall with the plaque, the sign and the vine on its corner, the
+  corner shop's green front, and plants cut out of the photo. Everything
+  the screenshots do not show follows the same rules as a guess. The IGN
   orthophoto remains available as the ground ("Ground" in Display).
 - The spider in the brief's locked proportions by default (body length
   L = 0.8 m, back-pair knee bend 60°, front pair 30°, feet on the real

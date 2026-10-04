@@ -1,7 +1,9 @@
 // Procedural materials for the Ré village, drawn on canvases. Colours come
-// from Daniel's photo of Rue de Trousse Chemise (site/photos): limewashed
-// walls with a dark painted plinth, pale grey-green shutters, canal tiles,
-// a gravel-aggregate lane with a strip of pale limestone setts.
+// from Daniel's photo of Rue de Trousse Chemise (site/photos) and from his
+// Street View screenshots of the junction and the alley (reference only):
+// limewashed walls with a dark painted plinth, shutters in grey-blue, pale
+// blue or sage, canal tiles, a gravel-aggregate lane with pale limestone
+// setts.
 //
 // Every texture is drawn at a known scale in meters so it can tile by
 // world distance: texture.repeat = 1 / size.
@@ -34,7 +36,7 @@ function speckle(g, w, h, count, rnd, colors, size = [1, 3]) {
   }
 }
 
-// Limewash wall: 1 m wide, 8 m tall, plinth in the bottom 0.35 m.
+// Limewash wall: 1 m wide, 8 m tall, plinth in the bottom 0.22 m.
 export const WALL_TEXTURE_HEIGHT = 8;
 export function limewashTexture() {
   return canvasTexture(256, 2048, (g, w, h) => {
@@ -42,17 +44,15 @@ export function limewashTexture() {
     g.fillStyle = '#efece5';
     g.fillRect(0, 0, w, h);
     speckle(g, w, h, 9000, rnd, ['#e8e4dc', '#f4f2ec', '#e3dfd6', '#f7f5f0'], [1, 4]);
-    // faint horizontal render lines and streaks of weathering
     for (let i = 0; i < 40; i++) {
       g.fillStyle = `rgba(120,110,95,${0.03 + rnd() * 0.04})`;
       g.fillRect(rnd() * w, rnd() * h, 2 + rnd() * 30, 1);
     }
-    const plinth = h * 0.35 / WALL_TEXTURE_HEIGHT;
-    g.fillStyle = '#3b3b39';
+    const plinth = h * 0.22 / WALL_TEXTURE_HEIGHT;
+    g.fillStyle = '#34343a';
     g.fillRect(0, h - plinth, w, plinth);
-    speckle(g, w, plinth, 1500, (() => { const r = rng(5); return () => r(); })(), ['#454543', '#333331', '#4d4c48'], [1, 3]);
-    // the plinth's soft top edge
-    g.fillStyle = 'rgba(59,59,57,0.5)';
+    speckle(g, w, plinth, 1200, rng(5), ['#3e3e43', '#2c2c30', '#45454a'], [1, 3]);
+    g.fillStyle = 'rgba(52,52,58,0.5)';
     g.fillRect(0, h - plinth - 2, w, 2);
   }, { repeat: [1, 1 / WALL_TEXTURE_HEIGHT] });
 }
@@ -69,7 +69,6 @@ export function tileTexture() {
       for (let c = 0; c < cols; c++) {
         const x = c * cw, y = r * rh - (c % 2) * rh * 0.5;
         const base = 160 + rnd() * 40, gr = 95 + rnd() * 30, bl = 62 + rnd() * 25;
-        // cover tile: convex, lit on the left
         const grad = g.createLinearGradient(x, 0, x + cw, 0);
         grad.addColorStop(0, `rgb(${base - 40},${gr - 30},${bl - 20})`);
         grad.addColorStop(0.35, `rgb(${base},${gr},${bl})`);
@@ -77,8 +76,7 @@ export function tileTexture() {
         grad.addColorStop(1, `rgb(${base - 70},${gr - 50},${bl - 30})`);
         g.fillStyle = grad;
         g.fillRect(x, y, cw, rh);
-        g.fillRect(x, y + rh, cw, rh); // the row below the offset start
-        // row overlap shadow
+        g.fillRect(x, y + rh, cw, rh);
         g.fillStyle = 'rgba(40,20,10,0.45)';
         g.fillRect(x, y + rh - 4, cw, 4);
         g.fillRect(x, y + 2 * rh - 4, cw, 4);
@@ -92,10 +90,10 @@ export function tileTexture() {
 export function aggregateTexture() {
   return canvasTexture(512, 512, (g, w, h) => {
     const rnd = rng(37);
-    g.fillStyle = '#7e776a';
+    g.fillStyle = '#76706a';
     g.fillRect(0, 0, w, h);
-    speckle(g, w, h, 26000, rnd, ['#8f8778', '#6d6659', '#a39b8c', '#5e5950', '#948c7d', '#7a7366'], [1, 4]);
-    speckle(g, w, h, 400, rnd, ['#b3ab9b', '#4f4a43'], [2, 5]);
+    speckle(g, w, h, 26000, rnd, ['#8a8378', '#67615a', '#9d968b', '#58534d', '#8f8880', '#726c66'], [1, 4]);
+    speckle(g, w, h, 400, rnd, ['#aaa295', '#4b4741'], [2, 5]);
   });
 }
 
@@ -121,54 +119,116 @@ export function settTexture() {
   });
 }
 
-// Window with open shutters: 2.0 m wide x 1.4 m tall (the plane size).
-export const WINDOW_SIZE = [2.0, 1.4];
-export function windowTexture() {
-  return canvasTexture(400, 280, (g, w, h) => {
-    g.clearRect(0, 0, w, h);
-    const sx = 90, wx = 100, ww = 200; // shutter width, window x, window width in px
-    // shutters
-    for (const x of [wx - sx - 4, wx + ww + 4]) {
-      g.fillStyle = '#8c9c8a';
-      g.fillRect(x, 0, sx, h);
-      g.fillStyle = '#7a8a78';
-      for (let y = 14; y < h - 10; y += 14) g.fillRect(x + 6, y, sx - 12, 5);
-      g.fillStyle = '#9fae9c';
-      g.fillRect(x, 0, sx, 6); g.fillRect(x, h - 6, sx, 6);
-      g.fillRect(x, 0, 6, h); g.fillRect(x + sx - 6, 0, 6, h);
-    }
-    // frame and glass
-    g.fillStyle = '#f2f1ec';
-    g.fillRect(wx, 0, ww, h);
-    const glass = g.createLinearGradient(0, 0, 0, h);
-    glass.addColorStop(0, '#5d6d80'); glass.addColorStop(0.5, '#2e3845'); glass.addColorStop(1, '#1f2730');
-    g.fillStyle = glass;
-    const pad = 12;
-    for (const [px, py, pw, ph] of [[wx + pad, pad, ww / 2 - pad - 4, h / 2 - pad - 4], [wx + ww / 2 + 4, pad, ww / 2 - pad - 4, h / 2 - pad - 4],
-      [wx + pad, h / 2 + 4, ww / 2 - pad - 4, h / 2 - pad - 4], [wx + ww / 2 + 4, h / 2 + 4, ww / 2 - pad - 4, h / 2 - pad - 4]]) {
-      g.fillRect(px, py, pw, ph);
-      g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(px, py, pw, 10); g.fillStyle = glass;
-    }
-    // sill
-    g.fillStyle = '#d9d6cd';
-    g.fillRect(wx - 8, h - 10, ww + 16, 10);
+// Joinery colours seen in the village: shutters mostly grey-blue, some pale
+// blue, some sage; doors sage, grey-blue or white.
+export const SHUTTER_COLOURS = {
+  grey: ['#9ba7b2', '#87939f', '#aab5bf'],
+  blue: ['#a6c0d1', '#8fabbf', '#b8cedb'],
+  sage: ['#8c9c8a', '#7a8a78', '#9fae9c'],
+};
+export const DOOR_COLOURS = {
+  sage: ['#86a886', '#729472', '#98b798'],
+  grey: ['#93a0ac', '#7f8c98', '#a3afba'],
+  white: ['#e9e8e2', '#d8d7d0', '#f4f3ee'],
+};
+
+function louvred(g, x, y, sw, h, [base, dark, light]) {
+  g.fillStyle = base;
+  g.fillRect(x, y, sw, h);
+  g.fillStyle = dark;
+  for (let yy = y + 14; yy < y + h - 10; yy += 14) g.fillRect(x + 6, yy, sw - 12, 5);
+  g.fillStyle = light;
+  g.fillRect(x, y, sw, 6); g.fillRect(x, y + h - 6, sw, 6);
+  g.fillRect(x, y, 6, h); g.fillRect(x + sw - 6, y, 6, h);
+}
+
+// A single shutter leaf, 0.5 m x 1.3 m, hung open flat against the wall.
+export const SHUTTER_SIZE = [0.5, 1.3];
+export function shutterTexture(colours = SHUTTER_COLOURS.grey) {
+  return canvasTexture(100, 260, (g, w, h) => {
+    louvred(g, 0, 0, w, h, colours);
+    g.fillStyle = 'rgba(0,0,0,0.18)';
+    g.fillRect(0, 0, 4, h); // the hinge-side shadow
   }, { anisotropy: 4 });
 }
 
-// Door: 1.0 m x 2.2 m plane.
-export const DOOR_SIZE = [1.0, 2.2];
-export function doorTexture() {
-  return canvasTexture(200, 440, (g, w, h) => {
+// The glazing at the back of a window opening: white frame, four panes,
+// 1.0 m x 1.3 m.
+export const WINDOW_SIZE = [1.0, 1.3];
+export function glazingTexture() {
+  return canvasTexture(200, 260, (g, w, h) => {
     g.fillStyle = '#f2f1ec';
     g.fillRect(0, 0, w, h);
-    g.fillStyle = '#7f8f7c';
-    g.fillRect(14, 14, w - 28, h - 14);
-    g.fillStyle = '#6d7d6a';
+    const glass = g.createLinearGradient(0, 0, 0, h);
+    glass.addColorStop(0, '#5d6d80'); glass.addColorStop(0.5, '#2e3845'); glass.addColorStop(1, '#1f2730');
+    const pad = 12, mid = 5;
+    for (const [px, py, pw, ph] of [[pad, pad, w / 2 - pad - mid, h / 2 - pad - mid], [w / 2 + mid, pad, w / 2 - pad - mid, h / 2 - pad - mid],
+      [pad, h / 2 + mid, w / 2 - pad - mid, h / 2 - pad - mid], [w / 2 + mid, h / 2 + mid, w / 2 - pad - mid, h / 2 - pad - mid]]) {
+      g.fillStyle = glass; g.fillRect(px, py, pw, ph);
+      g.fillStyle = 'rgba(255,255,255,0.14)'; g.fillRect(px, py, pw, 10);
+    }
+  }, { anisotropy: 4 });
+}
+
+// Door leaf in its opening: 1.0 m x 2.15 m.
+export const DOOR_SIZE = [1.0, 2.15];
+export function doorTexture(colours = DOOR_COLOURS.sage) {
+  return canvasTexture(200, 430, (g, w, h) => {
+    const [base, dark, light] = colours;
+    g.fillStyle = base;
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = dark;
     for (const [x, y, pw, ph] of [[34, 40, w - 68, 120], [34, 190, w - 68, 200]]) g.fillRect(x, y, pw, ph);
-    g.fillStyle = '#8fa08c';
+    g.fillStyle = light;
     for (const [x, y, pw, ph] of [[42, 48, w - 84, 104], [42, 198, w - 84, 184]]) g.fillRect(x, y, pw, ph);
     g.fillStyle = '#d9d2b8';
     g.beginPath(); g.arc(w - 44, h * 0.52, 5, 0, Math.PI * 2); g.fill();
+  }, { anisotropy: 4 });
+}
+
+// The garage at the alley mouth: sage double door with ventilation holes,
+// 2.2 m x 2.3 m.
+export const GARAGE_SIZE = [2.2, 2.3];
+export function garageDoorTexture() {
+  return canvasTexture(440, 460, (g, w, h) => {
+    const [base, dark, light] = DOOR_COLOURS.sage;
+    g.fillStyle = base;
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = dark;
+    for (let x = 0; x < w; x += 44) g.fillRect(x, 0, 3, h); // planks
+    g.fillRect(w / 2 - 3, 0, 6, h);
+    g.fillStyle = light;
+    for (const y of [60, h / 2, h - 60]) g.fillRect(0, y, w, 6); // ledges
+    g.fillStyle = '#4a5a4a';
+    for (const cx of [w * 0.25, w * 0.75]) {
+      for (let r = 0; r < 6; r++) for (let c = 0; c < 3 + (r % 2); c++) {
+        g.beginPath(); g.arc(cx - 30 + c * 20 + (r % 2 ? -10 : 0), h * 0.42 + r * 14, 4, 0, Math.PI * 2); g.fill();
+      }
+    }
+  }, { anisotropy: 4 });
+}
+
+// The corner shop on the square: sage frame around a wide window and a
+// door, 4.2 m x 2.2 m.
+export const SHOPFRONT_SIZE = [4.2, 2.2];
+export function shopfrontTexture() {
+  return canvasTexture(840, 440, (g, w, h) => {
+    const [base, dark, light] = DOOR_COLOURS.sage;
+    g.clearRect(0, 0, w, h);
+    g.fillStyle = base;
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = light; g.fillRect(0, 0, w, 30); g.fillRect(0, h - 24, w, 24);
+    g.fillStyle = dark; g.fillRect(0, 30, w, 8);
+    // door at the left
+    g.fillStyle = '#2b3542'; g.fillRect(40, 60, 150, h - 84);
+    g.fillStyle = 'rgba(255,255,255,0.15)'; g.fillRect(40, 60, 150, 40);
+    // the shop window
+    const glass = g.createLinearGradient(0, 60, 0, h - 24);
+    glass.addColorStop(0, '#6a7a88'); glass.addColorStop(0.6, '#3a4552'); glass.addColorStop(1, '#2b3440');
+    g.fillStyle = glass; g.fillRect(230, 80, w - 270, h - 124);
+    g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(230, 80, w - 270, 36);
+    g.fillStyle = dark; g.fillRect(230 + (w - 270) / 2 - 4, 80, 8, h - 124);
+    for (const y of [160, 250, 340]) { g.fillStyle = '#c9b89c'; g.fillRect(240, y, w - 290, 5); } // shelves
   }, { anisotropy: 4 });
 }
 
@@ -211,8 +271,14 @@ export function villageMaterials() {
     tile: std(tileTexture(), { side: THREE.DoubleSide }),
     lane: std(aggregateTexture()),
     setts: std(settTexture()),
-    window: std(windowTexture(), { transparent: true, alphaTest: 0.5, roughness: 0.6 }),
-    door: std(doorTexture(), { roughness: 0.7 }),
+    wallBoth: std(limewashTexture(), { side: THREE.DoubleSide }),
+    chimney: new THREE.MeshStandardMaterial({ color: 0xe9e6df, roughness: 0.95 }),
+    pipe: new THREE.MeshStandardMaterial({ color: 0x8d9296, roughness: 0.6, metalness: 0.3 }),
+    glazing: std(glazingTexture(), { roughness: 0.5 }),
+    shutters: Object.fromEntries(Object.entries(SHUTTER_COLOURS).map(([k, c]) => [k, std(shutterTexture(c), { roughness: 0.8 })])),
+    doors: Object.fromEntries(Object.entries(DOOR_COLOURS).map(([k, c]) => [k, std(doorTexture(c), { roughness: 0.7 })])),
+    garage: std(garageDoorTexture(), { roughness: 0.7 }),
+    shopfront: std(shopfrontTexture(), { roughness: 0.6 }),
     plaque: std(plaqueTexture(), { roughness: 0.5 }),
     noParking: std(noParkingTexture(), { transparent: true, alphaTest: 0.5, roughness: 0.4, side: THREE.DoubleSide }),
   };

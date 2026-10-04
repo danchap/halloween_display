@@ -28,8 +28,12 @@ test run before the night.
   through the debugging port is throttled and never finishes. The page
   posts progress to the server's stdout via /log. feta has no ffmpeg.
 - `textures.js` draws the village materials on canvases from colours in
-  Daniel's photo (site/photos); `site.js` dresses the buildings, lane and
-  plants with them. `tools/build_artifact.py` makes the body-only page
+  Daniel's photo (site/photos); `site.js` lays out openings per wall, cuts
+  them into the wall geometry with reveals, and dresses buildings, lane
+  and plants. Three buildings at the alley mouth are laid out from Street
+  View (ids in site.js: east house, garage, corner shop); the rest is the
+  same logic as a guess. Street View images are reference only; none of
+  their pixels are in the model. `tools/build_artifact.py` makes the body-only page
   published on claude.ai (links in README). Hosted, the page cannot use
   the URL hash or downloads: window.HOSTED hides those buttons.
 - Put screenshots and Chrome profiles under visualizer/out/ (ignored), not

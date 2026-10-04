@@ -136,7 +136,7 @@ function lookFrom(eyeAlley, targetAlley) {
   orbit.update(); render();
 }
 const VIEWS = {
-  'Street': () => { const p = state.params; lookFrom([-6, 1.65, 0], [p.along, p.bodyHeight - 0.3, p.across]); },
+  'Street': () => { const p = state.params; lookFrom([-1.2, 1.65, 0.4], [p.along, p.bodyHeight - 0.3, p.across]); },
   'Front': () => { const p = state.params; const f = p.facing >= 0 ? 1 : -1;
     lookFrom([p.along + f * 4.5, p.bodyHeight + 0.2, p.across], [p.along, p.bodyHeight, p.across]); },
   'Side': () => { const p = state.params; lookFrom([p.along, p.bodyHeight + 1.5, p.across + 5.5], [p.along, p.bodyHeight, p.across]); },
@@ -164,9 +164,10 @@ function yawPitchFrom(dir) {
   return { yaw: Math.atan2(-d.x, -d.z), pitch: Math.asin(Math.max(-1, Math.min(1, d.y))) };
 }
 function spawnWalker() {
-  const p = alleyToScene(-4, 0, 0.3);
+  // On the street at the alley mouth, looking into the alley.
+  const p = alleyToScene(-1.0, 0, 0.5);
   walker.pos.set(p.x, 0, p.z);
-  const dir = alleyToScene(1, 0, 0.3).sub(alleyToScene(0, 0, 0.3));
+  const dir = alleyToScene(1, 0, 0.5).sub(alleyToScene(0, 0, 0.5));
   walker.yaw = yawPitchFrom(dir).yaw;
   walker.pitch = 0;
   walker.fly = false;

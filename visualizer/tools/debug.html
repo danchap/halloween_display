@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><title>debug</title>
+<script type="importmap">{ "imports": { "three": "../vendor/three.module.js" } }</script></head>
+<body><pre id="out">running</pre>
+<script type="module">
+import * as THREE from 'three';
+import { loadSite, buildSiteMeshes } from '../site.js';
+const site = await loadSite('../site/site.json');
+const g = buildSiteMeshes(site, null, {});
+const lines = [];
+g.traverse(o => {
+  if (!o.isMesh || !(o.name === 'facade')) return;
+  o.geometry.computeBoundingBox();
+  const bb = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld.identity ? o.matrix : o.matrix);
+  const size = new THREE.Vector3(); bb.getSize(size);
+  const big = Math.max(size.x, size.y, size.z);
+  if (big > 4.2 || bb.max.y > 5.2) lines.push(`${o.geometry.type} size ${size.x.toFixed(2)} ${size.y.toFixed(2)} ${size.z.toFixed(2)} at ${o.position.x.toFixed(1)},${o.position.y.toFixed(1)},${o.position.z.toFixed(1)} rot ${o.rotation.x.toFixed(2)},${o.rotation.y.toFixed(2)},${o.rotation.z.toFixed(2)} color ${o.material.color ? o.material.color.getHexString() : '?'}`);
+});
+document.getElementById('out').textContent = lines.join('\n') || 'nothing oversized';
+document.title = 'DONE';
+</script></body></html>
