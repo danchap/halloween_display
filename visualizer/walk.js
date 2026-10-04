@@ -16,8 +16,9 @@ export const WALK_DEFAULTS = Object.freeze({
   gazeRelease: 1.8,    // m over which the gaze comes back down to the path
   maxPitch: 80,        // degrees, how far up the head tilts
   bob: true,           // head bob and sway
-  afterSpider: 9.0,    // m walked past the spider before the walk ends
+  afterSpider: 9.0,    // m the route continues past the spider (so the look-ahead stays steady)
   startOffset: 3.3,    // m along the route where the walk begins (skips the first 2.5 s from the junction)
+  stopAfter: 1.6,      // m past the spider where the walk ends: just as the eyes have come back down
   vfov: 65,            // vertical field of view, degrees (about 97 wide at 16:9)
 });
 
@@ -97,13 +98,16 @@ export function buildPath(site, params, opts = {}) {
     const f = (t - times[lo]) / (times[hi] - times[lo]);
     return Math.min(length, (lo + f) * ds);
   };
-  // The walk starts startOffset meters along the route: time counts from there.
+  // The walk starts startOffset meters along the route and ends stopAfter
+  // meters past the spider; time counts between those two points.
   const s0 = Math.max(0, Math.min(o.startOffset, length - 1));
+  const sEnd = Math.max(s0 + 1, Math.min(length, spiderS + o.stopAfter));
   const t0 = times[Math.min(times.length - 1, Math.round(s0 / ds))];
-  const duration = fullDuration - t0;
-  const distanceAt = t => fullDistanceAt(t + t0);
+  const tEnd = times[Math.min(times.length - 1, Math.round(sEnd / ds))];
+  const duration = tEnd - t0;
+  const distanceAt = t => Math.min(sEnd, fullDistanceAt(t + t0));
 
-  return { curve, length, spiderS, alleyS, duration, distanceAt, speedAt, startOffset: s0, opts: o, waypoints: pts2 };
+  return { curve, length, spiderS, alleyS, duration, distanceAt, speedAt, startOffset: s0, endDistance: sEnd, opts: o, waypoints: pts2 };
 }
 
 // Camera pose at time t: position and look direction in the alley frame.

@@ -51,7 +51,7 @@ import { Muxer, ArrayBufferTarget } from './vendor/mp4-muxer.mjs';
 
 const q = new URLSearchParams(location.search);
 const walk = { ...WALK_DEFAULTS };
-for (const k of ['vfov', 'eyeHeight', 'speed', 'startOffset']) if (q.has(k)) walk[k] = parseFloat(q.get(k));
+for (const k of ['vfov', 'eyeHeight', 'speed', 'startOffset', 'stopAfter']) if (q.has(k)) walk[k] = parseFloat(q.get(k));
 walk.speed = Math.max(0.1, walk.speed || WALK_DEFAULTS.speed);
 if (q.has('bob')) walk.bob = q.get('bob') !== '0';
 
