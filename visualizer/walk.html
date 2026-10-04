@@ -76,8 +76,7 @@ const camera = new THREE.PerspectiveCamera(walk.vfov, W0 / H0, 0.05, 400);
 
 const world = createWorld();
 let path = null;
-let textureReady = new Promise(r => { world._tex = r; });
-const site = await loadWorldSite(world, { onTexture: () => world._tex() });
+const site = await loadWorldSite(world, {});
 if (!site) { document.getElementById('status').textContent = 'Site data missing: run site/fetch_site.py'; }
 const walls = site ? wallsFromSite(site) : flatWalls(3);
 rebuildSpiderMeshes(world, buildSpider(params, walls), params, { showJoints: false });
@@ -211,7 +210,7 @@ document.getElementById('record').addEventListener('click', () => record());
 
 // ---------------------------------------------------------------- start
 
-await textureReady;
+await world.ready; // orthophoto and plant sprites
 renderAt(parseFloat(q.get('t') || '0'));
 window.walk = { walk, path, params, renderAt, record, camera, cameraAt };
 document.title = 'The Path (ready)';

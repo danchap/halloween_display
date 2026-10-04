@@ -1,0 +1,22 @@
+{
+ "shrub": {
+  "file": "plant-shrub.png",
+  "height": 2.3,
+  "aspect": 0.5228571428571429
+ },
+ "hollyhock": {
+  "file": "plant-hollyhock.png",
+  "height": 1.6,
+  "aspect": 0.4223300970873786
+ },
+ "flowers": {
+  "file": "plant-flowers.png",
+  "height": 1.7,
+  "aspect": 0.44654088050314467
+ },
+ "bush": {
+  "file": "plant-bush.png",
+  "height": 0.8,
+  "aspect": 1.0136986301369864
+ }
+}

@@ -1,0 +1,70 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>bake plants</title>
+<style>body{background:#345;color:#eee;font:13px system-ui} canvas{background:repeating-conic-gradient(#666 0 25%,#999 0 50%) 0 0/20px 20px;margin:6px}</style>
+</head>
+<body>
+<p>Cuts plants out of site/photos/trousse-chemise-east.jpg by colour saturation and saves them as PNG sprites through the server (/upload). Open with ?upload=1 to save; without it, just preview.</p>
+<div id="out"></div>
+<script>
+// Rectangles as fractions of the photo: [x0, y0, x1, y1], plus the sprite's
+// real height in meters (used by the page that places them).
+const CUTS = {
+  shrub: { rect: [0.595, 0.395, 0.825, 0.725], height: 2.3 },
+  hollyhock: { rect: [0.385, 0.495, 0.475, 0.655], height: 1.6 },
+  flowers: { rect: [0.565, 0.495, 0.675, 0.68], height: 1.7 },
+  bush: { rect: [0.885, 0.775, 1.0, 0.86], height: 0.8 },
+};
+const q = new URLSearchParams(location.search);
+const img = new Image();
+img.src = '../site/photos/trousse-chemise-east.jpg';
+img.onload = async () => {
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const meta = {};
+  for (const [name, { rect, height }] of Object.entries(CUTS)) {
+    const [x0, y0, x1, y1] = rect;
+    const sx = Math.round(x0 * W), sy = Math.round(y0 * H), sw = Math.round((x1 - x0) * W), sh = Math.round((y1 - y0) * H);
+    const scale = Math.min(1, 700 / sh);
+    const c = document.createElement('canvas');
+    c.width = Math.round(sw * scale); c.height = Math.round(sh * scale);
+    const g = c.getContext('2d');
+    g.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    const id = g.getImageData(0, 0, c.width, c.height);
+    const d = id.data, w = c.width, h = c.height;
+    // Keep saturated pixels (leaves, flowers); drop the limewash, its
+    // shadows and the sky-grey. Then clean up isolated pixels.
+    const keep = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) {
+      const r = d[i * 4], gg = d[i * 4 + 1], b = d[i * 4 + 2];
+      const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b);
+      const s = mx ? (mx - mn) / mx : 0, v = mx / 255;
+      const greenish = gg >= r * 0.95 && gg >= b * 0.97;    // leaves, lit or in shadow
+      const pinkish = (r > gg * 1.2 && r > b * 1.05) || (r - gg > 18 && r - b > 10 && v > 0.55); // flowers, deep or pale
+      keep[i] = ((s > 0.17 && greenish) || (s > 0.12 && pinkish)) && v > 0.05 ? 1 : 0;
+    }
+    // Close small holes (dilate then erode), then drop isolated specks.
+    const dil = (src, rad, min) => { const dst = new Uint8Array(w * h); for (let y = rad; y < h - rad; y++) for (let x = rad; x < w - rad; x++) { let n = 0; for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) n += src[(y + dy) * w + x + dx]; dst[y * w + x] = n >= min ? 1 : 0; } return dst; };
+    const closed = dil(dil(keep, 2, 1), 2, 25);
+    const clean = dil(closed, 2, 10);
+    for (let i = 0; i < w * h; i++) d[i * 4 + 3] = clean[i] ? 255 : 0;
+    g.putImageData(id, 0, 0);
+    // soften the edge
+    const c2 = document.createElement('canvas'); c2.width = w; c2.height = h;
+    const g2 = c2.getContext('2d');
+    g2.filter = 'blur(0.6px)'; g2.drawImage(c, 0, 0);
+    const kept = clean.reduce((a, b) => a + b, 0);
+    document.getElementById('out').insertAdjacentHTML('beforeend', `<div>${name}: ${w}x${h}, ${(100 * kept / (w * h)).toFixed(0)}% kept</div>`);
+    document.getElementById('out').appendChild(c2);
+    meta[name] = { file: `plant-${name}.png`, height, aspect: w / h };
+    if (q.get('upload') === '1') {
+      const blob = await new Promise(r => c2.toBlob(r, 'image/png'));
+      const res = await fetch('/upload?name=' + encodeURIComponent(`plant-${name}.png`), { method: 'POST', body: blob });
+      document.getElementById('out').insertAdjacentHTML('beforeend', `<div>${name}: upload ${res.status}</div>`);
+    }
+  }
+  if (q.get('upload') === '1') {
+    await fetch('/upload?name=plants.json', { method: 'POST', body: JSON.stringify(meta, null, 1) });
+  }
+  document.title = 'BAKED';
+};
+</script>
+</body></html>

@@ -4,6 +4,14 @@ A giant two-segment spider hung over Impasse du Rossignol in Les Portes-en-Ré
 (Île de Ré), for 31 October 2026. People walk underneath; the legs reach the
 houses on both sides of the 3 m alley. The brief is in `docs/`.
 
+## Online
+
+The viewer is also published as a private claude.ai page (share it from
+its Share menu): https://claude.ai/artifact/H3RJ4ZWXPziqnzm9ApMPR4. It has
+the same sliders, plus Walk (first person: W A S D, mouse to look, F to
+fly) and Play the path. The walk-through video is at
+https://claude.ai/artifact/KqzFnsro5Svw8bLHnKhrSw.
+
 ## 3D visualizer
 
 `visualizer/` is a web page (three.js, no build step, nothing to install)
@@ -19,9 +27,16 @@ refuse from `file://`.
 What it shows:
 
 - The alley and the surrounding block, built from IGN's open BD TOPO
-  building footprints with their eave heights, on the IGN orthophoto. The
-  alley runs south from Rue de Trousse Chemise for 45 m; the walls are
-  2.94 m apart along the stretch to be used and about 3.7 m at the mouth.
+  building footprints with their eave heights. The alley runs south from
+  Rue de Trousse Chemise for 45 m; the walls are 2.94 m apart along the
+  stretch to be used and about 3.7 m at the mouth.
+- Materials taken from Daniel's photo of Rue de Trousse Chemise
+  (`visualizer/site/photos/`): limewashed walls with the dark plinth,
+  grey-green shutters and doors on street-facing walls, canal-tile roofs
+  and eaves, the gravel lane with its strip of pale setts and gutters, the
+  corner plaque, and plants cut out of the photo along the alley. Walls
+  facing the alley are left blank, since nothing shows them. The IGN
+  orthophoto remains available as the ground ("Ground" in Display).
 - The spider in the brief's locked proportions by default (body length
   L = 0.8 m, back-pair knee bend 60°, front pair 30°, feet on the real
   walls at staggered heights). Pick another L or bend and press
@@ -38,6 +53,11 @@ What it shows:
   matches).
 - Views: street (eye height at the alley mouth), front, side, top, under,
   overview. Save PNG, and copy a link that holds the whole design.
+- Walk: first-person with W A S D or arrows, drag or click the view to
+  look (the mouse is captured; Esc frees it), Shift to hurry, F to fly;
+  on a phone the left half of the view moves and the right half looks.
+  The buildings block the way. Play the path replays the scripted walk in
+  the page; any move key takes over on foot.
 
 ### The path (video walk-through)
 
@@ -66,8 +86,13 @@ CLAUDE.md has the headless Chrome command for the same check.
 Site data is cached in `visualizer/site/` (site.json, ortho.jpg). To refresh
 it from IGN: `python3 visualizer/site/fetch_site.py`.
 
+Site textures: `tools/bake-plants.html` cuts the plant sprites out of the
+photo (open it from the server with `?upload=1` to regenerate
+`site/sprites/`); `tools/build_artifact.py` builds the hosted page.
+
 ## Data sources
 
 - IGN BD TOPO v3 buildings and roads, BD ORTHO orthophoto, RGE ALTI
   elevation, all via data.geopf.fr (Licence Ouverte / Etalab 2.0).
-- three.js r170 (MIT), vendored in `visualizer/vendor/`.
+- three.js r170 (MIT) and mp4-muxer 5 (MIT), vendored in `visualizer/vendor/`.
+- The photo of Rue de Trousse Chemise is Daniel's.

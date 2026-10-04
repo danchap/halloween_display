@@ -6,7 +6,7 @@
 <script type="module">
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, flatWalls, rootToFootDistance,
          lowerSegmentFor, solveFeetForLength, bendFactor } from './spider.js';
-import { loadSite, wallsFromSite } from './site.js';
+import { loadSite, wallsFromSite, insideBuilding } from './site.js';
 
 const out = [];
 let failed = 0;
@@ -94,6 +94,12 @@ try {
   check('real-site legs all placed', real.legs.every(l => l.status === 'ok'), real.legs.map(l => l.status).join(','));
   for (const leg of real.legs) check(`real leg ${leg.pair} foot on a building edge`, near(dist(leg.knee, leg.foot), leg.b, 1e-9));
   out.push('gaps along the alley at x = 3, 5, 8, 12 m: ' + gaps.map(g => g.toFixed(2)).join(', '));
+  // Walking collisions: inside the east house is blocked, the alley centre is free.
+  check('inside a building is blocked', insideBuilding(site, 6.5, -8, 0.35));
+  const [ce, cn] = site.frame.toSite(8, 0);
+  check('alley centre is free', !insideBuilding(site, ce, cn, 0.35));
+  const [we, wn] = site.frame.toSite(8, sw(8, 1, 0) - 0.1);
+  check('10 cm from a wall is blocked', insideBuilding(site, we, wn, 0.35));
 } catch (err) {
   failed++;
   out.push('ERROR ' + (err.stack || err));

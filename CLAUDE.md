@@ -27,6 +27,15 @@ test run before the night.
   walk URL as its first tab (`?record=1&upload=<name>`); a tab opened
   through the debugging port is throttled and never finishes. The page
   posts progress to the server's stdout via /log. feta has no ffmpeg.
+- `textures.js` draws the village materials on canvases from colours in
+  Daniel's photo (site/photos); `site.js` dresses the buildings, lane and
+  plants with them. `tools/build_artifact.py` makes the body-only page
+  published on claude.ai (links in README). Hosted, the page cannot use
+  the URL hash or downloads: window.HOSTED hides those buttons.
+- Put screenshots and Chrome profiles under visualizer/out/ (ignored), not
+  /tmp: /tmp is a quota-limited tmpfs shared with other sessions. Pass
+  `--user-data-dir=out/chrome --disk-cache-size=1` to headless Chrome or
+  it renders stale scripts.
 - Headless check: serve, then
   `google-chrome --headless=new --no-sandbox --use-angle=swiftshader
   --enable-unsafe-swiftshader --virtual-time-budget=15000 --dump-dom

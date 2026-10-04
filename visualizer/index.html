@@ -45,8 +45,10 @@
   .ok { color: var(--ok); }
   .muted { color: var(--muted); }
   #hud { position: absolute; left: 10px; bottom: 10px; color: #fff; text-shadow: 0 1px 2px #000; font-size: 12px; pointer-events: none; }
-  #views { position: absolute; left: 10px; top: 10px; display: flex; gap: 4px; flex-wrap: wrap; }
-  #views button { background: rgba(38,38,44,.85); }
+  #views, #modes { position: absolute; left: 10px; top: 10px; display: flex; gap: 4px; flex-wrap: wrap; }
+  #modes { top: 44px; }
+  #views button, #modes button { background: rgba(38,38,44,.85); }
+  #modes button.active { background: var(--accent); color: #1b1b1f; border-color: var(--accent); }
   #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); }
   @media (max-width: 1000px) {
     #app { grid-template-columns: 1fr; grid-template-rows: auto 60vh auto; }
@@ -58,7 +60,7 @@
 <div id="app">
   <aside id="left">
     <h1>Alley spider</h1>
-    <div class="muted" style="margin-bottom:8px">Impasse du Rossignol, Les Portes-en-Ré. Drag to orbit, right-drag or Shift-drag to pan, wheel to zoom. Keys 1–6 switch views.</div>
+    <div class="muted" style="margin-bottom:8px">Impasse du Rossignol, Les Portes-en-Ré. Orbit: drag to turn, right-drag or Shift-drag to pan, wheel to zoom, keys 1–6 for views. Walk: W A S D or arrows, drag or click the view to look around, Shift to hurry, F to fly. On a phone, drag the left half to move and the right half to look.</div>
 
     <h2>Brief ratios</h2>
     <div class="row"><label>Body length <small>L</small></label><input id="briefL" type="range" min="0.3" max="1.6" step="0.01"><input id="briefLn" type="number" min="0.3" max="1.6" step="0.01"></div>
@@ -75,17 +77,20 @@
     <div class="check"><input type="checkbox" id="showPerson" checked><label for="showPerson">Person for scale (1.75 m)</label></div>
     <div class="check"><input type="checkbox" id="showRoofs" checked><label for="showRoofs">Roofs</label></div>
     <div class="check"><input type="checkbox" id="showJoints" checked><label for="showJoints">Mark knees and feet</label></div>
+    <div class="check"><input type="checkbox" id="plants" checked><label for="plants">Plants from the photo</label></div>
+    <div class="row" style="grid-template-columns: 1fr 158px"><label for="ground">Ground</label><select id="ground"><option value="lane">Lane, from the photo</option><option value="ortho">IGN orthophoto</option></select></div>
     <div style="margin-top:8px">
       <button id="reset">Reset to brief defaults</button>
-      <button id="savePng">Save PNG</button>
-      <button id="copyLink">Copy link to this design</button>
-      <button id="walkLink">Walk the path (video)</button>
+      <button id="savePng" class="local-only">Save PNG</button>
+      <button id="copyLink" class="local-only">Copy link to this design</button>
+      <button id="walkLink" class="local-only">Walk the path (video)</button>
     </div>
   </aside>
 
   <main id="view">
     <div id="loading">Loading site…</div>
     <div id="views"></div>
+    <div id="modes"></div>
     <div id="hud"></div>
   </main>
 

@@ -2,7 +2,7 @@
 // (walk.js): lights, the site, the alley frame group and the spider meshes.
 
 import * as THREE from 'three';
-import { loadSite, buildSiteMeshes } from './site.js';
+import { loadSite, buildSiteMeshes, setGroundMode as siteGround, setPlantsVisible as sitePlants } from './site.js';
 
 export function createWorld() {
   const scene = new THREE.Scene();
@@ -35,7 +35,7 @@ export function createWorld() {
 // Load the site into the world. Resolves with the site, or null when the
 // data is missing (a flat ground is added instead). onTexture fires once
 // the orthophoto is on the ground.
-export async function loadWorldSite(world, { onTexture } = {}) {
+export async function loadWorldSite(world, { onTexture, ground = 'lane' } = {}) {
   try {
     const site = await loadSite();
     world.site = site;
@@ -43,22 +43,27 @@ export async function loadWorldSite(world, { onTexture } = {}) {
     world.alleyGroup.rotation.y = site.frame.yaw;
     world.alleyGroup.updateMatrixWorld(true);
     const loader = new THREE.TextureLoader();
-    world.siteGroup = buildSiteMeshes(site, loader, { onTexture });
+    world.siteGroup = buildSiteMeshes(site, loader, { onTexture, ground });
     world.siteGroup.traverse(o => {
       if (o.name === 'roofs') { o.material = o.material.clone(); o.material.side = THREE.DoubleSide; }
     });
     world.scene.add(world.siteGroup);
     world.sun.target.position.copy(world.alleyGroup.position);
+    world.ready = world.siteGroup.userData.ready || Promise.resolve();
     return site;
   } catch (e) {
     console.error(e);
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshStandardMaterial({ color: 0x9a948a }));
     ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
     world.scene.add(ground);
+    world.ready = Promise.resolve();
     if (onTexture) onTexture();
     return null;
   }
 }
+
+export function setGroundMode(world, mode) { if (world.siteGroup) siteGround(world.siteGroup, mode); }
+export function setPlantsVisible(world, visible) { if (world.siteGroup) sitePlants(world.siteGroup, visible); }
 
 export function setRoofsVisible(world, visible) {
   if (world.siteGroup) world.siteGroup.traverse(o => { if (o.name === 'roofs') o.visible = visible; });
