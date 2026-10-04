@@ -5,7 +5,8 @@
 <body><pre id="out">running…</pre>
 <script type="module">
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, flatWalls, rootToFootDistance,
-         lowerSegmentFor, solveFeetForLength, bendFactor } from './spider.js';
+         lowerSegmentFor, solveFeetForLength, bendFactor, placeKnee, kneeParamsAt, footParamsAt,
+         kneeFromBend, upgradeParams } from './spider.js';
 import { loadSite, wallsFromSite, insideBuilding } from './site.js';
 
 const out = [];
@@ -16,10 +17,11 @@ function check(name, cond, detail = '') {
 }
 const near = (a, b, tol = 1e-6) => Math.abs(a - b) <= tol;
 const dist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+const leg = (m, pair, side) => m.legs.find(l => l.pair === pair && l.side === side);
 
 try {
   // Locked ratios are consistent.
-  check('segments sum to 1', near(LOCKED.headLength + LOCKED.abdomenLength - LOCKED.overlap, 1));
+  check('segments sum to 1', near(LOCKED.headLength + LOCKED.abdomenLength, 1));
   check('head is 0.66 of abdomen width', near(LOCKED.headWidth / LOCKED.abdomenWidth, 0.66, 0.002));
 
   // Brief preset at L = 0.8 reproduces the ratios.
@@ -27,9 +29,9 @@ try {
   const p = briefPreset(L);
   check('preset body length', near(bodyLength(p), L));
   check('preset abdomen', near(p.abdomenLength, 0.76 * L) && near(p.abdomenWidth, 0.494 * L) && near(p.abdomenHeight, 0.494 * L));
-  check('preset head', near(p.headLength, 0.30 * L) && near(p.headWidth, 0.326 * L));
-  check('preset bends halve toward the front', p.pairs[0].bend === 30 && p.pairs[3].bend === 60);
+  check('preset head', near(p.headLength, 0.24 * L) && near(p.headWidth, 0.326 * L));
   check('bend factors', near(bendFactor(0), 0.5) && near(bendFactor(3), 1));
+  check('preset pairs are points', p.pairs.every(q => ['footAlong', 'footHeight', 'kneeAlong', 'kneeHeight', 'kneeOut'].every(k => Number.isFinite(q[k]))));
 
   // Law of cosines round trip.
   const a = 1.248, b = 1.352;
@@ -39,45 +41,84 @@ try {
     check(`lower segment recovered at ${bend}°`, b2 !== null && near(b2, b, 1e-9), String(b2));
   }
   check('infeasible foot gives null', lowerSegmentFor(1.0, 0.5, 30) === null);
+  const fold = placeKnee([0, 0, 0], [0.5, 0, 0], 1.0, 30);
+  check('too-close foot folds the leg flat', fold.folded && near(dist(fold.knee, [0, 0, 0]), 1.0, 1e-9));
 
-  // Flat walls: feet on the walls, segment lengths as derived, knees lifted.
+  // Flat walls: feet on the walls, segment lengths as the brief, knees
+  // lifted, bends as chosen (the preset rounds its points to the mm).
   const walls = flatWalls(2.94); // the preset places its feet for a 2.94 m alley
   const m = buildSpider(p, walls);
+  const aBrief = LOCKED.legLength * L * LOCKED.kneeFraction, bBrief = LOCKED.legLength * L - aBrief;
   check('8 legs', m.legs.length === 8);
-  for (const leg of m.legs) {
-    check(`leg ${leg.pair}${leg.side > 0 ? 'R' : 'L'} foot on wall`, near(Math.abs(leg.foot[2]), 1.47));
-    check(`leg ${leg.pair} upper length`, near(dist(leg.root, leg.knee), leg.a, 1e-9));
-    check(`leg ${leg.pair} lower length`, near(dist(leg.knee, leg.foot), leg.b, 1e-9));
-    check(`leg ${leg.pair} knee above root-foot line`, leg.knee[1] >= Math.min(leg.root[1], leg.foot[1]) - 1e-9);
-    // Bend angle recovered from the joint geometry.
-    const u = [leg.knee[0] - leg.root[0], leg.knee[1] - leg.root[1], leg.knee[2] - leg.root[2]];
-    const v = [leg.foot[0] - leg.knee[0], leg.foot[1] - leg.knee[1], leg.foot[2] - leg.knee[2]];
-    const cos = (u[0] * v[0] + u[1] * v[1] + u[2] * v[2]) / (leg.a * leg.b);
-    check(`leg ${leg.pair} bend is ${leg.bend}°`, near(Math.acos(Math.max(-1, Math.min(1, cos))) * 180 / Math.PI, leg.bend, 1e-6));
-    check(`leg ${leg.pair} status ok`, leg.status === 'ok', leg.status);
+  for (const l of m.legs) {
+    const tag = `leg ${l.pair}${l.side > 0 ? 'R' : 'L'}`;
+    check(`${tag} foot on wall`, near(Math.abs(l.foot[2]), 1.47));
+    check(`${tag} upper length`, near(dist(l.root, l.knee), l.a, 1e-9) && near(l.a, aBrief, 0.002), l.a.toFixed(4));
+    check(`${tag} lower length`, near(dist(l.knee, l.foot), l.b, 1e-9) && near(l.b, bBrief, 0.002), l.b.toFixed(4));
+    check(`${tag} knee above root-foot line`, l.knee[1] >= Math.min(l.root[1], l.foot[1]) - 1e-9);
+    check(`${tag} bend is ${60 * bendFactor(l.pair)}°`, near(l.bend, 60 * bendFactor(l.pair), 0.1), l.bend.toFixed(3));
+    check(`${tag} status ok`, l.status === 'ok', l.status);
   }
-  // Preset feet were placed so the lower segment matches the brief at 1.5 m walls.
+  check('preset bends halve toward the front', near(leg(m, 0, 1).bend, 30, 0.1) && near(leg(m, 3, 1).bend, 60, 0.1));
+  // Preset feet were placed so the lower segment matches the brief at 1.47 m walls.
   for (const q of m.stats.pairs) {
     check(`pair ${q.pair} total leg is 3.25 L`, near(q.totalInL, 3.25, 0.01), q.totalInL.toFixed(4));
     check(`pair ${q.pair} knee at 48 %`, near(q.kneeFraction, 0.48, 0.003), q.kneeFraction.toFixed(4));
     check(`pair ${q.pair} foot height kept`, near(q.footHeight, p.pairs[q.pair - 1].footHeight));
   }
   check('front view circle is the abdomen', m.abdomen.height > m.head.height);
+  check('head continues into the abdomen', m.head.length > p.headLength && m.head.length < p.headLength + 0.1);
+  check('body is level without pitch', near(m.abdomen.center[1], p.bodyHeight) && near(m.head.center[1], p.bodyHeight) && m.abdomen.rotZ === 0);
 
   // Facing flips the body along x but keeps the feet mirrored.
   const back = buildSpider({ ...p, facing: 1 }, walls);
-  check('facing flips head side', Math.sign(m.head.x0 - m.abdomen.x0) === -Math.sign(back.head.x0 - back.abdomen.x0));
+  check('facing flips head side', Math.sign(m.head.center[0] - m.abdomen.center[0]) === -Math.sign(back.head.center[0] - back.abdomen.center[0]));
   check('facing keeps leg lengths', back.legs.every((l, i) => near(l.b, m.legs[i].b, 1e-9)));
 
-  // Narrow walls make a foot too close: flagged, not crashed.
-  const tight = buildSpider({ ...p, pairs: p.pairs.map(q => ({ ...q, footAlong: 0, footHeight: p.bodyHeight })) }, flatWalls(1.0));
-  check('too-close feet are flagged', tight.legs.some(l => l.status === 'folded'));
+  // Pitch raises the head end (and the leg roots on it) and leaves the
+  // knees and feet where they are, whichever way the body faces.
+  for (const facing of [-1, 1]) {
+    const flat = buildSpider({ ...p, facing }, walls);
+    const up = buildSpider({ ...p, facing, pitch: 20 }, walls);
+    const tag = facing < 0 ? 'toward the street' : 'into the alley';
+    check(`pitch ${tag}: head above abdomen`, up.head.center[1] > up.abdomen.center[1] + 0.1);
+    check(`pitch ${tag}: body length kept`, near(up.L, L));
+    check(`pitch ${tag}: roots rise`, up.legs.every((l, i) => l.root[1] > flat.legs[i].root[1]));
+    check(`pitch ${tag}: knees and feet stay`, up.legs.every((l, i) => dist(l.knee, flat.legs[i].knee) < 1e-9 && dist(l.foot, flat.legs[i].foot) < 1e-9));
+    check(`pitch ${tag}: mesh tilt sign`, Math.sign(up.head.rotZ) === Math.sign(facing));
+    check(`pitch ${tag}: top is higher`, up.stats.topHeight >= flat.stats.topHeight);
+  }
 
-  // Solver puts the lower segment at the target on wider walls.
+  // A knee or a foot put at a point comes back at that point (mirrored on
+  // the other side); the segment lengths and bend follow.
+  const kneePt = [7.1, 3.2, 0.9];
+  const pairs2 = p.pairs.map((q, i) => i === 1 ? { ...q, ...kneeParamsAt(p, 1, kneePt) } : q);
+  const m2 = buildSpider({ ...p, pairs: pairs2 }, walls);
+  check('knee lands where it is put', dist(leg(m2, 1, 1).knee, kneePt) < 1e-3, JSON.stringify(leg(m2, 1, 1).knee));
+  check('other knee mirrors it', near(leg(m2, 1, -1).knee[2], -kneePt[2], 1e-3) && near(leg(m2, 1, -1).knee[1], kneePt[1], 1e-3));
+  check('lengths follow the knee', near(leg(m2, 1, 1).a, dist(leg(m2, 1, 1).root, kneePt), 1e-3));
+  const footPt = [5.0, 2.2, 0];
+  const pairs3 = p.pairs.map((q, i) => i === 2 ? { ...q, ...footParamsAt(p, footPt) } : q);
+  const m3 = buildSpider({ ...p, pairs: pairs3 }, walls);
+  check('foot lands where it is put, on the wall', near(leg(m3, 2, 1).foot[0], 5.0, 1e-3) && near(leg(m3, 2, 1).foot[1], 2.2, 1e-3) && near(leg(m3, 2, 1).foot[2], 1.47));
+
+  // Choosing a bend re-places the knee for the current upper length.
+  const bent = { ...p, pairs: p.pairs.map((q, i) => i === 3 ? kneeFromBend(p, walls, 3, aBrief, 90) : q) };
+  const m4 = buildSpider(bent, walls);
+  check('kneeFromBend gives the bend', near(leg(m4, 3, 1).bend, 90, 0.1) && near(leg(m4, 3, 1).a, aBrief, 1e-3), leg(m4, 3, 1).bend.toFixed(3));
+
+  // Designs saved with a bend and an upper length still build, to the same knees.
+  const legacy = p.pairs.map((q, i) => ({ bend: 60 * bendFactor(i), upper: aBrief, footAlong: q.footAlong, footHeight: q.footHeight }));
+  const m5 = buildSpider({ ...p, pairs: legacy }, walls);
+  check('legacy pairs give the same knees', m5.legs.every((l, i) => dist(l.knee, m.legs[i].knee) < 2e-3), m5.legs.map((l, i) => dist(l.knee, m.legs[i].knee).toFixed(4)).join(','));
+  const upgraded = upgradeParams({ ...p, headLength: 0.24, overlap: 0.048 });
+  check('upgrade folds the overlap into the head length', near(upgraded.headLength, 0.192) && !('overlap' in upgraded) && upgraded.pitch === 0);
+
+  // Solver puts the lower segment at the target on wider walls, keeping the bend.
   const wide = flatWalls(3.6);
-  const solved = { ...p, pairs: solveFeetForLength(p, wide, b) };
+  const solved = { ...p, pairs: solveFeetForLength(p, wide, b, [0, 1, 2, 3].map(i => ({ upper: aBrief, bend: 60 * bendFactor(i) }))) };
   const ms = buildSpider(solved, wide);
-  for (const q of ms.stats.pairs) check(`solved pair ${q.pair} lower = ${b}`, near(q.lower, b, 0.002), q.lower.toFixed(4));
+  for (const q of ms.stats.pairs) check(`solved pair ${q.pair} lower = ${b}`, near(q.lower, b, 0.002) && near(q.bend, 60 * bendFactor(q.pair - 1), 0.1), `${q.lower.toFixed(4)} ${q.bend.toFixed(2)}`);
 
   // Site: alley frame round trip and real walls about 3 m apart near the body.
   const site = await loadSite();
@@ -92,7 +133,7 @@ try {
   check('gap wider at the mouth', gaps[0] > gaps[1], JSON.stringify(gaps));
   const real = buildSpider(DEFAULTS, sw);
   check('real-site legs all placed', real.legs.every(l => l.status === 'ok'), real.legs.map(l => l.status).join(','));
-  for (const leg of real.legs) check(`real leg ${leg.pair} foot on a building edge`, near(dist(leg.knee, leg.foot), leg.b, 1e-9));
+  for (const l of real.legs) check(`real leg ${l.pair} foot on a building edge`, near(dist(l.knee, l.foot), l.b, 1e-9));
   out.push('gaps along the alley at x = 3, 5, 8, 12 m: ' + gaps.map(g => g.toFixed(2)).join(', '));
   // Walking collisions: inside the east house is blocked, the alley centre is free.
   check('inside a building is blocked', insideBuilding(site, 6.5, -8, 0.35));

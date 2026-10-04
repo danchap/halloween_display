@@ -51,16 +51,22 @@ What it shows:
   thickness: body axis 2.5 m up, 6.5 m into the alley with the head toward
   the street, legs 4.8 cm and 3.6 cm thick. Pick another L or bend and
   press "Apply brief ratios at L".
-- Sliders for the abdomen (length, width, height), the head (same), their
-  overlap and lift, the body's position along, across and above the alley,
-  which way it faces, and for each leg pair the knee bend, the upper segment
-  length, and where the foot lands on the wall (along the alley and height).
-  Leg thickness is set per segment. The lower leg segment (knee to foot) is
-  derived so the foot lands where it is put; the brief's ratios would
-  over-constrain it otherwise.
-- A numbers panel: heights, clearance over the walking path, every leg
-  length, and each dimension against the brief's ratios (green when it
-  matches).
+- Sliders for the abdomen (length, width, height), the head (length in
+  front of the abdomen, width, height, lift), the body's position along,
+  across and above the alley, its pitch, which way it faces, and the leg
+  thickness per segment. The scenery has no controls: it is measured.
+- Knees and feet are dragged in the view (orange balls). A foot slides in
+  its wall plane. A knee moves in the level plane through it, or up and
+  down its vertical line with Shift, Ctrl or Alt held. The two legs of a
+  pair mirror each other; both segment lengths and the bend follow from
+  where the three points are. The bend buttons re-place the knees for a
+  chosen back-pair bend.
+- Designs: "Save as…" keeps the current parameters under a name in the
+  browser; the Design list loads one back, or the brief defaults.
+- A numbers panel (hidden by default, "Numbers" at the top right): heights,
+  clearance over the walking path, every leg length, and each dimension
+  against the brief's ratios (green when it matches). The parameters panel
+  collapses too.
 - Views: street (eye height at the alley mouth), front, side, top, under,
   overview. Save PNG, and copy a link that holds the whole design.
 - Walk: first-person with W A S D or arrows, drag or click the view to

@@ -28,8 +28,10 @@ export function createWorld() {
   alleyGroup.add(spiderGroup);
   const extrasGroup = new THREE.Group();
   alleyGroup.add(extrasGroup);
+  const guideGroup = new THREE.Group(); // drag guides: the gravity line, the level plane, the wall square
+  alleyGroup.add(guideGroup);
 
-  return { scene, sun, hemi, alleyGroup, spiderGroup, extrasGroup, site: null, siteGroup: null };
+  return { scene, sun, hemi, alleyGroup, spiderGroup, extrasGroup, guideGroup, joints: [], site: null, siteGroup: null };
 }
 
 // Load the site into the world. Resolves with the site, or null when the
@@ -82,6 +84,9 @@ const jointMat = new THREE.MeshStandardMaterial({ color: 0xe8822a, roughness: 0.
 const badMat = new THREE.MeshStandardMaterial({ color: 0xe05a4a, roughness: 0.6 });
 const personMat = new THREE.MeshStandardMaterial({ color: 0x5a7fa8, roughness: 0.8 });
 const flatWallMat = new THREE.MeshStandardMaterial({ color: 0xcfd6dd, transparent: true, opacity: 0.35, side: THREE.DoubleSide });
+const pickMat = new THREE.MeshBasicMaterial({ visible: false }); // hit targets around the joint markers, never drawn
+const guideFill = new THREE.MeshBasicMaterial({ color: 0xe8822a, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false });
+const guideLine = new THREE.LineBasicMaterial({ color: 0xe8822a });
 
 const unitCyl = new THREE.CylinderGeometry(1, 1, 1, 24, 1);
 unitCyl.translate(0, 0.5, 0); // spans y in [0, 1]
@@ -125,7 +130,7 @@ export function rebuildSpiderMeshes(world, model, params, { silhouette = false, 
   const mat = silhouette ? spiderFlat : spiderLit;
 
   for (const seg of [model.abdomen, model.head]) {
-    const len = seg.x1 - seg.x0;
+    const len = seg.length;
     let m;
     if (p.bodyShape === 'capsule') {
       // Round caps: the straight part is stretched in the geometry, the
@@ -142,22 +147,35 @@ export function rebuildSpiderMeshes(world, model, params, { silhouette = false, 
       m = new THREE.Mesh(bodyGeos.cylinder, mat);
       m.scale.set(len, seg.height / 2, seg.width / 2);
     }
-    m.position.set((seg.x0 + seg.x1) / 2, seg.y, seg.z);
+    m.position.set(...seg.center);
+    m.rotation.z = seg.rotZ;
     m.castShadow = true;
     world.spiderGroup.add(m);
   }
+
+  // Joint markers double as drag handles: each gets an invisible, larger
+  // sphere for picking, tagged with which joint it is.
+  world.joints = [];
+  const handle = (point, diameter, mat, joint, leg) => {
+    world.spiderGroup.add(sphereMesh(point, diameter, mat));
+    const pick = sphereMesh(point, Math.max(0.3, diameter * 2.5), pickMat);
+    pick.castShadow = false;
+    pick.userData = { joint, pair: leg.pair, side: leg.side };
+    world.spiderGroup.add(pick);
+    world.joints.push(pick);
+  };
 
   for (const leg of model.legs) {
     const bad = leg.status !== 'ok';
     const legMat = bad && !silhouette ? badMat : mat;
     // Start the upper segment a little inside the head so the joint is hidden.
-    const inset = [leg.root[0], leg.root[1], leg.root[2] - Math.sign(leg.root[2] - model.head.z) * Math.min(0.05, model.head.width / 4)];
+    const inset = [leg.root[0], leg.root[1], leg.root[2] - Math.sign(leg.root[2] - model.head.center[2]) * Math.min(0.05, model.head.width / 4)];
     world.spiderGroup.add(segmentMesh(inset, leg.knee, p.upperDiameter, legMat));
     world.spiderGroup.add(segmentMesh(leg.knee, leg.foot, p.lowerDiameter, legMat));
     world.spiderGroup.add(sphereMesh(leg.knee, Math.max(p.upperDiameter, p.lowerDiameter), legMat));
     if (showJoints && !silhouette) {
-      world.spiderGroup.add(sphereMesh(leg.knee, Math.max(0.08, p.upperDiameter * 1.6), bad ? badMat : jointMat));
-      world.spiderGroup.add(sphereMesh(leg.foot, Math.max(0.08, p.lowerDiameter * 1.6), bad ? badMat : jointMat));
+      handle(leg.knee, Math.max(0.08, p.upperDiameter * 1.6), bad ? badMat : jointMat, 'knee', leg);
+      handle(leg.foot, Math.max(0.08, p.lowerDiameter * 1.6), bad ? badMat : jointMat, 'foot', leg);
     }
   }
 }
@@ -185,4 +203,34 @@ export function rebuildExtras(world, params, { showPerson = true, wallMode = 'si
       world.extrasGroup.add(wall);
     }
   }
+}
+
+// ---------------------------------------------------------------- drag guides
+
+// Show the guide a joint is being moved along, in the alley frame: 'line'
+// is the vertical (gravity) line through the point, 'level' a square in the
+// horizontal plane through it, 'wall' a square in the wall plane (normal
+// across the alley), nudged `inward` toward the alley so it does not fight
+// the wall for the pixels.
+export function showGuide(world, kind, point, { inward = 0 } = {}) {
+  hideGuide(world);
+  const g = world.guideGroup;
+  if (kind === 'line') {
+    const top = Math.max(point[1] + 3, 6);
+    const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(point[0], 0, point[2]), new THREE.Vector3(point[0], top, point[2])]);
+    g.add(new THREE.Line(geo, guideLine));
+    return;
+  }
+  const size = 1.6;
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(size, size), guideFill);
+  if (kind === 'level') plane.rotation.x = -Math.PI / 2;
+  plane.position.set(point[0], point[1], point[2] + (kind === 'wall' ? inward * 0.01 : 0));
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(plane.geometry), guideLine);
+  edges.position.copy(plane.position);
+  edges.rotation.copy(plane.rotation);
+  g.add(plane, edges);
+}
+
+export function hideGuide(world) {
+  clearGroup(world.guideGroup);
 }

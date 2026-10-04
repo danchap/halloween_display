@@ -43,7 +43,7 @@
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
 <script type="module">
 import * as THREE from 'three';
-import { DEFAULTS, buildSpider, flatWalls } from './spider.js';
+import { DEFAULTS, buildSpider, flatWalls, upgradeParams } from './spider.js';
 import { wallsFromSite } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes } from './scene.js';
 import { WALK_DEFAULTS, buildPath, cameraAt } from './walk.js';
@@ -59,7 +59,7 @@ if (q.has('bob')) walk.bob = q.get('bob') !== '0';
 let params = { ...DEFAULTS };
 try {
   const h = location.hash.slice(1);
-  if (h) { const s = JSON.parse(decodeURIComponent(h)); params = { ...DEFAULTS, ...(s.params || {}) }; }
+  if (h) { const s = JSON.parse(decodeURIComponent(h)); params = upgradeParams(s.params || {}); }
 } catch (e) { console.warn('bad design in URL', e); }
 document.getElementById('back').href = './' + location.hash;
 

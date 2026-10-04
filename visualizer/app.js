@@ -1,15 +1,16 @@
 import * as THREE from 'three';
 import { LOCKED, BEND_SERIES, DEFAULTS, briefPreset, buildSpider, bodyLength, bendFactor,
-         flatWalls, solveFeetForLength } from './spider.js';
+         flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams } from './spider.js';
 import { wallsFromSite, insideBuilding } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildExtras, setRoofsVisible,
-         setSilhouetteBackground, setGroundMode, setPlantsVisible } from './scene.js';
+         setSilhouetteBackground, setGroundMode, setPlantsVisible, showGuide, hideGuide } from './scene.js';
 import { buildPath, cameraAt } from './walk.js';
 
 // Hosted on claude.ai the page cannot use the URL hash or start downloads;
 // the design is then remembered in the browser instead.
 const HOSTED = Boolean(window.HOSTED) || /claude\.ai$/.test(location.hostname);
-const STORAGE_KEY = 'alley-spider-design-v3';
+const STORAGE_KEY = 'alley-spider-design-v3';   // the working state, written on every change
+const DESIGNS_KEY = 'alley-spider-designs-v1';  // the named designs saved with "Save as…"
 
 // ---------------------------------------------------------------- parameters
 
@@ -18,36 +19,28 @@ const SLIDERS = [
     ['abdomenLength', 'Abdomen length', 0.2, 2.0, 0.005],
     ['abdomenWidth', 'Abdomen width', 0.1, 1.5, 0.005],
     ['abdomenHeight', 'Abdomen height', 0.1, 1.5, 0.005],
-    ['headLength', 'Head length', 0.05, 1.0, 0.005],
+    ['headLength', 'Head length (in front of the abdomen)', 0.05, 1.0, 0.005],
     ['headWidth', 'Head width', 0.05, 1.0, 0.005],
     ['headHeight', 'Head height', 0.05, 1.0, 0.005],
-    ['overlap', 'Segment overlap', 0, 0.5, 0.005],
     ['headLift', 'Head lift (axis above abdomen)', -0.5, 0.5, 0.005],
   ]},
   { group: 'Body position', open: true, items: [
     ['along', 'Along the alley (from the street)', 0, 45, 0.05],
-    ['bodyHeight', 'Abdomen axis height', 0.5, 5, 0.01],
+    ['bodyHeight', 'Body centre height', 0.5, 5, 0.01],
     ['across', 'Across the alley (+ is right, looking in)', -1.5, 1.5, 0.01],
+    ['pitch', 'Pitch, ° (head up is +)', -60, 60, 1],
   ]},
   { group: 'Leg thickness', open: false, items: [
     ['upperDiameter', 'Upper segment diameter', 0.005, 0.25, 0.005],
     ['lowerDiameter', 'Lower segment diameter', 0.005, 0.25, 0.005],
   ]},
 ];
-const PAIR_SLIDERS = [
-  ['bend', 'Knee bend, ° off straight', 0, 150, 1],
-  ['upper', 'Upper segment (root to knee)', 0.1, 4, 0.005],
-  ['footAlong', 'Foot along, from body centre (+ toward head)', -6, 6, 0.01],
-  ['footHeight', 'Foot height on the wall', 0, 6, 0.01],
-];
-const PAIR_NAMES = ['Front pair (1)', 'Pair 2', 'Pair 3', 'Back pair (4)'];
 
 const state = {
   params: clone(DEFAULTS),
   briefL: 0.8,
   backBend: 60,
-  wallMode: 'site',   // 'site' or 'flat'
-  flatWidth: 3.0,
+  design: '',         // name of the loaded saved design; '' is the brief defaults
   silhouette: false,
   showPerson: true,
   showRoofs: true,
@@ -55,15 +48,24 @@ const state = {
   ground: 'lane',     // 'lane' (materials from the photo) or 'ortho'
   plants: true,
 };
+const SAVED_KEYS = Object.keys(state);
+// Which panels show. Not remembered: the numbers start hidden every visit.
+const panes = { left: true, numbers: false };
 
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function fmt(v, d = 2) { return Number.isFinite(v) ? v.toFixed(d) : '–'; }
+
+// Parameters saved by earlier versions of this page are brought up to date
+// on the way in; pairs saved with a bend and an upper length are converted
+// once the walls are known (see rebuildSpider).
+function normalizeParams(params) { return upgradeParams(clone(params)); }
 
 // ---------------------------------------------------------------- saved state
 
 function applySaved(s) {
   if (!s || typeof s !== 'object' || !s.params) return false;
-  Object.assign(state, s, { params: { ...clone(DEFAULTS), ...s.params } });
+  for (const k of SAVED_KEYS) if (k in s) state[k] = s[k];
+  state.params = normalizeParams(s.params);
   return true;
 }
 function readState() {
@@ -87,6 +89,75 @@ function writeState() {
   }, 300);
 }
 
+// ---------------------------------------------------------------- named designs
+
+// { name: { params, briefL, backBend, savedAt } }, kept in this browser.
+function readDesigns() {
+  try { return JSON.parse(localStorage.getItem(DESIGNS_KEY)) || {}; } catch (e) { return {}; }
+}
+function writeDesigns(d) {
+  try { localStorage.setItem(DESIGNS_KEY, JSON.stringify(d)); return true; } catch (e) { alert('This browser would not store the design.'); return false; }
+}
+function designSnapshot() {
+  return { params: clone(state.params), briefL: state.briefL, backBend: state.backBend };
+}
+// What was last loaded or saved, to warn before it is replaced unsaved.
+let loadedSnapshot = '';
+function markLoaded() { loadedSnapshot = JSON.stringify(designSnapshot()); }
+function unsavedChanges() { return JSON.stringify(designSnapshot()) !== loadedSnapshot; }
+
+function refreshDesignList() {
+  const sel = document.getElementById('designs');
+  const names = Object.keys(readDesigns()).sort((a, b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">Brief defaults</option>' + names.map(n => `<option value="${n.replace(/"/g, '&quot;')}">${n.replace(/</g, '&lt;')}</option>`).join('');
+  sel.value = names.includes(state.design) ? state.design : '';
+  if (sel.value !== state.design) state.design = sel.value;
+  document.getElementById('deleteDesign').disabled = !sel.value;
+}
+function loadDesign(name) {
+  if (unsavedChanges() && !confirm(`Replace the current parameters with "${name || 'Brief defaults'}"? The changes since "${state.design || 'Brief defaults'}" was loaded are not saved.`)) {
+    document.getElementById('designs').value = state.design;
+    return;
+  }
+  if (!name) {
+    state.params = clone(DEFAULTS); state.briefL = 0.8; state.backBend = 60; state.design = '';
+    applyBrief();
+  } else {
+    const d = readDesigns()[name];
+    if (!d) return;
+    state.params = normalizeParams(d.params);
+    state.briefL = d.briefL ?? state.briefL;
+    state.backBend = d.backBend ?? state.backBend;
+    state.design = name;
+    refreshControls();
+    onChange();
+  }
+  markLoaded();
+  refreshDesignList();
+}
+function saveDesignAs() {
+  const name = (prompt('Name for this design', state.design || '') || '').trim();
+  if (!name) return;
+  const designs = readDesigns();
+  if (designs[name] && !confirm(`"${name}" exists. Replace it with the current parameters?`)) return;
+  designs[name] = { ...designSnapshot(), savedAt: new Date().toISOString() };
+  if (!writeDesigns(designs)) return;
+  state.design = name;
+  markLoaded();
+  refreshDesignList();
+  writeState();
+}
+function deleteDesign() {
+  const name = document.getElementById('designs').value;
+  if (!name || !confirm(`Delete the saved design "${name}"? The parameters on screen stay as they are.`)) return;
+  const designs = readDesigns();
+  delete designs[name];
+  writeDesigns(designs);
+  if (state.design === name) state.design = '';
+  refreshDesignList();
+  writeState();
+}
+
 // ---------------------------------------------------------------- scene
 
 const viewEl = document.getElementById('view');
@@ -102,7 +173,7 @@ const { scene, alleyGroup } = world;
 const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 500);
 
 let site = null;
-let walls = flatWalls(3.0);
+let walls = flatWalls(3.0); // the real buildings once the site is loaded; flat 3 m walls only if it is not
 let model = null;
 
 // ---------------------------------------------------------------- camera: orbit
@@ -248,6 +319,7 @@ function setMode(m) {
   if (m !== 'walk' && document.pointerLockElement) document.exitPointerLock();
   for (const b of document.querySelectorAll('#modes button')) b.classList.toggle('active', b.dataset.mode === m);
   renderer.domElement.style.cursor = m === 'walk' ? 'crosshair' : 'grab';
+  hideGuide(world);
   updateHud();
   if (m === 'orbit') { orbit.update(); render(); }
   else if (!looping) { looping = true; lastFrame = performance.now(); requestAnimationFrame(loop); }
@@ -273,11 +345,123 @@ function updateHud() {
   const hud = document.getElementById('hud');
   if (!model) return;
   const s = model.stats;
-  let text = `L ${fmt(s.bodyLength)} m · legs ${s.pairs.map(q => fmt(q.total, 2)).join(' / ')} m · back bend ${s.pairs[3].bend}°` + (s.allOk ? '' : ' · some legs cannot be placed');
+  let text = `L ${fmt(s.bodyLength)} m · legs ${s.pairs.map(q => fmt(q.total, 2)).join(' / ')} m · bends ${s.pairs.map(q => fmt(q.bend, 0)).join(' / ')}°` + (s.allOk ? '' : ' · a foot has no wall');
   const locked = document.pointerLockElement === renderer.domElement;
   if (mode === 'walk') text = (walker.fly ? 'Flying (Space up, C down): ' : 'Walking: ') + 'W A S D or arrows, Shift to hurry, ' + (locked ? 'move the mouse to look, Esc frees it' : 'drag the view to look (a click captures the mouse where the browser allows it)') + ', F to fly · ' + text;
   if (mode === 'path') text = `The path: ${pathT.toFixed(1)} s of ${path.duration.toFixed(0)} s · any move key takes over on foot · ` + text;
+  if (jointDrag) text = (jointDrag.kind === 'wall' ? 'Foot: sliding on the wall' : jointDrag.kind === 'gravity' ? 'Knee: up and down the gravity line' : 'Knee: in the level plane (hold Shift for up and down)') + ' · ' + text;
   hud.textContent = text;
+}
+
+// ---------------------------------------------------------------- joints: picking and dragging
+
+// In orbit mode the orange knee and foot markers can be dragged. A foot
+// slides in its wall plane. A knee moves in the level plane through it, or,
+// with a modifier key held, up and down the vertical line through it.
+const raycaster = new THREE.Raycaster();
+let jointDrag = null; // { joint, pair, side, kind, plane | line }
+let hover = null;     // the joint under the pointer, when not dragging
+const lastPointer = { x: 0, y: 0, has: false };
+
+function modifierHeld(e) { return e.shiftKey || e.ctrlKey || e.altKey || e.metaKey; }
+function setRay(clientX, clientY) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+}
+function pickJoint(clientX, clientY) {
+  if (!world.joints.length || !model) return null;
+  setRay(clientX, clientY);
+  world.spiderGroup.updateMatrixWorld(true);
+  const hits = raycaster.intersectObjects(world.joints, false);
+  return hits.length ? hits[0].object.userData : null;
+}
+function legOf(j) { return model.legs.find(l => l.pair === j.pair && l.side === j.side); }
+function jointPoint(j) { const l = legOf(j); return j.joint === 'knee' ? l.knee : l.foot; }
+function acrossAxisWorld() {
+  return alleyToScene(0, 0, 1).sub(alleyToScene(0, 0, 0)).normalize();
+}
+function startJointDrag(j, e) {
+  const point = jointPoint(j);
+  const pw = alleyToScene(...point);
+  const drag = { ...j, point };
+  if (j.joint === 'foot') {
+    drag.kind = 'wall';
+    drag.plane = new THREE.Plane().setFromNormalAndCoplanarPoint(acrossAxisWorld(), pw);
+    showGuide(world, 'wall', point, { inward: -j.side });
+  } else if (modifierHeld(e)) {
+    drag.kind = 'gravity';
+    drag.line = { origin: pw, dir: new THREE.Vector3(0, 1, 0) };
+    showGuide(world, 'line', point);
+  } else {
+    drag.kind = 'level';
+    drag.plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), pw);
+    showGuide(world, 'level', point);
+  }
+  jointDrag = drag;
+  renderer.domElement.style.cursor = 'grabbing';
+  updateHud();
+  render();
+}
+// Point on the drag constraint under the pointer, in the alley frame.
+function dragTarget(e) {
+  setRay(e.clientX, e.clientY);
+  const ray = raycaster.ray;
+  const out = new THREE.Vector3();
+  if (jointDrag.plane) {
+    if (!ray.intersectPlane(jointDrag.plane, out)) return null;
+  } else {
+    // Closest point on the vertical line to the pointer ray.
+    const { origin: q, dir: v } = jointDrag.line;
+    const d = ray.direction, w0 = ray.origin.clone().sub(q);
+    const b = d.dot(v), dd = d.dot(w0), ee = v.dot(w0);
+    const denom = 1 - b * b;
+    if (denom < 1e-9) return null;
+    const tc = (ee - b * dd) / denom;
+    out.copy(q).addScaledVector(v, tc);
+  }
+  return alleyGroup.worldToLocal(out);
+}
+function moveJoint(e) {
+  const t = dragTarget(e);
+  if (!t) return;
+  const p = state.params;
+  const q = p.pairs[jointDrag.pair];
+  if (jointDrag.kind === 'wall') {
+    Object.assign(q, footParamsAt(p, [t.x, Math.max(0, t.y), 0]));
+  } else if (jointDrag.kind === 'gravity') {
+    q.kneeHeight = Math.round(Math.max(0, t.y) * 1000) / 1000;
+  } else {
+    const k = kneeParamsAt(p, jointDrag.side, [t.x, 0, t.z]);
+    q.kneeAlong = k.kneeAlong;
+    q.kneeOut = Math.max(0, k.kneeOut);
+  }
+  onChange();
+  const point = jointPoint(jointDrag);
+  jointDrag.point = point;
+  showGuide(world, jointDrag.kind === 'wall' ? 'wall' : jointDrag.kind === 'gravity' ? 'line' : 'level', point, { inward: -jointDrag.side });
+  render();
+}
+function endJointDrag() {
+  jointDrag = null;
+  hoverKey = '';
+  hideGuide(world);
+  renderer.domElement.style.cursor = 'grab';
+  updateHud();
+  render();
+}
+// Hovering a knee with a modifier held previews its gravity line.
+let hoverKey = '';
+function updateHover(clientX, clientY, mod) {
+  if (mode !== 'orbit' || jointDrag) return;
+  hover = pickJoint(clientX, clientY);
+  const key = hover ? `${hover.joint}${hover.pair}${hover.side}${hover.joint === 'knee' && mod ? 'g' : ''}` : '';
+  if (key === hoverKey) return;
+  hoverKey = key;
+  renderer.domElement.style.cursor = hover ? 'move' : 'grab';
+  if (hover && hover.joint === 'knee' && mod) showGuide(world, 'line', jointPoint(hover));
+  else hideGuide(world);
+  render();
 }
 
 // ---------------------------------------------------------------- input
@@ -285,6 +469,7 @@ function updateHud() {
 (function installControls() {
   const el = renderer.domElement;
   let drag = null;
+  const capture = e => { try { el.setPointerCapture(e.pointerId); } catch (err) { /* synthetic events have no pointer to capture */ } };
   el.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('pointerlockchange', updateHud);
   el.addEventListener('pointerdown', e => {
@@ -295,16 +480,22 @@ function updateHud() {
       const t = { id: e.pointerId, x: e.clientX, y: e.clientY };
       if (e.clientX - rect.left < rect.width / 2 && !walker.touchMove) walker.touchMove = { ...t, f: 0, s: 0 };
       else if (!walker.touchLook) walker.touchLook = t;
-      el.setPointerCapture(e.pointerId);
+      capture(e);
       return;
     }
     if (mode === 'walk' && e.pointerType === 'mouse' && e.button === 0 && el.requestPointerLock && document.pointerLockElement !== el) {
       try { const r = el.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (err) { /* no pointer lock here */ }
     }
+    if (mode === 'orbit' && e.button === 0 && !jointDrag) {
+      const j = pickJoint(e.clientX, e.clientY);
+      if (j) { startJointDrag(j, e); capture(e); return; }
+    }
     drag = { x: e.clientX, y: e.clientY, pan: e.button === 2 || e.shiftKey };
-    el.setPointerCapture(e.pointerId);
+    capture(e);
   });
   el.addEventListener('pointermove', e => {
+    lastPointer.x = e.clientX; lastPointer.y = e.clientY; lastPointer.has = true;
+    if (jointDrag) { moveJoint(e); return; }
     if (mode === 'walk') {
       if (e.pointerType === 'touch') {
         if (walker.touchMove && e.pointerId === walker.touchMove.id) {
@@ -327,7 +518,7 @@ function updateHud() {
       }
       return;
     }
-    if (!drag) return;
+    if (!drag) { if (e.pointerType !== 'touch') updateHover(e.clientX, e.clientY, modifierHeld(e)); return; }
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     drag.x = e.clientX; drag.y = e.clientY;
     if (drag.pan) {
@@ -343,19 +534,26 @@ function updateHud() {
   });
   const release = e => {
     drag = null;
+    if (jointDrag) endJointDrag();
     if (walker.touchMove && e.pointerId === walker.touchMove.id) walker.touchMove = null;
     if (walker.touchLook && e.pointerId === walker.touchLook.id) walker.touchLook = null;
   };
   el.addEventListener('pointerup', release);
   el.addEventListener('pointercancel', release);
+  el.addEventListener('pointerleave', () => { if (!jointDrag && hover) { hover = null; hoverKey = ''; hideGuide(world); el.style.cursor = 'grab'; render(); } });
   el.addEventListener('wheel', e => {
     e.preventDefault();
     if (mode !== 'orbit') return;
     orbit.radius = Math.min(150, Math.max(0.3, orbit.radius * Math.exp(e.deltaY * 0.0012)));
     orbit.update(); render();
   }, { passive: false });
+  const modifierChange = e => {
+    if (!/^(Shift|Control|Alt|Meta)/.test(e.key)) return;
+    if (lastPointer.has && !jointDrag) updateHover(lastPointer.x, lastPointer.y, modifierHeld(e));
+  };
   window.addEventListener('keydown', e => {
     if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+    modifierChange(e);
     if (mode === 'path' && /^(Key[WASD]|Arrow)/.test(e.code)) setMode('walk');
     if (mode === 'walk') {
       walker.keys.add(e.code);
@@ -367,7 +565,7 @@ function updateHud() {
     const names = Object.keys(VIEWS);
     if (i >= 1 && i <= names.length) VIEWS[names[i - 1]]();
   });
-  window.addEventListener('keyup', e => walker.keys.delete(e.code));
+  window.addEventListener('keyup', e => { walker.keys.delete(e.code); modifierChange(e); });
   window.addEventListener('blur', () => walker.keys.clear());
 })();
 
@@ -376,17 +574,19 @@ function updateHud() {
 function rebuildSpider() {
   const p = state.params;
   model = buildSpider(p, walls);
+  // Designs saved before knees were points: keep the knees the old bend and
+  // upper length produced, as points, now that the walls are known.
+  if (p.pairs.some(q => q.kneeAlong === undefined)) {
+    p.pairs = model.legs.filter(l => l.side === 1).map(l => ({
+      footAlong: p.pairs[l.pair].footAlong, footHeight: p.pairs[l.pair].footHeight, ...kneeParamsAt(p, 1, l.knee),
+    }));
+    model = buildSpider(p, walls);
+  }
   rebuildSpiderMeshes(world, model, p, { silhouette: state.silhouette, showJoints: state.showJoints });
-  rebuildExtras(world, p, { showPerson: state.showPerson, wallMode: state.wallMode, flatWidth: state.flatWidth });
+  rebuildExtras(world, p, { showPerson: state.showPerson, wallMode: site ? 'site' : 'flat', flatWidth: 3.0 });
   updateStats();
   updateHud();
   render();
-}
-
-function applyWallMode() {
-  if (!site) state.wallMode = 'flat'; // nothing else to land on
-  if (state.wallMode === 'site') walls = wallsFromSite(site);
-  else walls = flatWalls(state.flatWidth);
 }
 
 // ---------------------------------------------------------------- stats
@@ -404,31 +604,32 @@ function updateStats() {
   h += row('Lowest point over the path', fmt(s.pathClearance) + ' m', s.pathClearance < 2.0 ? 'warn' : 'ok');
   h += row('Foot-to-foot across', fmt(s.spanAcross) + ' m');
   h += row('Foot-to-foot along', fmt(s.lengthAlong) + ' m');
+  h += row('Pitch', fmt(s.pitch, 0) + '°' + (s.pitch ? (s.pitch > 0 ? ', head up' : ', head down') : ''));
   h += '</table>';
 
   h += '<h2>Legs</h2><table><tr><th>Pair</th><th>Bend</th><th>Upper</th><th>Lower</th><th>Total</th><th>/L</th><th>Knee at</th><th>Foot h</th></tr>';
   for (const q of s.pairs) {
     const cls = q.status === 'ok' ? '' : 'warn';
+    const bend = Math.abs(q.bend - q.bendOtherSide) > 0.5 ? `${fmt(q.bend, 0)}/${fmt(q.bendOtherSide, 0)}` : fmt(q.bend, 0);
     const lower = Math.abs(q.lower - q.lowerOtherSide) > 0.005 ? `${fmt(q.lower)}/${fmt(q.lowerOtherSide)}` : fmt(q.lower);
     const total = Math.abs(q.total - q.totalOtherSide) > 0.005 ? `${fmt(q.total)}/${fmt(q.totalOtherSide)}` : fmt(q.total);
-    h += `<tr class="${cls}"><td>${q.pair}${q.status === 'ok' ? '' : ' ' + q.status}</td><td>${q.bend}°</td><td>${fmt(q.upper)}</td><td>${lower}</td><td>${total}</td><td>${fmt(q.totalInL)}</td><td>${fmt(q.kneeFraction * 100, 0)}%</td><td>${fmt(q.footHeight)}</td></tr>`;
+    h += `<tr class="${cls}"><td>${q.pair}${q.status === 'ok' ? '' : ' no wall'}</td><td>${bend}°</td><td>${fmt(q.upper)}</td><td>${lower}</td><td>${total}</td><td>${fmt(q.totalInL)}</td><td>${fmt(q.kneeFraction * 100, 0)}%</td><td>${fmt(q.footHeight)}</td></tr>`;
   }
-  h += '</table><div class="muted" style="margin-top:4px">Lower segment is derived so the foot lands where it is put. Two values mean the two walls are at different distances. Red: the foot is too close for that bend, or no wall was found.</div>';
+  h += '</table><div class="muted" style="margin-top:4px">Segment lengths and bends follow from where the knees and feet are. Two values mean the two walls are at different distances. Red: no wall was found for that foot.</div>';
 
   h += '<h2>Against the brief (in L)</h2><table><tr><th></th><th>Now</th><th>Brief</th></tr>';
   const cmp = (name, v, t, tol = 0.01) => `<tr><td>${name}</td><td class="${dev(v, t, tol)}">${fmt(v, 3)}</td><td class="muted">${t}</td></tr>`;
   h += cmp('Abdomen length', s.abdomenInL[0], LOCKED.abdomenLength);
   h += cmp('Abdomen width', s.abdomenInL[1], LOCKED.abdomenWidth);
   h += cmp('Abdomen height', s.abdomenInL[2], LOCKED.abdomenWidth);
-  h += cmp('Head length', s.headInL[0], LOCKED.headLength);
+  h += cmp('Head length, in front', s.headInL[0], LOCKED.headLength);
   h += cmp('Head width', s.headInL[1], LOCKED.headWidth);
   h += cmp('Head height', s.headInL[2], LOCKED.headWidth);
-  h += cmp('Overlap', s.overlapInL, LOCKED.overlap);
   h += cmp('Head / abdomen width', s.headToAbdomenWidth, 0.66);
   for (const q of s.pairs) h += cmp(`Leg ${q.pair} length`, q.totalInLWorst, LOCKED.legLength, 0.03);
   for (const q of s.pairs) h += cmp(`Leg ${q.pair} knee at`, q.kneeFractionWorst, LOCKED.kneeFraction, 0.01);
   h += cmp('Front bend / back bend', s.pairs[0].bend / (s.pairs[3].bend || 1), LOCKED.frontBendFactor, 0.02);
-  h += '</table>';
+  h += '</table><div class="muted" style="margin-top:4px">The brief\'s head length of 0.30 includes 0.06 inside the abdomen; the head in front of it is 0.24.</div>';
 
   if (site) {
     const w = wallsFromSite(site);
@@ -441,7 +642,7 @@ function updateStats() {
     if (lb) h += row('Right wall eave', fmt(lb.building.eaveHeight ?? NaN, 1) + ' m' + (lb.building.floors ? `, ${lb.building.floors} floor(s)` : ''));
     if (rb) h += row('Left wall eave', fmt(rb.building.eaveHeight ?? NaN, 1) + ' m' + (rb.building.floors ? `, ${rb.building.floors} floor(s)` : ''));
     h += row('Alley length', fmt(site.alley.length, 1) + ' m, runs south from the street');
-    h += '</table>';
+    h += '</table><div class="muted" style="margin-top:4px">The site is measured, not adjustable here.</div>';
   }
   document.getElementById('stats').innerHTML = h;
 }
@@ -480,19 +681,6 @@ function buildControls() {
     if (g.group === 'Body position') {
       d.appendChild(selectRow('Facing', [['-1', 'Head toward the street'], ['1', 'Head into the alley']],
         () => String(state.params.facing), v => { state.params.facing = parseInt(v, 10); }));
-      d.appendChild(selectRow('Walls', [['site', 'Real buildings (IGN)'], ['flat', 'Flat walls, set width']],
-        () => state.wallMode, v => { state.wallMode = v; applyWallMode(); }));
-      const r = sliderRow('flatWidth', 'Flat wall spacing', 1.5, 6, 0.05, () => state.flatWidth, v => { state.flatWidth = v; applyWallMode(); });
-      rows.push(r); d.appendChild(r);
-    }
-    root.appendChild(d);
-  }
-  for (let i = 0; i < 4; i++) {
-    const d = document.createElement('details'); d.open = i === 0 || i === 3;
-    d.innerHTML = `<summary>${PAIR_NAMES[i]}</summary>`;
-    for (const [key, label, min, max, step] of PAIR_SLIDERS) {
-      const r = sliderRow(key, label, min, max, step, () => state.params.pairs[i][key], v => { state.params.pairs[i][key] = v; });
-      rows.push(r); d.appendChild(r);
     }
     root.appendChild(d);
   }
@@ -534,15 +722,39 @@ function applyBrief() {
   preset.across = old.across;
   preset.facing = old.facing;
   preset.bodyShape = old.bodyShape;
+  preset.pitch = old.pitch || 0;
   state.params = preset;
-  solveFeet();
+  const leg = LOCKED.legLength * state.briefL;
+  solveFeet([0, 1, 2, 3].map(i => ({ upper: leg * LOCKED.kneeFraction, bend: state.backBend * bendFactor(i) })));
 }
-function solveFeet() {
+// Slide the feet to where each leg has the brief's lower segment length,
+// at the given (or the current) upper lengths and bends.
+function solveFeet(targets = null) {
   const p = state.params;
   const lowerTarget = LOCKED.legLength * bodyLength(p) * (1 - LOCKED.kneeFraction);
-  p.pairs = solveFeetForLength(p, walls, lowerTarget);
+  p.pairs = solveFeetForLength(p, walls, lowerTarget, targets);
   refreshControls();
   onChange();
+}
+// Re-place every knee for the chosen back-pair bend, keeping each pair's
+// upper segment length.
+function setBendSeries(b) {
+  state.backBend = b;
+  const p = state.params;
+  for (let i = 0; i < 4; i++) {
+    const upper = model.legs.find(l => l.pair === i && l.side === 1).a;
+    p.pairs[i] = kneeFromBend(p, walls, i, upper, b * bendFactor(i));
+  }
+  refreshControls(); onChange();
+}
+
+function applyPanes() {
+  const app = document.getElementById('app');
+  app.classList.toggle('no-left', !panes.left);
+  app.classList.toggle('no-right', !panes.numbers);
+  document.getElementById('showLeft').hidden = panes.left;
+  document.getElementById('toggleNumbers').classList.toggle('active', panes.numbers);
+  resize();
 }
 
 function wireUI() {
@@ -550,22 +762,25 @@ function wireUI() {
   for (const b of BEND_SERIES) {
     const btn = document.createElement('button');
     btn.textContent = b + '°'; btn.dataset.bend = b;
-    btn.addEventListener('click', () => {
-      state.backBend = b;
-      for (let i = 0; i < 4; i++) state.params.pairs[i].bend = Math.round(b * bendFactor(i));
-      refreshControls(); onChange();
-    });
+    btn.addEventListener('click', () => setBendSeries(b));
     seriesEl.appendChild(btn);
   }
   const l = document.getElementById('briefL'), ln = document.getElementById('briefLn');
   const setL = e => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { state.briefL = v; refreshControls(); writeState(); } };
   l.addEventListener('input', setL); ln.addEventListener('change', setL);
   document.getElementById('applyBrief').addEventListener('click', applyBrief);
-  document.getElementById('solveFeet').addEventListener('click', solveFeet);
-  document.getElementById('reset').addEventListener('click', () => {
-    state.params = clone(DEFAULTS); state.briefL = 0.8; state.backBend = 60;
-    applyBrief();
-  });
+  document.getElementById('solveFeet').addEventListener('click', () => solveFeet());
+
+  document.getElementById('loadDesign').addEventListener('click', () => loadDesign(document.getElementById('designs').value));
+  document.getElementById('saveDesign').addEventListener('click', saveDesignAs);
+  document.getElementById('deleteDesign').addEventListener('click', deleteDesign);
+  document.getElementById('designs').addEventListener('change', e => { document.getElementById('deleteDesign').disabled = !e.target.value; });
+
+  document.getElementById('hideLeft').addEventListener('click', () => { panes.left = false; applyPanes(); });
+  document.getElementById('showLeft').addEventListener('click', () => { panes.left = true; applyPanes(); });
+  document.getElementById('hideRight').addEventListener('click', () => { panes.numbers = false; applyPanes(); });
+  document.getElementById('toggleNumbers').addEventListener('click', () => { panes.numbers = !panes.numbers; applyPanes(); });
+
   for (const key of ['silhouette', 'showPerson', 'showRoofs', 'showJoints', 'plants']) {
     document.getElementById(key).addEventListener('change', e => {
       state[key] = e.target.checked;
@@ -622,12 +837,14 @@ function wireUI() {
 
 function resize() {
   const w = viewEl.clientWidth, h = viewEl.clientHeight;
+  if (!w || !h) return;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   render();
 }
 window.addEventListener('resize', resize);
+if (window.ResizeObserver) new ResizeObserver(resize).observe(viewEl);
 let frame = null;
 function render() {
   if (mode !== 'orbit') return; // the walking loop renders every frame
@@ -642,23 +859,26 @@ async function main() {
   site = await loadWorldSite(world, { onTexture: render, ground: state.ground });
   if (!site) {
     document.getElementById('loading').textContent = HOSTED ? 'The site data could not be loaded; showing flat walls.' : 'Site data missing (run site/fetch_site.py); showing flat walls.';
-    state.wallMode = 'flat';
   }
   if (site) document.getElementById('loading').remove();
-  applyWallMode();
+  walls = site ? wallsFromSite(site) : flatWalls(3.0);
   buildControls();
   wireUI();
   refreshControls();
+  refreshDesignList();
+  applyPanes();
   if (state.silhouette) setSilhouetteBackground(world, true);
   setRoofsVisible(world, state.showRoofs);
   setPlantsVisible(world, state.plants);
   if (hadSaved) rebuildSpider(); else applyBrief(); // first visit: brief ratios on the real walls
+  markLoaded();
   resize();
   spawnWalker();
   for (const b of document.querySelectorAll('#modes button')) b.classList.toggle('active', b.dataset.mode === 'orbit');
   const view = new URLSearchParams(location.search).get('view');
   if (view === 'walk') { orbit.update(); setMode('walk'); }
   else (VIEWS[view] || VIEWS.Street)();
-  window.spider = { state, get model() { return model; }, VIEWS, rebuildSpider, render, walker, setMode, startPath, stepWalker, get mode() { return mode; } };
+  window.spider = { state, panes, get model() { return model; }, VIEWS, rebuildSpider, render, walker, setMode, startPath, stepWalker, get mode() { return mode; },
+    pickJoint, startJointDrag, moveJoint, endJointDrag, get jointDrag() { return jointDrag; }, loadDesign, saveDesignAs, camera, world };
 }
 main();
