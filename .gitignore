@@ -16,3 +16,6 @@ node_modules/
 
 # Recorded videos
 visualizer/out/
+
+# Server address for tools/deploy_site.sh
+visualizer/tools/deploy_site.env

@@ -33,9 +33,14 @@ test run before the night.
   and plants. Three buildings at the alley mouth are laid out from Street
   View (ids in site.js: east house, garage, corner shop); the rest is the
   same logic as a guess. Street View images are reference only; none of
-  their pixels are in the model. `tools/build_artifact.py` makes the body-only page
-  published on claude.ai (links in README). Hosted, the page cannot use
-  the URL hash or downloads: window.HOSTED hides those buttons.
+  their pixels are in the model. Live at https://danielsknowledge.com/halloween/: the
+  knowledge site's web server serves this repo's visualizer/ from a plain
+  clone through an Apache Alias (site/photos and *.py denied). Deploy with
+  `visualizer/tools/deploy_site.sh`; the server address lives in the
+  gitignored tools/deploy_site.env, see the knowledge project's notes.
+  `tools/build_artifact.py` makes the older body-only page on claude.ai
+  (links in README); there the page cannot use the URL hash or downloads,
+  and window.HOSTED hides those buttons.
 - Put screenshots and Chrome profiles under visualizer/out/ (ignored), not
   /tmp: /tmp is a quota-limited tmpfs shared with other sessions. Pass
   `--user-data-dir=out/chrome --disk-cache-size=1` to headless Chrome or

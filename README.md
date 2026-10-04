@@ -6,11 +6,13 @@ houses on both sides of the 3 m alley. The brief is in `docs/`.
 
 ## Online
 
-The viewer is also published as a private claude.ai page (share it from
-its Share menu): https://claude.ai/artifact/H3RJ4ZWXPziqnzm9ApMPR4. It has
-the same sliders, plus Walk (first person: W A S D, mouse to look, F to
-fly) and Play the path. The walk-through video is at
-https://claude.ai/artifact/KqzFnsro5Svw8bLHnKhrSw.
+The viewer is live at https://danielsknowledge.com/halloween/ with the
+same sliders, plus Walk (first person: W A S D, mouse to look, F to fly)
+and Play the path. It is served as static files by the web server behind
+danielsknowledge.com, from a clone of this repo on that server;
+`visualizer/tools/deploy_site.sh` pushes and pulls it. Older copies: a
+private claude.ai page https://claude.ai/artifact/H3RJ4ZWXPziqnzm9ApMPR4
+and the walk-through video https://claude.ai/artifact/KqzFnsro5Svw8bLHnKhrSw.
 
 ## 3D visualizer
 
