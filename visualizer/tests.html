@@ -8,6 +8,7 @@ import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, flatWalls, root
          lowerSegmentFor, solveFeetForLength, bendFactor, placeKnee, kneeParamsAt, footParamsAt,
          kneeFromBend, upgradeParams } from './spider.js';
 import { loadSite, wallsFromSite, insideBuilding } from './site.js';
+import { HALLOWEEN_NOON, solarPosition, sunVector } from './sun.js';
 
 const out = [];
 let failed = 0;
@@ -119,6 +120,21 @@ try {
   const solved = { ...p, pairs: solveFeetForLength(p, wide, b, [0, 1, 2, 3].map(i => ({ upper: aBrief, bend: 60 * bendFactor(i) }))) };
   const ms = buildSpider(solved, wide);
   for (const q of ms.stats.pairs) check(`solved pair ${q.pair} lower = ${b}`, near(q.lower, b, 0.002) && near(q.bend, 60 * bendFactor(q.pair - 1), 0.1), `${q.lower.toFixed(4)} ${q.bend.toFixed(2)}`);
+
+  // The sun at noon on Halloween over the alley: south-south-east, 28.5°
+  // up (NOAA calculator values for 46.2499 N, 1.4967 W, 2026-10-31 11:00 UTC).
+  const sun = solarPosition(HALLOWEEN_NOON, 46.249891, -1.496728);
+  check('Halloween noon sun azimuth', near(sun.azimuth, 166.3, 0.3), sun.azimuth.toFixed(2));
+  check('Halloween noon sun elevation', near(sun.elevation, 28.5, 0.3), sun.elevation.toFixed(2));
+  check('Halloween noon is CET', HALLOWEEN_NOON.getUTCHours() === 11);
+  const noon = solarPosition(new Date('2026-10-31T11:50:00Z'), 46.249891, -1.496728);
+  check('solar noon is due south', near(noon.azimuth, 180, 0.5) && noon.elevation > sun.elevation, noon.azimuth.toFixed(2));
+  const night = solarPosition(new Date('2026-10-31T19:00:00Z'), 46.249891, -1.496728);
+  check('sun is down at 20:00', night.elevation < 0, night.elevation.toFixed(1));
+  const june = solarPosition(new Date('2026-06-21T12:00:00Z'), 46.249891, -1.496728);
+  check('midsummer sun is high', june.elevation > 65, june.elevation.toFixed(1));
+  const v = sunVector(HALLOWEEN_NOON, 46.249891, -1.496728);
+  check('sun vector points south and up', v[2] < -0.8 && v[1] > 0.4 && v[0] > 0 && near(Math.hypot(...v), 1, 1e-9), JSON.stringify(v));
 
   // Site: alley frame round trip and real walls about 3 m apart near the body.
   const site = await loadSite();

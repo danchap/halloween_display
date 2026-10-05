@@ -3,6 +3,11 @@
 
 import * as THREE from 'three';
 import { loadSite, buildSiteMeshes, setGroundMode as siteGround, setPlantsVisible as sitePlants } from './site.js';
+import { HALLOWEEN_NOON, sunVector } from './sun.js';
+
+// The alley, for the sun before the site data is loaded (site.json carries
+// the same origin).
+const ALLEY_LAT = 46.249891, ALLEY_LON = -1.496728;
 
 export function createWorld() {
   const scene = new THREE.Scene();
@@ -12,7 +17,6 @@ export function createWorld() {
   const hemi = new THREE.HemisphereLight(0xcfe0ff, 0x6b6050, 0.9);
   scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xfff2e0, 2.2);
-  sun.position.set(30, 45, -20);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.left = -40; sun.shadow.camera.right = 40;
@@ -21,6 +25,7 @@ export function createWorld() {
   sun.shadow.bias = -0.0005;
   scene.add(sun);
   scene.add(sun.target);
+  placeSun({ sun }, ALLEY_LAT, ALLEY_LON);
 
   const alleyGroup = new THREE.Group(); // alley frame -> scene
   scene.add(alleyGroup);
@@ -51,6 +56,8 @@ export async function loadWorldSite(world, { onTexture, ground = 'lane' } = {}) 
     });
     world.scene.add(world.siteGroup);
     world.sun.target.position.copy(world.alleyGroup.position);
+    const [lat, lon] = (site.origin && site.origin.wgs84) || [ALLEY_LAT, ALLEY_LON];
+    placeSun(world, lat, lon);
     world.ready = world.siteGroup.userData.ready || Promise.resolve();
     return site;
   } catch (e) {
@@ -62,6 +69,15 @@ export async function loadWorldSite(world, { onTexture, ground = 'lane' } = {}) 
     if (onTexture) onTexture();
     return null;
   }
+}
+
+// Put the sun where it stands at noon on Halloween over the alley: the
+// scene's x is east and its z is south, so the vector [east, up, north]
+// becomes (east, up, -north). The light sits 60 m out along that line from
+// its target, inside its shadow camera's range.
+export function placeSun(world, lat, lon, when = HALLOWEEN_NOON) {
+  const [east, up, north] = sunVector(when, lat, lon);
+  world.sun.position.copy(world.sun.target.position).add(new THREE.Vector3(east, up, -north).multiplyScalar(60));
 }
 
 export function setGroundMode(world, mode) { if (world.siteGroup) siteGround(world.siteGroup, mode); }

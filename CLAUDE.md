@@ -27,6 +27,8 @@ test run before the night.
   walk URL as its first tab (`?record=1&upload=<name>`); a tab opened
   through the debugging port is throttled and never finishes. The page
   posts progress to the server's stdout via /log. feta has no ffmpeg.
+- `sun.js` puts the sun at noon CET on 2026-10-31 over the alley (Daniel's
+  choice, 2026-10-05); change HALLOWEEN_NOON there for another moment.
 - `textures.js` draws the village materials on canvases from colours in
   Daniel's photo (site/photos); `site.js` lays out openings per wall, cuts
   them into the wall geometry with reveals, and dresses buildings, lane

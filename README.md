@@ -64,6 +64,9 @@ What it shows:
   chosen back-pair bend.
 - Designs: "Save as…" keeps the current parameters under a name in the
   browser; the Design list loads one back, or the brief defaults.
+- The sun stands where it does at noon (12:00 CET) on 31 October 2026
+  over the alley: azimuth 166°, 28.5° up, computed in `sun.js` from the
+  date and the site's coordinates, so shadows are the real ones.
 - A numbers panel (hidden by default, "Numbers" at the top right): heights,
   clearance over the walking path, every leg length, and each dimension
   against the brief's ratios (green when it matches). The parameters panel
