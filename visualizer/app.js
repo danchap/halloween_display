@@ -28,7 +28,7 @@ const SLIDERS = [
     ['along', 'Along the alley (from the street)', 0, 45, 0.05],
     ['bodyHeight', 'Body centre height', 0.5, 5, 0.01],
     ['across', 'Across the alley (+ is right, looking in)', -1.5, 1.5, 0.01],
-    ['pitch', 'Pitch, ° (head up is +)', -60, 60, 1],
+    ['pitch', 'Pitch of the whole spider, ° (head up is +)', -80, 80, 1],
   ]},
   { group: 'Leg thickness', open: false, items: [
     ['upperDiameter', 'Upper segment diameter', 0.005, 0.25, 0.005],
@@ -463,13 +463,18 @@ function moveJoint(e) {
   if (!t) return;
   const p = state.params;
   const q = p.pairs[jointDrag.pair];
+  // The world point is stored as the level pose (see kneeParamsAt), so a
+  // vertical or level move changes both stored coordinates when pitched.
   if (jointDrag.kind === 'wall') {
     Object.assign(q, footParamsAt(p, [t.x, Math.max(0, t.y), 0]));
   } else if (jointDrag.kind === 'gravity') {
-    q.kneeHeight = Math.round(Math.max(0, t.y) * 1000) / 1000;
-  } else {
-    const k = kneeParamsAt(p, jointDrag.side, [t.x, 0, t.z]);
+    const k = kneeParamsAt(p, jointDrag.side, [t.x, Math.max(0, t.y), t.z]);
     q.kneeAlong = k.kneeAlong;
+    q.kneeHeight = k.kneeHeight;
+  } else {
+    const k = kneeParamsAt(p, jointDrag.side, [t.x, t.y, t.z]);
+    q.kneeAlong = k.kneeAlong;
+    q.kneeHeight = k.kneeHeight;
     q.kneeOut = Math.max(0, k.kneeOut);
   }
   onChange();
@@ -640,7 +645,7 @@ function updateStats() {
   h += row('Lowest point over the path', fmt(s.pathClearance) + ' m', s.pathClearance < 2.0 ? 'warn' : 'ok');
   h += row('Foot-to-foot across', fmt(s.spanAcross) + ' m');
   h += row('Foot-to-foot along', fmt(s.lengthAlong) + ' m');
-  h += row('Pitch', fmt(s.pitch, 0) + '°' + (s.pitch ? (s.pitch > 0 ? ', head up' : ', head down') : ''));
+  h += row('Pitch (whole spider)', fmt(s.pitch, 0) + '°' + (s.pitch ? (s.pitch > 0 ? ', head up' : ', head down') : ''));
   h += '</table>';
 
   h += '<h2>Legs</h2><table><tr><th>Pair</th><th>Bend</th><th>Upper</th><th>Lower</th><th>Total</th><th>/L</th><th>Knee at</th><th>Foot h</th></tr>';

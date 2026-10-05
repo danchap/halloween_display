@@ -76,19 +76,34 @@ try {
   check('facing flips head side', Math.sign(m.head.center[0] - m.abdomen.center[0]) === -Math.sign(back.head.center[0] - back.abdomen.center[0]));
   check('facing keeps leg lengths', back.legs.every((l, i) => near(l.b, m.legs[i].b, 1e-9)));
 
-  // Pitch raises the head end (and the leg roots on it) and leaves the
-  // knees and feet where they are, whichever way the body faces.
+  // Pitch rotates the whole spider about the body centre: the head end
+  // rises, the legs turn with it keeping their lengths and bends, the feet
+  // stay on their walls, whichever way the body faces.
   for (const facing of [-1, 1]) {
     const flat = buildSpider({ ...p, facing }, walls);
-    const up = buildSpider({ ...p, facing, pitch: 20 }, walls);
+    const up = buildSpider({ ...p, facing, pitch: 35 }, walls);
     const tag = facing < 0 ? 'toward the street' : 'into the alley';
     check(`pitch ${tag}: head above abdomen`, up.head.center[1] > up.abdomen.center[1] + 0.1);
     check(`pitch ${tag}: body length kept`, near(up.L, L));
     check(`pitch ${tag}: roots rise`, up.legs.every((l, i) => l.root[1] > flat.legs[i].root[1]));
-    check(`pitch ${tag}: knees and feet stay`, up.legs.every((l, i) => dist(l.knee, flat.legs[i].knee) < 1e-9 && dist(l.foot, flat.legs[i].foot) < 1e-9));
+    check(`pitch ${tag}: leg lengths kept`, up.legs.every((l, i) => near(l.a, flat.legs[i].a, 1e-9) && near(l.b, flat.legs[i].b, 1e-9)));
+    check(`pitch ${tag}: bends kept`, up.legs.every((l, i) => near(l.bend, flat.legs[i].bend, 1e-6)));
+    check(`pitch ${tag}: feet on their walls`, up.legs.every(l => near(Math.abs(l.foot[2]), 1.47)));
+    check(`pitch ${tag}: front feet rise, back feet drop`, leg(up, 0, 1).foot[1] > leg(flat, 0, 1).foot[1] + 0.5 && leg(up, 3, 1).foot[1] < leg(flat, 3, 1).foot[1] - 0.5);
+    check(`pitch ${tag}: centre of the feet turns about the body`, near(dist(leg(up, 0, 1).foot, [up.params.along, up.params.bodyHeight, 1.47]), dist(leg(flat, 0, 1).foot, [flat.params.along, flat.params.bodyHeight, 1.47]), 1e-9));
     check(`pitch ${tag}: mesh tilt sign`, Math.sign(up.head.rotZ) === Math.sign(facing));
     check(`pitch ${tag}: top is higher`, up.stats.topHeight >= flat.stats.topHeight);
   }
+  // Points placed in the world come back at the same world point when pitched.
+  const pitched = { ...p, pitch: 35 };
+  const kp = [7.0, 3.4, 0.9];
+  const mp = buildSpider({ ...pitched, pairs: pitched.pairs.map((q, i) => i === 2 ? { ...q, ...kneeParamsAt(pitched, 1, kp) } : q) }, walls);
+  check('pitched knee lands where it is put', dist(leg(mp, 2, 1).knee, kp) < 2e-3, JSON.stringify(leg(mp, 2, 1).knee));
+  const fp = [5.2, 3.0, 0];
+  const mf = buildSpider({ ...pitched, pairs: pitched.pairs.map((q, i) => i === 1 ? { ...q, ...footParamsAt(pitched, fp) } : q) }, walls);
+  check('pitched foot lands where it is put', near(leg(mf, 1, 1).foot[0], 5.2, 2e-3) && near(leg(mf, 1, 1).foot[1], 3.0, 2e-3) && near(leg(mf, 1, 1).foot[2], 1.47));
+  const mb = buildSpider({ ...pitched, pairs: pitched.pairs.map((q, i) => i === 3 ? kneeFromBend(pitched, walls, 3, aBrief, 90) : q) }, walls);
+  check('kneeFromBend holds under pitch', near(leg(mb, 3, 1).bend, 90, 0.1) && near(leg(mb, 3, 1).a, aBrief, 1e-3), leg(mb, 3, 1).bend.toFixed(2));
 
   // A knee or a foot put at a point comes back at that point (mirrored on
   // the other side); the segment lengths and bend follow.

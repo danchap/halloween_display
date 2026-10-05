@@ -54,8 +54,10 @@ What it shows:
   press "Apply brief ratios at L".
 - Sliders for the abdomen (length, width, height), the head (length in
   front of the abdomen, width, height, lift), the body's position along,
-  across and above the alley, its pitch, which way it faces, and the leg
-  thickness per segment. The scenery has no controls: it is measured.
+  across and above the alley, which way it faces, the pitch of the whole
+  spider (body and legs turn together about the body centre, head up for
+  a positive angle; each foot keeps to its wall), and the leg thickness
+  per segment. The scenery has no controls: it is measured.
 - Knees and feet are dragged in the view (orange balls). A foot slides in
   its wall plane. A knee moves in the level plane through it, or up and
   down its vertical line with Shift, Ctrl or Alt held. The two legs of a

@@ -33,10 +33,12 @@ export const ROOT_FRACTIONS = [0.94, 0.65, 0.36, 0.08];
 //     headLength is the head in front of the abdomen.
 //   headLift: head axis above the abdomen axis.
 //   along, bodyHeight, across: the body centre in the alley frame.
-//   pitch: body tilt in degrees, head up is positive. facing: -1 head toward
-//     the street, +1 into the alley. bodyShape: cylinder, capsule, ellipsoid.
+//   pitch: tilt of the whole spider, body and legs, about the body centre,
+//     in degrees, head up is positive. facing: -1 head toward the street, +1
+//     into the alley. bodyShape: cylinder, capsule, ellipsoid.
 //   upperDiameter, lowerDiameter: leg thickness.
-//   pairs[i] (front pair first), the two sides mirrored:
+//   pairs[i] (front pair first), the two sides mirrored, as the level pose
+//   (what the spider looks like at pitch 0; the pitch rotates it):
 //     footAlong   foot along the alley from the body centre, + toward the head
 //     footHeight  foot height; the wall gives its across position
 //     kneeAlong   knee along the alley from the body centre, + toward the head
@@ -90,8 +92,9 @@ export function rootAlongOffset(p, pairIndex) {
 }
 
 // The body frame: `along` runs from the body centre toward the head, `up`
-// is the body's own up, `across` is toward +z. Pitch tilts the body about
-// its centre, head end up for a positive angle, whichever way it faces.
+// is the body's own up, `across` is toward +z. Pitch tilts the whole spider
+// about the body centre, head end up for a positive angle, whichever way
+// it faces; the across coordinate is untouched, so a foot stays on its wall.
 export function bodyFrame(p) {
   const f = p.facing >= 0 ? 1 : -1;
   const t = (p.pitch || 0) * DEG;
@@ -125,12 +128,22 @@ export function placeKnee(root, foot, a, bendDeg, f = 1) {
   return { knee: add(root, add(scale(u, a * Math.cos(beta)), scale(n, a * Math.sin(beta)))), b, folded: false };
 }
 
+// Body-frame along and up of an alley-frame point: the inverse of
+// bodyFrame().toAlley, so a point placed in the world is stored as the
+// level pose that the pitch rotates onto it.
+function bodyCoords(p, point) {
+  const f = p.facing >= 0 ? 1 : -1;
+  const t = (p.pitch || 0) * DEG, c = Math.cos(t), s = Math.sin(t);
+  const X = f * (point[0] - p.along), Y = point[1] - p.bodyHeight;
+  return { along: X * c + Y * s, up: -X * s + Y * c };
+}
+
 // Pair parameters for a knee at an alley-frame point on the given side.
 export function kneeParamsAt(p, side, point) {
-  const f = p.facing >= 0 ? 1 : -1;
+  const { along, up } = bodyCoords(p, point);
   return {
-    kneeAlong: round(f * (point[0] - p.along)),
-    kneeHeight: round(point[1]),
+    kneeAlong: round(along),
+    kneeHeight: round(p.bodyHeight + up),
     kneeOut: round(side * (point[2] - p.across)),
   };
 }
@@ -138,8 +151,8 @@ export function kneeParamsAt(p, side, point) {
 // Pair parameters for a foot at an alley-frame point (its across position
 // comes from the wall, not from here).
 export function footParamsAt(p, point) {
-  const f = p.facing >= 0 ? 1 : -1;
-  return { footAlong: round(f * (point[0] - p.along)), footHeight: round(point[1]) };
+  const { along, up } = bodyCoords(p, point);
+  return { footAlong: round(along), footHeight: round(p.bodyHeight + up) };
 }
 
 // Parameters that are not geometry of the site. Everything in meters except
@@ -218,18 +231,20 @@ export function flatWalls(width) {
   return (x, side) => side * width / 2;
 }
 
-// Root and foot of one leg in the alley frame.
+// Root and foot of one leg in the alley frame. The foot's level-pose
+// position is pitched with the body; the wall where it then lands gives
+// its across position.
 function legEnds(p, walls, frame, pair, side) {
   const q = p.pairs[pair];
   const root = frame.toAlley(rootAlongOffset(p, pair), p.headLift, side * p.headWidth / 2);
-  const footX = p.along + frame.f * q.footAlong;
+  const [footX, footY] = frame.toAlley(q.footAlong, q.footHeight - p.bodyHeight, 0);
   let wallZ = walls(footX, side, p.across);
   let status = 'ok';
   if (wallZ === null || wallZ === undefined || Math.sign(wallZ - p.across) !== side) {
     status = 'noWall';
     wallZ = p.across + side * 1.5;
   }
-  return { root, foot: [footX, q.footHeight, wallZ], status };
+  return { root, foot: [footX, footY, wallZ], status };
 }
 
 // Build the whole spider from a parameter object (see briefPreset/DEFAULTS).
@@ -257,7 +272,7 @@ export function buildSpider(params, walls = flatWalls(3.0)) {
       const { root, foot, status } = legEnds(p, walls, frame, pair, side);
       const knee = q.kneeAlong === undefined
         ? placeKnee(root, foot, q.upper, q.bend, f).knee // designs saved before knees were points: from bend and upper length
-        : [p.along + f * q.kneeAlong, q.kneeHeight, p.across + side * q.kneeOut];
+        : frame.toAlley(q.kneeAlong, q.kneeHeight - p.bodyHeight, side * q.kneeOut);
       const a = norm(sub(knee, root));
       const b = norm(sub(foot, knee));
       const d = norm(sub(foot, root));
@@ -278,9 +293,10 @@ export function buildSpider(params, walls = flatWalls(3.0)) {
 
 // Pair parameters with the knee placed for an upper segment `upper` bent
 // `bendDeg` off straight, from the right-hand leg's root and foot (the left
-// leg mirrors it).
+// leg mirrors it). Worked out in the level pose; the pitch then rotates
+// the leg rigidly, keeping its lengths and bend.
 export function kneeFromBend(p, walls, pair, upper, bendDeg) {
-  const full = { ...DEFAULTS, ...p };
+  const full = { ...DEFAULTS, ...p, pitch: 0 };
   const frame = bodyFrame(full);
   const { root, foot } = legEnds(full, walls, frame, pair, 1);
   const { knee } = placeKnee(root, foot, upper, bendDeg, frame.f);
@@ -363,6 +379,7 @@ function computeStats({ p, L, abdomen, head, legs }) {
 // pair's current values. Returns a new pairs array; a foot that cannot reach
 // stays where it was.
 export function solveFeetForLength(p, walls, lowerTarget, targets = null) {
+  p = { ...p, pitch: 0 }; // the level pose; the pitch rotates the result
   const model = buildSpider(p, walls);
   const f = model.facing;
   const cx = p.along;
