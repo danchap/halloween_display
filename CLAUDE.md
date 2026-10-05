@@ -38,9 +38,9 @@ test run before the night.
   clone through an Apache Alias (site/photos and *.py denied). Deploy with
   `visualizer/tools/deploy_site.sh`; the server address lives in the
   gitignored tools/deploy_site.env, see the knowledge project's notes.
-  `tools/build_artifact.py` makes the older body-only page on claude.ai
-  (links in README); there the page cannot use the URL hash or downloads,
-  and window.HOSTED hides those buttons.
+  The earlier claude.ai copy of the viewer was retired on 2026-10-04 (its
+  link now points to the live page); window.HOSTED, which hid the URL-hash
+  and download buttons there, stays in app.js in case a host needs it.
 - Put screenshots and Chrome profiles under visualizer/out/ (ignored), not
   /tmp: /tmp is a quota-limited tmpfs shared with other sessions. Pass
   `--user-data-dir=out/chrome --disk-cache-size=1` to headless Chrome or

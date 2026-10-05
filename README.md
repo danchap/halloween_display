@@ -10,9 +10,10 @@ The viewer is live at https://danielsknowledge.com/halloween/ with the
 same sliders, plus Walk (first person: W A S D, mouse to look, F to fly)
 and Play the path. It is served as static files by the web server behind
 danielsknowledge.com, from a clone of this repo on that server;
-`visualizer/tools/deploy_site.sh` pushes and pulls it. Older copies: a
-private claude.ai page https://claude.ai/artifact/H3RJ4ZWXPziqnzm9ApMPR4
-and the walk-through video https://claude.ai/artifact/KqzFnsro5Svw8bLHnKhrSw.
+`visualizer/tools/deploy_site.sh` pushes and pulls it. The walk-through
+video is at https://claude.ai/artifact/KqzFnsro5Svw8bLHnKhrSw. (An earlier
+copy of the viewer on claude.ai was retired on 2026-10-04 and now points
+here.)
 
 ## 3D visualizer
 
@@ -105,7 +106,7 @@ it from IGN: `python3 visualizer/site/fetch_site.py`.
 
 Site textures: `tools/bake-plants.html` cuts the plant sprites out of the
 photo (open it from the server with `?upload=1` to regenerate
-`site/sprites/`); `tools/build_artifact.py` builds the hosted page.
+`site/sprites/`).
 
 ## Data sources
 

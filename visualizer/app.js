@@ -349,7 +349,8 @@ function updateHud() {
   const locked = document.pointerLockElement === renderer.domElement;
   if (mode === 'walk') text = (walker.fly ? 'Flying (Space up, C down): ' : 'Walking: ') + 'W A S D or arrows, Shift to hurry, ' + (locked ? 'move the mouse to look, Esc frees it' : 'drag the view to look (a click captures the mouse where the browser allows it)') + ', F to fly · ' + text;
   if (mode === 'path') text = `The path: ${pathT.toFixed(1)} s of ${path.duration.toFixed(0)} s · any move key takes over on foot · ` + text;
-  if (jointDrag) text = (jointDrag.kind === 'wall' ? 'Foot: sliding on the wall' : jointDrag.kind === 'gravity' ? 'Knee: up and down the gravity line' : 'Knee: in the level plane (hold Shift for up and down)') + ' · ' + text;
+  if (jointDrag) text = (jointDrag.kind === 'wall' ? 'Foot: sliding on the wall' : jointDrag.kind === 'gravity' ? 'Knee: up and down the gravity line' : 'Knee: in the level plane (hold Shift for up and down)')
+    + (jointDrag.edgeOn ? ` · ${jointDrag.edgeOn} is edge-on from here, turn the view to move that way` : '') + ' · ' + text;
   hud.textContent = text;
 }
 
@@ -358,8 +359,15 @@ function updateHud() {
 // In orbit mode the orange knee and foot markers can be dragged. A foot
 // slides in its wall plane. A knee moves in the level plane through it, or,
 // with a modifier key held, up and down the vertical line through it.
+//
+// The pointer motion is turned into motion along the allowed axes by a
+// damped least-squares fit of the axes' screen directions: along an axis
+// the camera sees well the joint follows the pointer; along one seen
+// nearly end-on (a level plane from eye height, the wall from the alley
+// mouth) it moves at a bounded rate instead of racing to the horizon.
 const raycaster = new THREE.Raycaster();
-let jointDrag = null; // { joint, pair, side, kind, plane | line }
+const DRAG_DAMPING = 0.12; // axes seen at less than this fraction of the across-view scale are damped
+let jointDrag = null; // { joint, pair, side, kind, axes, point, px, py }
 let hover = null;     // the joint under the pointer, when not dragging
 const lastPointer = { x: 0, y: 0, has: false };
 
@@ -373,29 +381,30 @@ function pickJoint(clientX, clientY) {
   if (!world.joints.length || !model) return null;
   setRay(clientX, clientY);
   world.spiderGroup.updateMatrixWorld(true);
-  const hits = raycaster.intersectObjects(world.joints, false);
-  return hits.length ? hits[0].object.userData : null;
+  // The ball under the pointer wins; the larger invisible spheres only
+  // catch a near miss, so a nearer joint's halo cannot steal a click on a
+  // ball behind it.
+  const hits = raycaster.intersectObjects(world.jointMarkers, false);
+  if (hits.length) return hits[0].object.userData;
+  const near = raycaster.intersectObjects(world.joints, false);
+  return near.length ? near[0].object.userData : null;
 }
 function legOf(j) { return model.legs.find(l => l.pair === j.pair && l.side === j.side); }
 function jointPoint(j) { const l = legOf(j); return j.joint === 'knee' ? l.knee : l.foot; }
-function acrossAxisWorld() {
-  return alleyToScene(0, 0, 1).sub(alleyToScene(0, 0, 0)).normalize();
-}
 function startJointDrag(j, e) {
   const point = jointPoint(j);
-  const pw = alleyToScene(...point);
-  const drag = { ...j, point };
+  const drag = { ...j, point, px: e.clientX, py: e.clientY };
   if (j.joint === 'foot') {
     drag.kind = 'wall';
-    drag.plane = new THREE.Plane().setFromNormalAndCoplanarPoint(acrossAxisWorld(), pw);
+    drag.axes = [[1, 0, 0], [0, 1, 0]];
     showGuide(world, 'wall', point, { inward: -j.side });
   } else if (modifierHeld(e)) {
     drag.kind = 'gravity';
-    drag.line = { origin: pw, dir: new THREE.Vector3(0, 1, 0) };
+    drag.axes = [[0, 1, 0]];
     showGuide(world, 'line', point);
   } else {
     drag.kind = 'level';
-    drag.plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), pw);
+    drag.axes = [[1, 0, 0], [0, 0, 1]];
     showGuide(world, 'level', point);
   }
   jointDrag = drag;
@@ -403,24 +412,51 @@ function startJointDrag(j, e) {
   updateHud();
   render();
 }
-// Point on the drag constraint under the pointer, in the alley frame.
+// Screen position, in pixels, of an alley-frame point.
+function screenOf(point) {
+  camera.updateMatrixWorld();
+  camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+  const v = alleyToScene(...point).project(camera);
+  const rect = renderer.domElement.getBoundingClientRect();
+  return [rect.left + (v.x + 1) / 2 * rect.width, rect.top + (1 - v.y) / 2 * rect.height];
+}
+// Where the pointer movement since the last event takes the dragged joint,
+// in the alley frame: the damped least-squares step along the drag axes.
 function dragTarget(e) {
-  setRay(e.clientX, e.clientY);
-  const ray = raycaster.ray;
-  const out = new THREE.Vector3();
-  if (jointDrag.plane) {
-    if (!ray.intersectPlane(jointDrag.plane, out)) return null;
+  const d = [e.clientX - jointDrag.px, e.clientY - jointDrag.py];
+  jointDrag.px = e.clientX; jointDrag.py = e.clientY;
+  const P = jointDrag.point;
+  const h = 0.01;
+  const s0 = screenOf(P);
+  const J = jointDrag.axes.map(a => {
+    const s = screenOf([P[0] + a[0] * h, P[1] + a[1] * h, P[2] + a[2] * h]);
+    return [(s[0] - s0[0]) / h, (s[1] - s0[1]) / h]; // pixels per metre along this axis
+  });
+  // Pixels per metre across the view at the joint's depth: the scale a
+  // well-seen axis has. Axes much weaker than that are damped.
+  const rect = renderer.domElement.getBoundingClientRect();
+  const focal = rect.height / (2 * Math.tan(camera.fov * Math.PI / 360));
+  const depth = Math.max(0.1, camera.position.distanceTo(alleyToScene(...P)));
+  const sigmaRef = focal / depth;
+  const lambda = (DRAG_DAMPING * sigmaRef) ** 2;
+  // Remember which axis, if any, the camera sees end-on, for the HUD.
+  const names = { '1,0,0': 'along the alley', '0,1,0': 'up and down', '0,0,1': 'across the alley' };
+  jointDrag.edgeOn = jointDrag.axes.filter((a, i) => Math.hypot(J[i][0], J[i][1]) < DRAG_DAMPING * sigmaRef).map(a => names[a.join(',')]).join(' and ');
+  let steps;
+  if (J.length === 1) {
+    const [j] = J;
+    steps = [(j[0] * d[0] + j[1] * d[1]) / (j[0] * j[0] + j[1] * j[1] + lambda)];
   } else {
-    // Closest point on the vertical line to the pointer ray.
-    const { origin: q, dir: v } = jointDrag.line;
-    const d = ray.direction, w0 = ray.origin.clone().sub(q);
-    const b = d.dot(v), dd = d.dot(w0), ee = v.dot(w0);
-    const denom = 1 - b * b;
-    if (denom < 1e-9) return null;
-    const tc = (ee - b * dd) / denom;
-    out.copy(q).addScaledVector(v, tc);
+    const [j1, j2] = J;
+    const a11 = j1[0] * j1[0] + j1[1] * j1[1] + lambda, a12 = j1[0] * j2[0] + j1[1] * j2[1], a22 = j2[0] * j2[0] + j2[1] * j2[1] + lambda;
+    const b1 = j1[0] * d[0] + j1[1] * d[1], b2 = j2[0] * d[0] + j2[1] * d[1];
+    const det = a11 * a22 - a12 * a12;
+    if (Math.abs(det) < 1e-12) return null;
+    steps = [(a22 * b1 - a12 * b2) / det, (a11 * b2 - a12 * b1) / det];
   }
-  return alleyGroup.worldToLocal(out);
+  const t = [...P];
+  jointDrag.axes.forEach((a, i) => { for (let k = 0; k < 3; k++) t[k] += a[k] * steps[i]; });
+  return { x: t[0], y: t[1], z: t[2] };
 }
 function moveJoint(e) {
   const t = dragTarget(e);

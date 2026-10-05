@@ -31,7 +31,7 @@ export function createWorld() {
   const guideGroup = new THREE.Group(); // drag guides: the gravity line, the level plane, the wall square
   alleyGroup.add(guideGroup);
 
-  return { scene, sun, hemi, alleyGroup, spiderGroup, extrasGroup, guideGroup, joints: [], site: null, siteGroup: null };
+  return { scene, sun, hemi, alleyGroup, spiderGroup, extrasGroup, guideGroup, joints: [], jointMarkers: [], site: null, siteGroup: null };
 }
 
 // Load the site into the world. Resolves with the site, or null when the
@@ -153,15 +153,18 @@ export function rebuildSpiderMeshes(world, model, params, { silhouette = false, 
     world.spiderGroup.add(m);
   }
 
-  // Joint markers double as drag handles: each gets an invisible, larger
-  // sphere for picking, tagged with which joint it is.
+  // Joint markers double as drag handles. The visible ball is picked
+  // first, so a click on a ball always takes that joint; around each ball
+  // an invisible, larger sphere catches near misses.
+  world.jointMarkers = [];
   world.joints = [];
   const handle = (point, diameter, mat, joint, leg) => {
-    world.spiderGroup.add(sphereMesh(point, diameter, mat));
+    const ball = sphereMesh(point, diameter, mat);
     const pick = sphereMesh(point, Math.max(0.3, diameter * 2.5), pickMat);
     pick.castShadow = false;
-    pick.userData = { joint, pair: leg.pair, side: leg.side };
-    world.spiderGroup.add(pick);
+    ball.userData = pick.userData = { joint, pair: leg.pair, side: leg.side };
+    world.spiderGroup.add(ball, pick);
+    world.jointMarkers.push(ball);
     world.joints.push(pick);
   };
 
