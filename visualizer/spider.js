@@ -37,13 +37,17 @@ export const ROOT_FRACTIONS = [0.94, 0.65, 0.36, 0.08];
 //     in degrees, head up is positive. facing: -1 head toward the street, +1
 //     into the alley. bodyShape: cylinder, capsule, ellipsoid.
 //   upperDiameter, lowerDiameter: leg thickness.
-//   pairs[i] (front pair first), the two sides mirrored, as the level pose
-//   (what the spider looks like at pitch 0; the pitch rotates it):
+//   legs[j], j = 2 * pair + (0 for the right leg, 1 for the left), front
+//   pair first, each as the level pose (what the spider looks like at
+//   pitch 0; the pitch rotates it). Right is +z: the right-hand side when
+//   looking into the alley from the street.
 //     footAlong   foot along the alley from the body centre, + toward the head
 //     footHeight  foot height; the wall gives its across position
 //     kneeAlong   knee along the alley from the body centre, + toward the head
 //     kneeHeight  knee height
-//     kneeOut     knee distance from the body axis toward its wall
+//     kneeOut     knee distance from the body axis toward that leg's wall
+//   Designs saved with `pairs` (one entry per pair, both sides mirrored)
+//   are accepted: see legsFrom and upgradeParams.
 
 const DEG = Math.PI / 180;
 
@@ -54,6 +58,17 @@ function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
 function norm(a) { return Math.sqrt(dot(a, a)); }
 function unit(a) { const n = norm(a); return n > 0 ? scale(a, 1 / n) : [0, 0, 0]; }
 function round(v) { return Math.round(v * 1000) / 1000; }
+
+export function legIndex(pair, side) { return 2 * pair + (side > 0 ? 0 : 1); }
+export function legOf(p, pair, side) { return p.legs[legIndex(pair, side)]; }
+
+// The eight legs of a parameter object: its own, or a mirrored pair list
+// from an older design, or the defaults.
+function legsFrom(params) {
+  if (params.legs) return params.legs.map(q => ({ ...q }));
+  if (params.pairs) return params.pairs.flatMap(q => [{ ...q }, { ...q }]);
+  return DEFAULTS.legs.map(q => ({ ...q }));
+}
 
 // Bend factor for each pair, front (0) to back (3): the brief fixes the ends
 // (front = half of back); the two middle pairs are spaced evenly between.
@@ -185,7 +200,7 @@ export function briefPreset(L, options = {}) {
     facing: -1,                      // -1: head toward the street, +1: into the alley
     upperDiameter: 0.06 * L,
     lowerDiameter: 0.045 * L,
-    pairs: [],
+    legs: [],
   };
   const frame = bodyFrame(p);
   // Feet: at the brief's bends and lengths, each foot sits at the wanted
@@ -204,7 +219,8 @@ export function briefPreset(L, options = {}) {
     const footAlong = rootAlong + forward * dx;
     const foot = [p.along + frame.f * footAlong, o.footHeights[i], o.wallDistance];
     const { knee } = placeKnee(root, foot, a, bend, frame.f);
-    p.pairs.push({ footAlong: round(footAlong), footHeight: o.footHeights[i], ...kneeParamsAt(p, 1, knee) });
+    const leg = { footAlong: round(footAlong), footHeight: o.footHeights[i], ...kneeParamsAt(p, 1, knee) };
+    p.legs.push(leg, { ...leg });
   }
   return p;
 }
@@ -213,8 +229,9 @@ export const DEFAULTS = Object.freeze(briefPreset(0.8));
 
 // Parameters saved by earlier versions of the pages, brought up to date:
 // the head length used to include the part inside the abdomen (saved as
-// `overlap`), and pitch did not exist. Pairs saved with a bend and an upper
-// length are accepted as they are by buildSpider.
+// `overlap`), pitch did not exist, and legs were saved per pair with the
+// two sides mirrored. Legs saved with a bend and an upper length are
+// accepted as they are by buildSpider.
 export function upgradeParams(params) {
   const p = { ...DEFAULTS, ...params };
   if (typeof p.overlap === 'number') {
@@ -222,6 +239,8 @@ export function upgradeParams(params) {
     delete p.overlap;
   }
   if (typeof p.pitch !== 'number') p.pitch = 0;
+  if (!params.legs && params.pairs) p.legs = legsFrom({ pairs: params.pairs });
+  delete p.pairs;
   return p;
 }
 
@@ -235,7 +254,7 @@ export function flatWalls(width) {
 // position is pitched with the body; the wall where it then lands gives
 // its across position.
 function legEnds(p, walls, frame, pair, side) {
-  const q = p.pairs[pair];
+  const q = legOf(p, pair, side);
   const root = frame.toAlley(rootAlongOffset(p, pair), p.headLift, side * p.headWidth / 2);
   const [footX, footY] = frame.toAlley(q.footAlong, q.footHeight - p.bodyHeight, 0);
   let wallZ = walls(footX, side, p.across);
@@ -249,7 +268,8 @@ function legEnds(p, walls, frame, pair, side) {
 
 // Build the whole spider from a parameter object (see briefPreset/DEFAULTS).
 export function buildSpider(params, walls = flatWalls(3.0)) {
-  const p = { ...DEFAULTS, ...params, pairs: (params.pairs || DEFAULTS.pairs).map(q => ({ ...q })) };
+  const p = { ...DEFAULTS, ...params, legs: legsFrom(params) };
+  delete p.pairs;
   const L = bodyLength(p);
   const frame = bodyFrame(p);
   const f = frame.f;
@@ -267,8 +287,8 @@ export function buildSpider(params, walls = flatWalls(3.0)) {
 
   const legs = [];
   for (let pair = 0; pair < 4; pair++) {
-    const q = p.pairs[pair];
     for (const side of [1, -1]) {
+      const q = legOf(p, pair, side);
       const { root, foot, status } = legEnds(p, walls, frame, pair, side);
       const knee = q.kneeAlong === undefined
         ? placeKnee(root, foot, q.upper, q.bend, f).knee // designs saved before knees were points: from bend and upper length
@@ -291,16 +311,16 @@ export function buildSpider(params, walls = flatWalls(3.0)) {
   return { params: p, L, facing: f, pitch: frame.pitch, abdomen, head, legs, stats };
 }
 
-// Pair parameters with the knee placed for an upper segment `upper` bent
-// `bendDeg` off straight, from the right-hand leg's root and foot (the left
-// leg mirrors it). Worked out in the level pose; the pitch then rotates
-// the leg rigidly, keeping its lengths and bend.
-export function kneeFromBend(p, walls, pair, upper, bendDeg) {
-  const full = { ...DEFAULTS, ...p, pitch: 0 };
+// Leg parameters with the knee placed for an upper segment `upper` bent
+// `bendDeg` off straight, from that leg's root and foot. Worked out in the
+// level pose; the pitch then rotates the leg rigidly, keeping its lengths
+// and bend.
+export function kneeFromBend(p, walls, pair, upper, bendDeg, side = 1) {
+  const full = { ...DEFAULTS, ...p, pitch: 0, legs: legsFrom(p) };
   const frame = bodyFrame(full);
-  const { root, foot } = legEnds(full, walls, frame, pair, 1);
+  const { root, foot } = legEnds(full, walls, frame, pair, side);
   const { knee } = placeKnee(root, foot, upper, bendDeg, frame.f);
-  return { ...full.pairs[pair], ...kneeParamsAt(full, 1, knee) };
+  return { ...legOf(full, pair, side), ...kneeParamsAt(full, side, knee) };
 }
 
 function computeStats({ p, L, abdomen, head, legs }) {
@@ -349,7 +369,7 @@ function computeStats({ p, L, abdomen, head, legs }) {
       kneeFractionWorst: worse(l.a / total, r.a / totalOther, LOCKED.kneeFraction),
       rootToFoot: l.d,
       footHeight: l.foot[1],
-      footAlong: p.pairs[i].footAlong,
+      footAlong: legOf(p, i, 1).footAlong,
       wallDistance: l.wallDistance,
       wallDistanceOtherSide: r.wallDistance,
       kneeHeight: l.knee[1],
@@ -376,37 +396,39 @@ function computeStats({ p, L, abdomen, head, legs }) {
 // Move each foot along its wall (keeping its height) to where a leg with the
 // given upper segment and bend has lower segment `lowerTarget`, then place
 // the knee for that bend. targets[i] = { upper, bend } defaults to each
-// pair's current values. Returns a new pairs array; a foot that cannot reach
-// stays where it was.
+// pair's current values (from its right leg). Each leg is solved on its
+// own wall. Returns a new legs array; a foot that cannot reach stays where
+// it was.
 export function solveFeetForLength(p, walls, lowerTarget, targets = null) {
-  p = { ...p, pitch: 0 }; // the level pose; the pitch rotates the result
+  p = { ...p, pitch: 0, legs: legsFrom(p) }; // the level pose; the pitch rotates the result
   const model = buildSpider(p, walls);
   const f = model.facing;
   const cx = p.along;
-  const pairs = p.pairs.map(q => ({ ...q }));
+  const legs = p.legs.map(q => ({ ...q }));
   for (let i = 0; i < 4; i++) {
-    const leg = model.legs.find(l => l.pair === i && l.side === 1);
-    const t = targets ? targets[i] : { upper: leg.a, bend: leg.bend };
+    const right = model.legs.find(l => l.pair === i && l.side === 1);
+    const t = targets ? targets[i] : { upper: right.a, bend: right.bend };
     const d = rootToFootDistance(t.upper, lowerTarget, t.bend);
-    const rootAlong = f * (leg.root[0] - cx);
-    const rootY = leg.root[1];
     const forward = i < 2 ? 1 : -1;
-    let footAlong = pairs[i].footAlong;
-    // The wall distance depends on where the foot lands; two passes settle it.
-    for (let pass = 0; pass < 3; pass++) {
-      const footX = cx + f * footAlong;
-      const dzs = [1, -1].map(side => {
+    for (const side of [1, -1]) {
+      const leg = model.legs.find(l => l.pair === i && l.side === side);
+      const j = legIndex(i, side);
+      const rootAlong = f * (leg.root[0] - cx);
+      const rootY = leg.root[1];
+      let footAlong = legs[j].footAlong;
+      // The wall distance depends on where the foot lands; two passes settle it.
+      for (let pass = 0; pass < 3; pass++) {
+        const footX = cx + f * footAlong;
         const w = walls(footX, side, p.across);
-        return (w === null || w === undefined) ? 1.5 - p.headWidth / 2 : Math.abs(w - p.across) - p.headWidth / 2;
-      });
-      const dz = Math.max(...dzs); // the longer side decides, so both reach
-      const dy = pairs[i].footHeight - rootY;
-      const dx2 = d * d - dz * dz - dy * dy;
-      if (dx2 <= 0) { footAlong = pairs[i].footAlong; break; } // cannot reach: leave the foot where it was
-      footAlong = rootAlong + forward * Math.sqrt(dx2);
+        const dz = (w === null || w === undefined) ? 1.5 - p.headWidth / 2 : Math.abs(w - p.across) - p.headWidth / 2;
+        const dy = legs[j].footHeight - rootY;
+        const dx2 = d * d - dz * dz - dy * dy;
+        if (dx2 <= 0) { footAlong = legs[j].footAlong; break; } // cannot reach: leave the foot where it was
+        footAlong = rootAlong + forward * Math.sqrt(dx2);
+      }
+      legs[j].footAlong = round(footAlong);
+      legs[j] = kneeFromBend({ ...p, legs }, walls, i, t.upper, t.bend, side);
     }
-    pairs[i].footAlong = round(footAlong);
-    pairs[i] = kneeFromBend({ ...p, pairs }, walls, i, t.upper, t.bend);
   }
-  return pairs;
+  return legs;
 }

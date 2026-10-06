@@ -92,7 +92,12 @@
     <div id="controls"></div>
 
     <h2>Legs</h2>
-    <div class="muted">Feet and knees are moved in the view while "Mark knees and feet" is on. Drag an orange foot: it slides on its wall. Drag an orange knee: it moves in a level plane; hold Shift, Ctrl or Alt to move it up and down its gravity line instead. The two legs of a pair mirror each other. The bend buttons above re-place the knees for the current upper segment lengths.</div>
+    <div class="muted">Feet and knees are moved in the view while "Mark knees and feet" is on. Every orange ball moves in the vertical plane along the alley walls: a foot slides on its wall, a knee moves along the alley and up and down. Hold Shift, Ctrl or Alt while dragging a knee to move it across the alley instead. Each leg moves on its own. The bend buttons above re-place every knee for its current upper segment length.</div>
+    <div class="check" style="margin-top:6px"><input type="checkbox" id="mirror"><label for="mirror">Mirror the two sides: a drag moves both legs of a pair</label></div>
+    <div>
+      <button id="copyRightToLeft" title="Right is the right-hand wall when looking into the alley">Copy right legs to the left</button>
+      <button id="copyLeftToRight">Copy left legs to the right</button>
+    </div>
 
     <h2>Display</h2>
     <div class="check"><input type="checkbox" id="silhouette"><label for="silhouette">Flat black silhouette</label></div>

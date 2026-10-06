@@ -6,7 +6,7 @@
 <script type="module">
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, flatWalls, rootToFootDistance,
          lowerSegmentFor, solveFeetForLength, bendFactor, placeKnee, kneeParamsAt, footParamsAt,
-         kneeFromBend, upgradeParams } from './spider.js';
+         kneeFromBend, upgradeParams, legIndex, legOf } from './spider.js';
 import { loadSite, wallsFromSite, insideBuilding } from './site.js';
 import { HALLOWEEN_NOON, solarPosition, sunVector } from './sun.js';
 
@@ -32,7 +32,9 @@ try {
   check('preset abdomen', near(p.abdomenLength, 0.76 * L) && near(p.abdomenWidth, 0.494 * L) && near(p.abdomenHeight, 0.494 * L));
   check('preset head', near(p.headLength, 0.24 * L) && near(p.headWidth, 0.326 * L));
   check('bend factors', near(bendFactor(0), 0.5) && near(bendFactor(3), 1));
-  check('preset pairs are points', p.pairs.every(q => ['footAlong', 'footHeight', 'kneeAlong', 'kneeHeight', 'kneeOut'].every(k => Number.isFinite(q[k]))));
+  check('preset legs are points', p.legs.length === 8 && p.legs.every(q => ['footAlong', 'footHeight', 'kneeAlong', 'kneeHeight', 'kneeOut'].every(k => Number.isFinite(q[k]))));
+  check('preset is mirrored', [0, 1, 2, 3].every(i => JSON.stringify(legOf(p, i, 1)) === JSON.stringify(legOf(p, i, -1))));
+  const withLeg = (base, pair, side, leg) => ({ ...base, legs: base.legs.map((q, j) => j === legIndex(pair, side) ? { ...q, ...leg } : q) });
 
   // Law of cosines round trip.
   const a = 1.248, b = 1.352;
@@ -65,7 +67,7 @@ try {
   for (const q of m.stats.pairs) {
     check(`pair ${q.pair} total leg is 3.25 L`, near(q.totalInL, 3.25, 0.01), q.totalInL.toFixed(4));
     check(`pair ${q.pair} knee at 48 %`, near(q.kneeFraction, 0.48, 0.003), q.kneeFraction.toFixed(4));
-    check(`pair ${q.pair} foot height kept`, near(q.footHeight, p.pairs[q.pair - 1].footHeight));
+    check(`pair ${q.pair} foot height kept`, near(q.footHeight, legOf(p, q.pair - 1, 1).footHeight));
   }
   check('front view circle is the abdomen', m.abdomen.height > m.head.height);
   check('head continues into the abdomen', m.head.length > p.headLength && m.head.length < p.headLength + 0.1);
@@ -97,44 +99,45 @@ try {
   // Points placed in the world come back at the same world point when pitched.
   const pitched = { ...p, pitch: 35 };
   const kp = [7.0, 3.4, 0.9];
-  const mp = buildSpider({ ...pitched, pairs: pitched.pairs.map((q, i) => i === 2 ? { ...q, ...kneeParamsAt(pitched, 1, kp) } : q) }, walls);
+  const mp = buildSpider(withLeg(pitched, 2, 1, kneeParamsAt(pitched, 1, kp)), walls);
   check('pitched knee lands where it is put', dist(leg(mp, 2, 1).knee, kp) < 2e-3, JSON.stringify(leg(mp, 2, 1).knee));
   const fp = [5.2, 3.0, 0];
-  const mf = buildSpider({ ...pitched, pairs: pitched.pairs.map((q, i) => i === 1 ? { ...q, ...footParamsAt(pitched, fp) } : q) }, walls);
+  const mf = buildSpider(withLeg(pitched, 1, 1, footParamsAt(pitched, fp)), walls);
   check('pitched foot lands where it is put', near(leg(mf, 1, 1).foot[0], 5.2, 2e-3) && near(leg(mf, 1, 1).foot[1], 3.0, 2e-3) && near(leg(mf, 1, 1).foot[2], 1.47));
-  const mb = buildSpider({ ...pitched, pairs: pitched.pairs.map((q, i) => i === 3 ? kneeFromBend(pitched, walls, 3, aBrief, 90) : q) }, walls);
+  const mb = buildSpider(withLeg(pitched, 3, 1, kneeFromBend(pitched, walls, 3, aBrief, 90)), walls);
   check('kneeFromBend holds under pitch', near(leg(mb, 3, 1).bend, 90, 0.1) && near(leg(mb, 3, 1).a, aBrief, 1e-3), leg(mb, 3, 1).bend.toFixed(2));
 
-  // A knee or a foot put at a point comes back at that point (mirrored on
-  // the other side); the segment lengths and bend follow.
+  // A knee or a foot put at a point comes back at that point, and only that
+  // leg moves; the segment lengths and bend follow.
   const kneePt = [7.1, 3.2, 0.9];
-  const pairs2 = p.pairs.map((q, i) => i === 1 ? { ...q, ...kneeParamsAt(p, 1, kneePt) } : q);
-  const m2 = buildSpider({ ...p, pairs: pairs2 }, walls);
+  const m2 = buildSpider(withLeg(p, 1, 1, kneeParamsAt(p, 1, kneePt)), walls);
   check('knee lands where it is put', dist(leg(m2, 1, 1).knee, kneePt) < 1e-3, JSON.stringify(leg(m2, 1, 1).knee));
-  check('other knee mirrors it', near(leg(m2, 1, -1).knee[2], -kneePt[2], 1e-3) && near(leg(m2, 1, -1).knee[1], kneePt[1], 1e-3));
+  check('the other leg of the pair stays', dist(leg(m2, 1, -1).knee, leg(m, 1, -1).knee) < 1e-9);
   check('lengths follow the knee', near(leg(m2, 1, 1).a, dist(leg(m2, 1, 1).root, kneePt), 1e-3));
   const footPt = [5.0, 2.2, 0];
-  const pairs3 = p.pairs.map((q, i) => i === 2 ? { ...q, ...footParamsAt(p, footPt) } : q);
-  const m3 = buildSpider({ ...p, pairs: pairs3 }, walls);
-  check('foot lands where it is put, on the wall', near(leg(m3, 2, 1).foot[0], 5.0, 1e-3) && near(leg(m3, 2, 1).foot[1], 2.2, 1e-3) && near(leg(m3, 2, 1).foot[2], 1.47));
+  const m3 = buildSpider(withLeg(p, 2, -1, footParamsAt(p, footPt)), walls);
+  check('left foot lands where it is put, on its wall', near(leg(m3, 2, -1).foot[0], 5.0, 1e-3) && near(leg(m3, 2, -1).foot[1], 2.2, 1e-3) && near(leg(m3, 2, -1).foot[2], -1.47));
+  check('right foot stays', dist(leg(m3, 2, 1).foot, leg(m, 2, 1).foot) < 1e-9);
 
-  // Choosing a bend re-places the knee for the current upper length.
-  const bent = { ...p, pairs: p.pairs.map((q, i) => i === 3 ? kneeFromBend(p, walls, 3, aBrief, 90) : q) };
-  const m4 = buildSpider(bent, walls);
-  check('kneeFromBend gives the bend', near(leg(m4, 3, 1).bend, 90, 0.1) && near(leg(m4, 3, 1).a, aBrief, 1e-3), leg(m4, 3, 1).bend.toFixed(3));
+  // Choosing a bend re-places the knee for the current upper length, per leg.
+  const m4 = buildSpider(withLeg(p, 3, -1, kneeFromBend(p, walls, 3, aBrief, 90, -1)), walls);
+  check('kneeFromBend gives the bend on the left leg', near(leg(m4, 3, -1).bend, 90, 0.1) && near(leg(m4, 3, -1).a, aBrief, 1e-3), leg(m4, 3, -1).bend.toFixed(3));
+  check('the right leg keeps its bend', near(leg(m4, 3, 1).bend, 60, 0.1));
 
-  // Designs saved with a bend and an upper length still build, to the same knees.
-  const legacy = p.pairs.map((q, i) => ({ bend: 60 * bendFactor(i), upper: aBrief, footAlong: q.footAlong, footHeight: q.footHeight }));
-  const m5 = buildSpider({ ...p, pairs: legacy }, walls);
+  // Designs saved per pair, with a bend and an upper length, still build to the same knees.
+  const { legs: _legs, ...bare } = p;
+  const legacy = [0, 1, 2, 3].map(i => ({ bend: 60 * bendFactor(i), upper: aBrief, footAlong: legOf(p, i, 1).footAlong, footHeight: legOf(p, i, 1).footHeight }));
+  const m5 = buildSpider({ ...bare, pairs: legacy }, walls);
   check('legacy pairs give the same knees', m5.legs.every((l, i) => dist(l.knee, m.legs[i].knee) < 2e-3), m5.legs.map((l, i) => dist(l.knee, m.legs[i].knee).toFixed(4)).join(','));
-  const upgraded = upgradeParams({ ...p, headLength: 0.24, overlap: 0.048 });
+  const upgraded = upgradeParams({ ...bare, headLength: 0.24, overlap: 0.048, pairs: [0, 1, 2, 3].map(i => legOf(p, i, 1)) });
   check('upgrade folds the overlap into the head length', near(upgraded.headLength, 0.192) && !('overlap' in upgraded) && upgraded.pitch === 0);
+  check('upgrade expands pairs into eight legs', !('pairs' in upgraded) && upgraded.legs.length === 8 && JSON.stringify(upgraded.legs[7]) === JSON.stringify(legOf(p, 3, 1)));
 
   // Solver puts the lower segment at the target on wider walls, keeping the bend.
   const wide = flatWalls(3.6);
-  const solved = { ...p, pairs: solveFeetForLength(p, wide, b, [0, 1, 2, 3].map(i => ({ upper: aBrief, bend: 60 * bendFactor(i) }))) };
+  const solved = { ...p, legs: solveFeetForLength(p, wide, b, [0, 1, 2, 3].map(i => ({ upper: aBrief, bend: 60 * bendFactor(i) }))) };
   const ms = buildSpider(solved, wide);
-  for (const q of ms.stats.pairs) check(`solved pair ${q.pair} lower = ${b}`, near(q.lower, b, 0.002) && near(q.bend, 60 * bendFactor(q.pair - 1), 0.1), `${q.lower.toFixed(4)} ${q.bend.toFixed(2)}`);
+  for (const q of ms.stats.pairs) check(`solved pair ${q.pair} lower = ${b} both sides`, near(q.lower, b, 0.002) && near(q.lowerOtherSide, b, 0.002) && near(q.bend, 60 * bendFactor(q.pair - 1), 0.1), `${q.lower.toFixed(4)} ${q.lowerOtherSide.toFixed(4)} ${q.bend.toFixed(2)}`);
 
   // The sun at noon on Halloween over the alley: south-south-east, 28.5°
   // up (NOAA calculator values for 46.2499 N, 1.4967 W, 2026-10-31 11:00 UTC).

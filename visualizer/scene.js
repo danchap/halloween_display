@@ -227,17 +227,19 @@ export function rebuildExtras(world, params, { showPerson = true, wallMode = 'si
 // ---------------------------------------------------------------- drag guides
 
 // Show the guide a joint is being moved along, in the alley frame: 'line'
-// is the vertical (gravity) line through the point, 'level' a square in the
-// horizontal plane through it, 'wall' a square in the wall plane (normal
-// across the alley), nudged `inward` toward the alley so it does not fight
-// the wall for the pixels.
+// is the vertical line through the point, 'across' the horizontal line
+// across the alley through it, 'level' a square in the horizontal plane
+// through it, 'wall' a square in the vertical plane along the alley (normal
+// across the alley), nudged `inward` toward the alley when it lies in a
+// wall so it does not fight the wall for the pixels.
 export function showGuide(world, kind, point, { inward = 0 } = {}) {
   hideGuide(world);
   const g = world.guideGroup;
-  if (kind === 'line') {
-    const top = Math.max(point[1] + 3, 6);
-    const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(point[0], 0, point[2]), new THREE.Vector3(point[0], top, point[2])]);
-    g.add(new THREE.Line(geo, guideLine));
+  if (kind === 'line' || kind === 'across') {
+    const ends = kind === 'line'
+      ? [new THREE.Vector3(point[0], 0, point[2]), new THREE.Vector3(point[0], Math.max(point[1] + 3, 6), point[2])]
+      : [new THREE.Vector3(point[0], point[1], point[2] - 1.6), new THREE.Vector3(point[0], point[1], point[2] + 1.6)];
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ends), guideLine));
     return;
   }
   const size = 1.6;

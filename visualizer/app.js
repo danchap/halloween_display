@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { LOCKED, BEND_SERIES, DEFAULTS, briefPreset, buildSpider, bodyLength, bendFactor,
-         flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams } from './spider.js';
+         flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams, legIndex, legOf } from './spider.js';
 import { wallsFromSite, insideBuilding } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildExtras, setRoofsVisible,
          setSilhouetteBackground, setGroundMode, setPlantsVisible, showGuide, hideGuide } from './scene.js';
@@ -41,6 +41,7 @@ const state = {
   briefL: 0.8,
   backBend: 60,
   design: '',         // name of the loaded saved design; '' is the brief defaults
+  mirror: false,      // a drag moves both legs of a pair
   silhouette: false,
   showPerson: true,
   showRoofs: true,
@@ -349,16 +350,17 @@ function updateHud() {
   const locked = document.pointerLockElement === renderer.domElement;
   if (mode === 'walk') text = (walker.fly ? 'Flying (Space up, C down): ' : 'Walking: ') + 'W A S D or arrows, Shift to hurry, ' + (locked ? 'move the mouse to look, Esc frees it' : 'drag the view to look (a click captures the mouse where the browser allows it)') + ', F to fly · ' + text;
   if (mode === 'path') text = `The path: ${pathT.toFixed(1)} s of ${path.duration.toFixed(0)} s · any move key takes over on foot · ` + text;
-  if (jointDrag) text = (jointDrag.kind === 'wall' ? 'Foot: sliding on the wall' : jointDrag.kind === 'gravity' ? 'Knee: up and down the gravity line' : 'Knee: in the level plane (hold Shift for up and down)')
-    + (jointDrag.edgeOn ? ` · ${jointDrag.edgeOn} is edge-on from here, turn the view to move that way` : '') + ' · ' + text;
+  if (jointDrag) text = (jointDrag.kind === 'wall' ? 'Foot: sliding on the wall' : jointDrag.kind === 'across' ? 'Knee: across the alley' : 'Knee: along the alley and up and down (hold Shift for across)')
+    + (state.mirror ? ', both sides' : '') + (jointDrag.edgeOn ? ` · ${jointDrag.edgeOn} is edge-on from here, turn the view to move that way` : '') + ' · ' + text;
   hud.textContent = text;
 }
 
 // ---------------------------------------------------------------- joints: picking and dragging
 
-// In orbit mode the orange knee and foot markers can be dragged. A foot
-// slides in its wall plane. A knee moves in the level plane through it, or,
-// with a modifier key held, up and down the vertical line through it.
+// In orbit mode the orange knee and foot markers can be dragged. Every
+// ball moves in the vertical plane along the alley walls: a foot in its
+// wall, a knee in the plane through it parallel to the walls. With a
+// modifier key held, a knee moves across the alley instead.
 //
 // The pointer motion is turned into motion along the allowed axes by a
 // damped least-squares fit of the axes' screen directions: along an axis
@@ -389,8 +391,8 @@ function pickJoint(clientX, clientY) {
   const near = raycaster.intersectObjects(world.joints, false);
   return near.length ? near[0].object.userData : null;
 }
-function legOf(j) { return model.legs.find(l => l.pair === j.pair && l.side === j.side); }
-function jointPoint(j) { const l = legOf(j); return j.joint === 'knee' ? l.knee : l.foot; }
+function modelLeg(j) { return model.legs.find(l => l.pair === j.pair && l.side === j.side); }
+function jointPoint(j) { const l = modelLeg(j); return j.joint === 'knee' ? l.knee : l.foot; }
 function startJointDrag(j, e) {
   const point = jointPoint(j);
   const drag = { ...j, point, px: e.clientX, py: e.clientY };
@@ -399,13 +401,13 @@ function startJointDrag(j, e) {
     drag.axes = [[1, 0, 0], [0, 1, 0]];
     showGuide(world, 'wall', point, { inward: -j.side });
   } else if (modifierHeld(e)) {
-    drag.kind = 'gravity';
-    drag.axes = [[0, 1, 0]];
-    showGuide(world, 'line', point);
+    drag.kind = 'across';
+    drag.axes = [[0, 0, 1]];
+    showGuide(world, 'across', point);
   } else {
-    drag.kind = 'level';
-    drag.axes = [[1, 0, 0], [0, 0, 1]];
-    showGuide(world, 'level', point);
+    drag.kind = 'along';
+    drag.axes = [[1, 0, 0], [0, 1, 0]];
+    showGuide(world, 'wall', point);
   }
   jointDrag = drag;
   renderer.domElement.style.cursor = 'grabbing';
@@ -462,25 +464,25 @@ function moveJoint(e) {
   const t = dragTarget(e);
   if (!t) return;
   const p = state.params;
-  const q = p.pairs[jointDrag.pair];
+  const q = legOf(p, jointDrag.pair, jointDrag.side);
   // The world point is stored as the level pose (see kneeParamsAt), so a
   // vertical or level move changes both stored coordinates when pitched.
+  let moved;
   if (jointDrag.kind === 'wall') {
-    Object.assign(q, footParamsAt(p, [t.x, Math.max(0, t.y), 0]));
-  } else if (jointDrag.kind === 'gravity') {
-    const k = kneeParamsAt(p, jointDrag.side, [t.x, Math.max(0, t.y), t.z]);
-    q.kneeAlong = k.kneeAlong;
-    q.kneeHeight = k.kneeHeight;
-  } else {
+    moved = footParamsAt(p, [t.x, Math.max(0, t.y), 0]);
+  } else if (jointDrag.kind === 'across') {
     const k = kneeParamsAt(p, jointDrag.side, [t.x, t.y, t.z]);
-    q.kneeAlong = k.kneeAlong;
-    q.kneeHeight = k.kneeHeight;
-    q.kneeOut = Math.max(0, k.kneeOut);
+    moved = { kneeOut: Math.max(0, k.kneeOut) };
+  } else {
+    const k = kneeParamsAt(p, jointDrag.side, [t.x, Math.max(0, t.y), t.z]);
+    moved = { kneeAlong: k.kneeAlong, kneeHeight: k.kneeHeight };
   }
+  Object.assign(q, moved);
+  if (state.mirror) Object.assign(legOf(p, jointDrag.pair, -jointDrag.side), moved); // the twin leg follows
   onChange();
   const point = jointPoint(jointDrag);
   jointDrag.point = point;
-  showGuide(world, jointDrag.kind === 'wall' ? 'wall' : jointDrag.kind === 'gravity' ? 'line' : 'level', point, { inward: -jointDrag.side });
+  showGuide(world, jointDrag.kind === 'across' ? 'across' : 'wall', point, { inward: jointDrag.kind === 'wall' ? -jointDrag.side : 0 });
   render();
 }
 function endJointDrag() {
@@ -491,7 +493,7 @@ function endJointDrag() {
   updateHud();
   render();
 }
-// Hovering a knee with a modifier held previews its gravity line.
+// Hovering a knee with a modifier held previews its across-the-alley line.
 let hoverKey = '';
 function updateHover(clientX, clientY, mod) {
   if (mode !== 'orbit' || jointDrag) return;
@@ -500,7 +502,7 @@ function updateHover(clientX, clientY, mod) {
   if (key === hoverKey) return;
   hoverKey = key;
   renderer.domElement.style.cursor = hover ? 'move' : 'grab';
-  if (hover && hover.joint === 'knee' && mod) showGuide(world, 'line', jointPoint(hover));
+  if (hover && hover.joint === 'knee' && mod) showGuide(world, 'across', jointPoint(hover));
   else hideGuide(world);
   render();
 }
@@ -617,10 +619,11 @@ function rebuildSpider() {
   model = buildSpider(p, walls);
   // Designs saved before knees were points: keep the knees the old bend and
   // upper length produced, as points, now that the walls are known.
-  if (p.pairs.some(q => q.kneeAlong === undefined)) {
-    p.pairs = model.legs.filter(l => l.side === 1).map(l => ({
-      footAlong: p.pairs[l.pair].footAlong, footHeight: p.pairs[l.pair].footHeight, ...kneeParamsAt(p, 1, l.knee),
-    }));
+  if (p.legs.some(q => q.kneeAlong === undefined)) {
+    for (const l of model.legs) {
+      const q = legOf(p, l.pair, l.side);
+      p.legs[legIndex(l.pair, l.side)] = { footAlong: q.footAlong, footHeight: q.footHeight, ...kneeParamsAt(p, l.side, l.knee) };
+    }
     model = buildSpider(p, walls);
   }
   rebuildSpiderMeshes(world, model, p, { silhouette: state.silhouette, showJoints: state.showJoints });
@@ -656,7 +659,7 @@ function updateStats() {
     const total = Math.abs(q.total - q.totalOtherSide) > 0.005 ? `${fmt(q.total)}/${fmt(q.totalOtherSide)}` : fmt(q.total);
     h += `<tr class="${cls}"><td>${q.pair}${q.status === 'ok' ? '' : ' no wall'}</td><td>${bend}°</td><td>${fmt(q.upper)}</td><td>${lower}</td><td>${total}</td><td>${fmt(q.totalInL)}</td><td>${fmt(q.kneeFraction * 100, 0)}%</td><td>${fmt(q.footHeight)}</td></tr>`;
   }
-  h += '</table><div class="muted" style="margin-top:4px">Segment lengths and bends follow from where the knees and feet are. Two values mean the two walls are at different distances. Red: no wall was found for that foot.</div>';
+  h += '</table><div class="muted" style="margin-top:4px">Segment lengths and bends follow from where the knees and feet are. Two values are right / left (looking in) where the two legs of a pair differ. Red: no wall was found for that foot.</div>';
 
   h += '<h2>Against the brief (in L)</h2><table><tr><th></th><th>Now</th><th>Brief</th></tr>';
   const cmp = (name, v, t, tol = 0.01) => `<tr><td>${name}</td><td class="${dev(v, t, tol)}">${fmt(v, 3)}</td><td class="muted">${t}</td></tr>`;
@@ -744,7 +747,7 @@ function refreshControls() {
   const l = document.getElementById('briefL'), ln = document.getElementById('briefLn');
   l.value = state.briefL; ln.value = state.briefL;
   for (const b of document.querySelectorAll('#series button')) b.classList.toggle('active', parseInt(b.dataset.bend, 10) === state.backBend);
-  for (const key of ['silhouette', 'showPerson', 'showRoofs', 'showJoints', 'plants']) document.getElementById(key).checked = state[key];
+  for (const key of ['silhouette', 'showPerson', 'showRoofs', 'showJoints', 'plants', 'mirror']) document.getElementById(key).checked = state[key];
   document.getElementById('ground').value = state.ground;
 }
 function onChange() {
@@ -756,7 +759,7 @@ function applyBrief() {
   const old = state.params;
   const preset = briefPreset(state.briefL, {
     backBend: state.backBend,
-    footHeights: old.pairs.map(q => q.footHeight),
+    footHeights: [0, 1, 2, 3].map(i => legOf(old, i, 1).footHeight),
     bodyHeight: old.bodyHeight,
     along: old.along,
   });
@@ -773,20 +776,25 @@ function applyBrief() {
 function solveFeet(targets = null) {
   const p = state.params;
   const lowerTarget = LOCKED.legLength * bodyLength(p) * (1 - LOCKED.kneeFraction);
-  p.pairs = solveFeetForLength(p, walls, lowerTarget, targets);
+  p.legs = solveFeetForLength(p, walls, lowerTarget, targets);
   refreshControls();
   onChange();
 }
-// Re-place every knee for the chosen back-pair bend, keeping each pair's
+// Re-place every knee for the chosen back-pair bend, keeping each leg's
 // upper segment length.
 function setBendSeries(b) {
   state.backBend = b;
   const p = state.params;
-  for (let i = 0; i < 4; i++) {
-    const upper = model.legs.find(l => l.pair === i && l.side === 1).a;
-    p.pairs[i] = kneeFromBend(p, walls, i, upper, b * bendFactor(i));
+  for (const l of model.legs) {
+    p.legs[legIndex(l.pair, l.side)] = kneeFromBend(p, walls, l.pair, l.a, b * bendFactor(l.pair), l.side);
   }
   refreshControls(); onChange();
+}
+// Make one side the mirror image of the other.
+function copySide(from) {
+  const p = state.params;
+  for (let i = 0; i < 4; i++) p.legs[legIndex(i, -from)] = { ...legOf(p, i, from) };
+  onChange();
 }
 
 function applyPanes() {
@@ -812,6 +820,9 @@ function wireUI() {
   document.getElementById('applyBrief').addEventListener('click', applyBrief);
   document.getElementById('solveFeet').addEventListener('click', () => solveFeet());
 
+  document.getElementById('mirror').addEventListener('change', e => { state.mirror = e.target.checked; writeState(); });
+  document.getElementById('copyRightToLeft').addEventListener('click', () => copySide(1));
+  document.getElementById('copyLeftToRight').addEventListener('click', () => copySide(-1));
   document.getElementById('loadDesign').addEventListener('click', () => loadDesign(document.getElementById('designs').value));
   document.getElementById('saveDesign').addEventListener('click', saveDesignAs);
   document.getElementById('deleteDesign').addEventListener('click', deleteDesign);

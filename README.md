@@ -58,12 +58,14 @@ What it shows:
   spider (body and legs turn together about the body centre, head up for
   a positive angle; each foot keeps to its wall), and the leg thickness
   per segment. The scenery has no controls: it is measured.
-- Knees and feet are dragged in the view (orange balls). A foot slides in
-  its wall plane. A knee moves in the level plane through it, or up and
-  down its vertical line with Shift, Ctrl or Alt held. The two legs of a
-  pair mirror each other; both segment lengths and the bend follow from
-  where the three points are. The bend buttons re-place the knees for a
-  chosen back-pair bend.
+- Knees and feet are dragged in the view (orange balls). Every ball moves
+  in the vertical plane along the alley walls: a foot slides on its wall, a
+  knee moves along the alley and up and down. With Shift, Ctrl or Alt held
+  a knee moves across the alley instead. Each of the eight legs moves on
+  its own; "Mirror the two sides" makes a drag move both legs of a pair,
+  and two buttons copy one side onto the other. Both segment lengths and
+  the bend follow from where the three points are. The bend buttons
+  re-place the knees for a chosen back-pair bend.
 - Designs: "Save as…" keeps the current parameters under a name in the
   browser; the Design list loads one back, or the brief defaults.
 - The sun stands where it does at noon (12:00 CET) on 31 October 2026
