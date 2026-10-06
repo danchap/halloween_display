@@ -250,6 +250,15 @@ export function showGuide(world, kind, point, { inward = 0 } = {}) {
   edges.position.copy(plane.position);
   edges.rotation.copy(plane.rotation);
   g.add(plane, edges);
+  if (kind === 'wall') {
+    // The plane's two directions drawn long, so it reads as vertical and
+    // along the alley from any viewpoint, even from right underneath: a
+    // plumb line down to the ground and a line along the alley.
+    const z = plane.position.z;
+    const plumb = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(point[0], 0, z), new THREE.Vector3(point[0], point[1] + 1.5, z)]);
+    const along = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(point[0] - 2.5, point[1], z), new THREE.Vector3(point[0] + 2.5, point[1], z)]);
+    g.add(new THREE.Line(plumb, guideLine), new THREE.Line(along, guideLine));
+  }
 }
 
 export function hideGuide(world) {
