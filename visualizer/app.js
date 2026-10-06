@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { LOCKED, BEND_SERIES, DEFAULTS, briefPreset, buildSpider, bodyLength, bendFactor,
+import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, bendFactor,
          flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams, legIndex, legOf } from './spider.js';
 import { wallsFromSite, insideBuilding } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildExtras, setRoofsVisible,
-         setSilhouetteBackground, setGroundMode, setPlantsVisible, showGuide, hideGuide } from './scene.js';
+         setPlantsVisible, showGuide, hideGuide } from './scene.js';
 import { buildPath, cameraAt } from './walk.js';
 
 // Hosted on claude.ai the page cannot use the URL hash or start downloads;
@@ -22,12 +22,10 @@ const SLIDERS = [
     ['headLength', 'Head length (in front of the abdomen)', 0.05, 1.0, 0.005],
     ['headWidth', 'Head width', 0.05, 1.0, 0.005],
     ['headHeight', 'Head height', 0.05, 1.0, 0.005],
-    ['headLift', 'Head lift (axis above abdomen)', -0.5, 0.5, 0.005],
   ]},
   { group: 'Body position', open: true, items: [
     ['along', 'Along the alley (from the street)', 0, 45, 0.05],
     ['bodyHeight', 'Body centre height', 0.5, 5, 0.01],
-    ['across', 'Across the alley (+ is right, looking in)', -1.5, 1.5, 0.01],
     ['pitch', 'Pitch of the whole spider, ° (head up is +)', -80, 80, 1],
   ]},
   { group: 'Leg thickness', open: false, items: [
@@ -41,12 +39,8 @@ const state = {
   briefL: 0.8,
   backBend: 60,
   design: '',         // name of the loaded saved design; '' is the brief defaults
-  mirror: false,      // a drag moves both legs of a pair
-  silhouette: false,
-  showPerson: true,
-  showRoofs: true,
+  bendLocked: true,   // the bend slider is inert until unlocked
   showJoints: true,
-  ground: 'lane',     // 'lane' (materials from the photo) or 'ortho'
   plants: true,
 };
 const SAVED_KEYS = Object.keys(state);
@@ -262,8 +256,9 @@ function stepWalker(dt) {
   if (k.has('KeyD') || k.has('ArrowRight')) s += 1;
   if (k.has('KeyA') || k.has('ArrowLeft')) s -= 1;
   if (walker.touchMove) { f += walker.touchMove.f; s += walker.touchMove.s; }
-  if (walker.fly) { if (k.has('Space')) up += 1; if (k.has('KeyC')) up -= 1; }
+  if (walker.fly) { if (k.has('Space')) up += 1; if (k.has('KeyX')) up -= 1; }
   const speed = k.has('ShiftLeft') || k.has('ShiftRight') ? walker.run : walker.speed;
+  // (fly down is X, so that C can open the controls)
   const len = Math.hypot(f, s);
   walker.moving = len > 0.05;
   if (!walker.moving && !up) return;
@@ -348,10 +343,10 @@ function updateHud() {
   const s = model.stats;
   let text = `L ${fmt(s.bodyLength)} m · legs ${s.pairs.map(q => fmt(q.total, 2)).join(' / ')} m · bends ${s.pairs.map(q => fmt(q.bend, 0)).join(' / ')}°` + (s.allOk ? '' : ' · a foot has no wall');
   const locked = document.pointerLockElement === renderer.domElement;
-  if (mode === 'walk') text = (walker.fly ? 'Flying (Space up, C down): ' : 'Walking: ') + 'W A S D or arrows, Shift to hurry, ' + (locked ? 'move the mouse to look, Esc frees it' : 'drag the view to look (a click captures the mouse where the browser allows it)') + ', F to fly · ' + text;
+  if (mode === 'walk') text = (walker.fly ? 'Flying (Space up, X down): ' : 'Walking: ') + 'W A S D or arrows, Shift to hurry, ' + (locked ? 'move the mouse to look, Esc frees it' : 'drag the view to look (a click captures the mouse where the browser allows it)') + ', F to fly · ' + text;
   if (mode === 'path') text = `The path: ${pathT.toFixed(1)} s of ${path.duration.toFixed(0)} s · any move key takes over on foot · ` + text;
   if (jointDrag) text = (jointDrag.kind === 'wall' ? 'Foot: sliding on the wall' : jointDrag.kind === 'across' ? 'Knee: across the alley' : 'Knee: along the alley and up and down (hold Shift for across)')
-    + (state.mirror ? ', both sides' : '') + (jointDrag.edgeOn ? ` · ${jointDrag.edgeOn} is edge-on from here, turn the view to move that way` : '') + ' · ' + text;
+    + (jointDrag.edgeOn ? ` · ${jointDrag.edgeOn} is edge-on from here, turn the view to move that way` : '') + ' · ' + text;
   hud.textContent = text;
 }
 
@@ -478,7 +473,6 @@ function moveJoint(e) {
     moved = { kneeAlong: k.kneeAlong, kneeHeight: k.kneeHeight };
   }
   Object.assign(q, moved);
-  if (state.mirror) Object.assign(legOf(p, jointDrag.pair, -jointDrag.side), moved); // the twin leg follows
   onChange();
   const point = jointPoint(jointDrag);
   jointDrag.point = point;
@@ -515,8 +509,13 @@ function updateHover(clientX, clientY, mod) {
   const capture = e => { try { el.setPointerCapture(e.pointerId); } catch (err) { /* synthetic events have no pointer to capture */ } };
   el.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('pointerlockchange', updateHud);
+  // A double-tap or double-click on the view opens the controls.
+  let lastTap = { t: 0, x: 0, y: 0 };
   el.addEventListener('pointerdown', e => {
     el.focus();
+    const now = performance.now();
+    if (now - lastTap.t < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 24) { lastTap.t = 0; showHelp(true); return; }
+    lastTap = { t: now, x: e.clientX, y: e.clientY };
     if (mode === 'path') setMode('walk');
     if (mode === 'walk' && e.pointerType === 'touch') {
       const rect = el.getBoundingClientRect();
@@ -596,12 +595,14 @@ function updateHover(clientX, clientY, mod) {
   };
   window.addEventListener('keydown', e => {
     if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+    if (e.code === 'Escape' && !document.getElementById('help').hidden) { showHelp(false); return; }
+    if (e.code === 'KeyC' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) { showHelp(document.getElementById('help').hidden); e.preventDefault(); return; }
     modifierChange(e);
     if (mode === 'path' && /^(Key[WASD]|Arrow)/.test(e.code)) setMode('walk');
     if (mode === 'walk') {
       walker.keys.add(e.code);
       if (e.code === 'KeyF' && !e.repeat) { walker.fly = !walker.fly; walker.pos.y = walker.fly ? walker.eye : 0; updateHud(); }
-      if (/^(Key[WASDC]|Arrow|Space)/.test(e.code)) e.preventDefault();
+      if (/^(Key[WASDX]|Arrow|Space)/.test(e.code)) e.preventDefault();
       return;
     }
     const i = parseInt(e.key, 10);
@@ -626,8 +627,8 @@ function rebuildSpider() {
     }
     model = buildSpider(p, walls);
   }
-  rebuildSpiderMeshes(world, model, p, { silhouette: state.silhouette, showJoints: state.showJoints });
-  rebuildExtras(world, p, { showPerson: state.showPerson, wallMode: site ? 'site' : 'flat', flatWidth: 3.0 });
+  rebuildSpiderMeshes(world, model, p, { showJoints: state.showJoints });
+  rebuildExtras(world, p, { showPerson: false, wallMode: site ? 'site' : 'flat', flatWidth: 3.0 });
   updateStats();
   updateHud();
   render();
@@ -718,37 +719,22 @@ function buildControls() {
       const r = sliderRow(key, label, min, max, step, () => state.params[key], v => { state.params[key] = v; });
       rows.push(r); d.appendChild(r);
     }
-    if (g.group === 'Body') {
-      d.appendChild(selectRow('Body shape', [['cylinder', 'Cylinder (brief)'], ['capsule', 'Capsule'], ['ellipsoid', 'Ellipsoid']],
-        () => state.params.bodyShape, v => { state.params.bodyShape = v; }));
-    }
-    if (g.group === 'Body position') {
-      d.appendChild(selectRow('Facing', [['-1', 'Head toward the street'], ['1', 'Head into the alley']],
-        () => String(state.params.facing), v => { state.params.facing = parseInt(v, 10); }));
-    }
     root.appendChild(d);
   }
-}
-function selectRow(label, options, get, set) {
-  const row = document.createElement('div');
-  row.className = 'row';
-  row.style.gridTemplateColumns = '1fr 158px';
-  const id = `sel-${rows.length}`;
-  row.innerHTML = `<label for="${id}">${label}</label><select id="${id}">${options.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select>`;
-  const sel = row.querySelector('select');
-  sel.addEventListener('change', () => { set(sel.value); onChange(); });
-  row.refresh = () => { sel.value = get(); };
-  row.refresh();
-  rows.push(row);
-  return row;
 }
 function refreshControls() {
   for (const r of rows) r.refresh();
   const l = document.getElementById('briefL'), ln = document.getElementById('briefLn');
   l.value = state.briefL; ln.value = state.briefL;
-  for (const b of document.querySelectorAll('#series button')) b.classList.toggle('active', parseInt(b.dataset.bend, 10) === state.backBend);
-  for (const key of ['silhouette', 'showPerson', 'showRoofs', 'showJoints', 'plants', 'mirror']) document.getElementById(key).checked = state[key];
-  document.getElementById('ground').value = state.ground;
+  const bend = document.getElementById('bend'), bendN = document.getElementById('bendN');
+  bend.value = state.backBend; bendN.value = state.backBend;
+  bend.disabled = bendN.disabled = state.bendLocked;
+  document.getElementById('bendLock').checked = state.bendLocked;
+  for (const key of ['showJoints', 'plants']) document.getElementById(key).checked = state[key];
+}
+function showHelp(on) {
+  document.getElementById('help').hidden = !on;
+  if (on && document.pointerLockElement) document.exitPointerLock();
 }
 function onChange() {
   rebuildSpider();
@@ -763,9 +749,6 @@ function applyBrief() {
     bodyHeight: old.bodyHeight,
     along: old.along,
   });
-  preset.across = old.across;
-  preset.facing = old.facing;
-  preset.bodyShape = old.bodyShape;
   preset.pitch = old.pitch || 0;
   state.params = preset;
   const leg = LOCKED.legLength * state.briefL;
@@ -780,15 +763,16 @@ function solveFeet(targets = null) {
   refreshControls();
   onChange();
 }
-// Re-place every knee for the chosen back-pair bend, keeping each leg's
-// upper segment length.
-function setBendSeries(b) {
+// Set every knee to the chosen back-pair bend (front pair half, the
+// middle pairs between), keeping each leg's upper segment length, and
+// slide the feet so the legs keep the brief's length at that bend.
+function applyBend(b) {
   state.backBend = b;
   const p = state.params;
   for (const l of model.legs) {
     p.legs[legIndex(l.pair, l.side)] = kneeFromBend(p, walls, l.pair, l.a, b * bendFactor(l.pair), l.side);
   }
-  refreshControls(); onChange();
+  solveFeet([0, 1, 2, 3].map(i => ({ upper: model.legs.find(l => l.pair === i && l.side === 1).a, bend: b * bendFactor(i) })));
 }
 // Make one side the mirror image of the other.
 function copySide(from) {
@@ -807,20 +791,22 @@ function applyPanes() {
 }
 
 function wireUI() {
-  const seriesEl = document.getElementById('series');
-  for (const b of BEND_SERIES) {
-    const btn = document.createElement('button');
-    btn.textContent = b + '°'; btn.dataset.bend = b;
-    btn.addEventListener('click', () => setBendSeries(b));
-    seriesEl.appendChild(btn);
-  }
+  const bend = document.getElementById('bend'), bendN = document.getElementById('bendN');
+  const setBend = e => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) applyBend(Math.max(0, Math.min(120, v))); };
+  bend.addEventListener('input', setBend); bendN.addEventListener('change', setBend);
+  document.getElementById('bendLock').addEventListener('change', e => {
+    state.bendLocked = e.target.checked;
+    if (!state.bendLocked) applyBend(state.backBend); else { refreshControls(); writeState(); }
+  });
+  document.getElementById('helpButton').addEventListener('click', () => showHelp(true));
+  document.getElementById('helpClose').addEventListener('click', () => showHelp(false));
+  document.getElementById('help').addEventListener('click', e => { if (e.target.id === 'help') showHelp(false); });
   const l = document.getElementById('briefL'), ln = document.getElementById('briefLn');
   const setL = e => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { state.briefL = v; refreshControls(); writeState(); } };
   l.addEventListener('input', setL); ln.addEventListener('change', setL);
   document.getElementById('applyBrief').addEventListener('click', applyBrief);
   document.getElementById('solveFeet').addEventListener('click', () => solveFeet());
 
-  document.getElementById('mirror').addEventListener('change', e => { state.mirror = e.target.checked; writeState(); });
   document.getElementById('copyRightToLeft').addEventListener('click', () => copySide(1));
   document.getElementById('copyLeftToRight').addEventListener('click', () => copySide(-1));
   document.getElementById('loadDesign').addEventListener('click', () => loadDesign(document.getElementById('designs').value));
@@ -833,20 +819,13 @@ function wireUI() {
   document.getElementById('hideRight').addEventListener('click', () => { panes.numbers = false; applyPanes(); });
   document.getElementById('toggleNumbers').addEventListener('click', () => { panes.numbers = !panes.numbers; applyPanes(); });
 
-  for (const key of ['silhouette', 'showPerson', 'showRoofs', 'showJoints', 'plants']) {
+  for (const key of ['showJoints', 'plants']) {
     document.getElementById(key).addEventListener('change', e => {
       state[key] = e.target.checked;
-      if (key === 'showRoofs') setRoofsVisible(world, state.showRoofs);
-      if (key === 'silhouette') setSilhouetteBackground(world, state.silhouette);
       if (key === 'plants') setPlantsVisible(world, state.plants);
       onChange();
     });
   }
-  document.getElementById('ground').addEventListener('change', e => {
-    state.ground = e.target.value;
-    setGroundMode(world, state.ground);
-    onChange();
-  });
   document.getElementById('savePng').addEventListener('click', () => {
     render();
     const a = document.createElement('a');
@@ -908,7 +887,7 @@ function render() {
 
 async function main() {
   const hadSaved = readState();
-  site = await loadWorldSite(world, { onTexture: render, ground: state.ground });
+  site = await loadWorldSite(world, { onTexture: render, ground: 'lane' });
   if (!site) {
     document.getElementById('loading').textContent = HOSTED ? 'The site data could not be loaded; showing flat walls.' : 'Site data missing (run site/fetch_site.py); showing flat walls.';
   }
@@ -919,8 +898,7 @@ async function main() {
   refreshControls();
   refreshDesignList();
   applyPanes();
-  if (state.silhouette) setSilhouetteBackground(world, true);
-  setRoofsVisible(world, state.showRoofs);
+  setRoofsVisible(world, true);
   setPlantsVisible(world, state.plants);
   if (hadSaved) rebuildSpider(); else applyBrief(); // first visit: brief ratios on the real walls
   markLoaded();
@@ -931,6 +909,6 @@ async function main() {
   if (view === 'walk') { orbit.update(); setMode('walk'); }
   else (VIEWS[view] || VIEWS.Street)();
   window.spider = { state, panes, get model() { return model; }, VIEWS, rebuildSpider, render, walker, setMode, startPath, stepWalker, get mode() { return mode; },
-    pickJoint, startJointDrag, moveJoint, endJointDrag, get jointDrag() { return jointDrag; }, loadDesign, saveDesignAs, camera, world };
+    pickJoint, startJointDrag, moveJoint, endJointDrag, get jointDrag() { return jointDrag; }, loadDesign, saveDesignAs, applyBend, showHelp, camera, world };
 }
 main();

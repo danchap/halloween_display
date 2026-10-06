@@ -193,7 +193,7 @@ export function briefPreset(L, options = {}) {
     headHeight: LOCKED.headWidth * L,
     headLift: 0,
     pitch: 0,
-    bodyShape: 'cylinder',
+    bodyShape: 'capsule',
     along: o.along,
     bodyHeight: o.bodyHeight,
     across: 0,
@@ -241,6 +241,12 @@ export function upgradeParams(params) {
   if (typeof p.pitch !== 'number') p.pitch = 0;
   if (!params.legs && params.pairs) p.legs = legsFrom({ pairs: params.pairs });
   delete p.pairs;
+  // Settled choices (Daniel, 2026-10-06): the head toward the street, the
+  // body on the alley's centreline, a capsule body, no head lift.
+  p.facing = -1;
+  p.across = 0;
+  p.headLift = 0;
+  p.bodyShape = 'capsule';
   return p;
 }
 

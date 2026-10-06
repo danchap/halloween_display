@@ -35,14 +35,13 @@
   .row label { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .row label small { color: var(--muted); }
   input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=range]:disabled, input[type=number]:disabled { opacity: .45; }
   input[type=number], select { width: 100%; background: var(--panel2); color: var(--text); border: 1px solid var(--border);
     border-radius: 4px; padding: 2px 4px; font: inherit; }
   button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 4px;
     padding: 4px 8px; font: inherit; cursor: pointer; margin: 2px 2px 2px 0; }
   button:hover { border-color: var(--accent); }
   button.primary { background: var(--accent); color: #1b1b1f; border-color: var(--accent); font-weight: 600; }
-  .series button { padding: 3px 7px; }
-  .series button.active { background: var(--accent); color: #1b1b1f; border-color: var(--accent); }
   .check { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
   table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
   td, th { padding: 2px 4px; text-align: right; border-bottom: 1px solid var(--border); }
@@ -58,6 +57,12 @@
   #views button, #modes button, #panes button { background: rgba(38,38,44,.85); }
   #modes button.active, #panes button.active { background: var(--accent); color: #1b1b1f; border-color: var(--accent); }
   #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); pointer-events: none; }
+  #help { position: absolute; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 5; }
+  #help[hidden] { display: none; }
+  #help .dialog { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px 16px; max-width: 520px; width: calc(100% - 32px); max-height: calc(100% - 32px); overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+  #help h2 { margin: 10px 0 4px; }
+  #help p { margin: 4px 0; }
+  #help kbd { background: var(--panel2); border: 1px solid var(--border); border-radius: 3px; padding: 0 5px; font: inherit; }
   @media (max-width: 1000px) {
     #app, #app.no-left, #app.no-right, #app.no-left.no-right { grid-template-columns: 1fr; grid-template-rows: auto 60vh auto; }
     #left { grid-row: 1; }
@@ -71,7 +76,6 @@
 <div id="app" class="no-right">
   <aside id="left">
     <div class="pane-head"><h1>Alley spider</h1><button id="hideLeft" title="Hide this panel">◂</button></div>
-    <div class="muted" style="margin-bottom:8px">Impasse du Rossignol, Les Portes-en-Ré. Orbit: drag to turn, right-drag or Shift-drag to pan, wheel to zoom, keys 1–6 for views. Walk: W A S D or arrows, drag or click the view to look around, Shift to hurry, F to fly. On a phone, drag the left half to move and the right half to look.</div>
 
     <h2>Design</h2>
     <div class="row" style="grid-template-columns: 1fr 64px"><select id="designs" title="Saved designs in this browser"></select><button id="loadDesign" title="Replace every parameter with this design">Load</button></div>
@@ -79,33 +83,26 @@
       <button id="saveDesign">Save as…</button>
       <button id="deleteDesign">Delete</button>
     </div>
-    <div class="muted" style="margin-top:4px">Save as… keeps the parameters as they are now under a name, in this browser. Load replaces them with a saved design or the brief defaults.</div>
 
     <h2>Brief ratios</h2>
     <div class="row"><label>Body length <small>L</small></label><input id="briefL" type="range" min="0.3" max="1.6" step="0.01"><input id="briefLn" type="number" min="0.3" max="1.6" step="0.01"></div>
-    <div class="muted" style="margin:2px 0 4px">Back-pair bend, degrees off straight (front pair gets half):</div>
-    <div class="series" id="series"></div>
     <button id="applyBrief" class="primary">Apply brief ratios at L</button>
     <button id="solveFeet">Move feet to brief leg length</button>
-    <div class="muted" style="margin-top:4px">Apply sets every size from L and the chosen bend, then slides each foot along its wall until the lower segment has the brief's length. Everything below stays editable afterwards.</div>
+    <div class="row" style="margin-top:8px"><label>Back-pair bend <small>° off straight, front pair half</small></label><input id="bend" type="range" min="0" max="120" step="1" disabled><input id="bendN" type="number" min="0" max="120" step="1" disabled></div>
+    <div class="check"><input type="checkbox" id="bendLock" checked><label for="bendLock">Locked. Unlock to set every knee to this bend; the feet follow.</label></div>
 
     <div id="controls"></div>
 
     <h2>Legs</h2>
-    <div class="muted">Feet and knees are moved in the view while "Mark knees and feet" is on. Every orange ball moves in the vertical plane along the alley walls: a foot slides on its wall, a knee moves along the alley and up and down. Hold Shift, Ctrl or Alt while dragging a knee to move it across the alley instead. Each leg moves on its own. The bend buttons above re-place every knee for its current upper segment length.</div>
-    <div class="check" style="margin-top:6px"><input type="checkbox" id="mirror"><label for="mirror">Mirror the two sides: a drag moves both legs of a pair</label></div>
+    <div class="muted">Drag the orange balls in the view (see Controls). Each leg moves on its own.</div>
     <div>
       <button id="copyRightToLeft" title="Right is the right-hand wall when looking into the alley">Copy right legs to the left</button>
       <button id="copyLeftToRight">Copy left legs to the right</button>
     </div>
 
     <h2>Display</h2>
-    <div class="check"><input type="checkbox" id="silhouette"><label for="silhouette">Flat black silhouette</label></div>
-    <div class="check"><input type="checkbox" id="showPerson" checked><label for="showPerson">Person for scale (1.75 m)</label></div>
-    <div class="check"><input type="checkbox" id="showRoofs" checked><label for="showRoofs">Roofs</label></div>
     <div class="check"><input type="checkbox" id="showJoints" checked><label for="showJoints">Mark knees and feet (drag to move)</label></div>
     <div class="check"><input type="checkbox" id="plants" checked><label for="plants">Plants from the photo</label></div>
-    <div class="row" style="grid-template-columns: 1fr 158px"><label for="ground">Ground</label><select id="ground"><option value="lane">Lane, from the photo</option><option value="ortho">IGN orthophoto</option></select></div>
     <div style="margin-top:8px">
       <button id="savePng" class="local-only">Save PNG</button>
       <button id="copyLink" class="local-only">Copy link to this design</button>
@@ -119,9 +116,24 @@
     <div id="modes"></div>
     <div id="panes">
       <button id="showLeft" hidden title="Show the parameters">Parameters</button>
+      <button id="helpButton" title="Controls (C, or double-tap the view)">Controls</button>
       <button id="toggleNumbers" title="Show or hide the numbers">Numbers</button>
     </div>
     <div id="hud"></div>
+    <div id="help" hidden>
+      <div class="dialog">
+        <div class="pane-head"><h1>Controls</h1><button id="helpClose" title="Close (Esc)">×</button></div>
+        <p class="muted">Impasse du Rossignol, Les Portes-en-Ré. Open this with <kbd>C</kbd>, the Controls button, or a double-tap on the view.</p>
+        <h2>Orbit</h2>
+        <p>Drag to turn, right-drag or <kbd>Shift</kbd>-drag to pan, wheel to zoom. Keys <kbd>1</kbd> to <kbd>6</kbd> jump to the views.</p>
+        <h2>Legs</h2>
+        <p>Drag an orange foot: it slides on its wall. Drag an orange knee: it moves along the alley and up and down. Hold <kbd>Shift</kbd>, <kbd>Ctrl</kbd> or <kbd>Alt</kbd> while dragging a knee to move it across the alley. The balls show while "Mark knees and feet" is on. Each leg moves on its own.</p>
+        <h2>Walk</h2>
+        <p><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or the arrows move, drag or click the view to look around, <kbd>Shift</kbd> hurries, <kbd>F</kbd> flies (<kbd>Space</kbd> up, <kbd>X</kbd> down). Any move key takes over from the path.</p>
+        <h2>On a phone</h2>
+        <p>While walking, drag the left half of the view to move and the right half to look.</p>
+      </div>
+    </div>
   </main>
 
   <aside id="right">

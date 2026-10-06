@@ -48,26 +48,35 @@ What it shows:
   orthophoto remains available as the ground ("Ground" in Display).
 - The spider in the brief's locked proportions by default (body length
   L = 0.8 m, back-pair knee bend 60°, front pair 30°, feet on the real
-  walls at staggered heights), with Daniel's choices of position and
-  thickness: body axis 2.5 m up, 6.5 m into the alley with the head toward
-  the street, legs 4.8 cm and 3.6 cm thick. Pick another L or bend and
-  press "Apply brief ratios at L".
+  walls at staggered heights), with Daniel's choices: a capsule body
+  2.5 m up on the alley's centreline, 6.5 m into the alley with the head
+  toward the street, legs 4.8 cm and 3.6 cm thick. Pick another L and
+  press "Apply brief ratios at L". The back-pair bend is one slider,
+  locked by default: unlocking it sets every knee to that bend (front
+  pair half, the middle pairs between) and slides the feet so the legs
+  keep the brief's length, and so does moving it.
 - Sliders for the abdomen (length, width, height), the head (length in
-  front of the abdomen, width, height, lift), the body's position along,
-  across and above the alley, which way it faces, the pitch of the whole
-  spider (body and legs turn together about the body centre, head up for
-  a positive angle; each foot keeps to its wall), and the leg thickness
-  per segment. The scenery has no controls: it is measured.
+  front of the abdomen, width, height), the body's position along and
+  above the alley, the pitch of the whole spider (body and legs turn
+  together about the body centre, head up for a positive angle; each foot
+  keeps to its wall), and the leg thickness per segment. The scenery has
+  no controls: it is measured.
 - Knees and feet are dragged in the view (orange balls). Every ball moves
   in the vertical plane along the alley walls: a foot slides on its wall, a
   knee moves along the alley and up and down. With Shift, Ctrl or Alt held
   a knee moves across the alley instead. Each of the eight legs moves on
-  its own; "Mirror the two sides" makes a drag move both legs of a pair,
-  and two buttons copy one side onto the other. Both segment lengths and
-  the bend follow from where the three points are. The bend buttons
-  re-place the knees for a chosen back-pair bend.
+  its own; two buttons copy one side onto the other. Both segment lengths
+  and the bend follow from where the three points are.
 - Designs: "Save as…" keeps the current parameters under a name in the
   browser; the Design list loads one back, or the brief defaults.
+- Display: the knee and foot markers, and the plants cut from the photo.
+  Roofs, the lane from the photo and the blue sky are always on.
+- A Controls pop-up (the Controls button, the C key, or a double-tap on
+  the view) lists the orbit, leg and walk controls.
+- A numbers panel (hidden by default, "Numbers" at the top right): heights,
+  clearance over the walking path, every leg length, and each dimension
+  against the brief's ratios (green when it matches). The parameters panel
+  collapses too.
 - The sun stands where it does at noon (12:00 CET) on 31 October 2026
   over the alley: azimuth 166°, 28.5° up, computed in `sun.js` from the
   date and the site's coordinates, so shadows are the real ones.
@@ -78,8 +87,9 @@ What it shows:
 - Views: street (eye height at the alley mouth), front, side, top, under,
   overview. Save PNG, and copy a link that holds the whole design.
 - Walk: first-person with W A S D or arrows, drag or click the view to
-  look (the mouse is captured; Esc frees it), Shift to hurry, F to fly;
-  on a phone the left half of the view moves and the right half looks.
+  look (the mouse is captured; Esc frees it), Shift to hurry, F to fly
+  (Space up, X down); on a phone the left half of the view moves and the
+  right half looks.
   The buildings block the way. Play the path replays the scripted walk in
   the page; any move key takes over on foot.
 

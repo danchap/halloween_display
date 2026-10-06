@@ -53,6 +53,16 @@ test run before the night.
   http://127.0.0.1:8765/tests.html` and look for ALL PASSED; the same flags
   with `--screenshot` render the page.
 
+## Settled by Daniel (do not add controls for these)
+
+- 2026-10-06: the head faces the street, the body sits on the alley's
+  centreline with no head lift, the body is a capsule, roofs and the lane
+  from the photo are always shown, the sky is blue (no silhouette mode),
+  no person for scale, legs are edited one by one (no mirror option, only
+  the copy-side buttons). The bend series is one locked slider. Controls
+  live in a pop-up (C key, Controls button, double-tap), not in a
+  paragraph. upgradeParams in spider.js enforces the fixed values.
+
 ## Still open (ask Daniel)
 
 - Absolute size (L), knee bend and leg thickness: the visualizer exists to

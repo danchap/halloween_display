@@ -132,6 +132,9 @@ try {
   const upgraded = upgradeParams({ ...bare, headLength: 0.24, overlap: 0.048, pairs: [0, 1, 2, 3].map(i => legOf(p, i, 1)) });
   check('upgrade folds the overlap into the head length', near(upgraded.headLength, 0.192) && !('overlap' in upgraded) && upgraded.pitch === 0);
   check('upgrade expands pairs into eight legs', !('pairs' in upgraded) && upgraded.legs.length === 8 && JSON.stringify(upgraded.legs[7]) === JSON.stringify(legOf(p, 3, 1)));
+  const settled = upgradeParams({ ...bare, facing: 1, across: 0.4, headLift: 0.2, bodyShape: 'ellipsoid' });
+  check('upgrade settles facing, across, lift and shape', settled.facing === -1 && settled.across === 0 && settled.headLift === 0 && settled.bodyShape === 'capsule');
+  check('preset body is a capsule facing the street', p.bodyShape === 'capsule' && p.facing === -1);
 
   // Solver puts the lower segment at the target on wider walls, keeping the bend.
   const wide = flatWalls(3.6);
