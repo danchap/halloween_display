@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, bendFactor,
          flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams, legIndex, legOf, legsFromAngles,
-         SPREAD_AZIMUTHS } from './spider.js';
+         SPREAD_AZIMUTHS, planAngles } from './spider.js';
 import { wallsFromSite, insideBuilding } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildExtras, setRoofsVisible,
          setPlantsVisible, showGuide, hideGuide } from './scene.js';
@@ -768,12 +768,12 @@ function solveFeet(targets = null) {
   onChange();
 }
 // Pose every leg from the two angle sliders (hip and back-pair knee bend)
-// at the brief's segment lengths; the feet land where that puts them on
-// the walls.
+// at the plan angle it has now, so a spread survives a slider move. Each
+// leg is scaled to its wall: the feet keep their place along the walls
+// and change height, and the lengths follow.
 function applyAngles() {
   const p = state.params;
-  const lower = LOCKED.legLength * bodyLength(p) * (1 - LOCKED.kneeFraction);
-  p.legs = legsFromAngles(p, walls, { hip: state.hip, backBend: state.backBend, lower });
+  p.legs = legsFromAngles(p, walls, { hip: state.hip, backBend: state.backBend, azimuths: planAngles(p, walls) });
   refreshControls();
   onChange();
 }

@@ -403,58 +403,62 @@ function computeStats({ p, L, abdomen, head, legs }) {
   };
 }
 
+// Plan angle of each leg in the level pose: degrees from straight across,
+// positive toward the head, measured from the root to the foot. Indexed
+// like p.legs. This is what the angle sliders keep.
+export function planAngles(p, walls) {
+  const level = { ...DEFAULTS, ...p, pitch: 0, legs: legsFrom(p) };
+  const frame = bodyFrame(level);
+  const out = [];
+  for (let pair = 0; pair < 4; pair++) {
+    for (const side of [1, -1]) {
+      const { root, foot } = legEnds(level, walls, frame, pair, side);
+      out[legIndex(pair, side)] = Math.atan2(frame.f * (foot[0] - root[0]), side * (foot[2] - root[2])) / DEG;
+    }
+  }
+  return out;
+}
+
+// A leg posed nearer the wall's own direction than this would need an
+// absurd length to reach it.
+const MAX_PLAN_ANGLE = 85;
+
 // Pose every leg from two angles: the hip, the upper segment's elevation
 // above level as it leaves the body, and the back-pair knee bend (front
-// pair half, the middle pairs between). Each leg lies in a vertical plane
-// through its root. Two ways to meet the wall:
-//   lengths given (`lower`, with the brief's upper or `uppers`): the plane
-//     turns about the root until the foot reaches the wall; a leg too short
-//     to reach points straight across.
-//   `azimuths` given (plan angles per pair, + toward the head): the plane
-//     is set and the leg is scaled, keeping the brief's upper/lower split,
-//     until the foot meets the wall; the lengths follow.
-// Returns a new legs array, as the level pose.
-export function legsFromAngles(p, walls, { hip, backBend, lower = null, azimuths = null, uppers = null }) {
+// pair half, the middle pairs between). Each leg lies in the vertical
+// plane through its root at its plan angle (`azimuths`: one per leg, or
+// one per pair, degrees from straight across, + toward the head) and is
+// scaled, keeping the brief's upper/lower split, until the foot meets the
+// wall: the plan angles are kept, the lengths follow. Returns a new legs
+// array, as the level pose.
+export function legsFromAngles(p, walls, { hip, backBend, azimuths }) {
   const level = { ...DEFAULTS, ...p, pitch: 0, legs: legsFrom(p) };
   const frame = bodyFrame(level);
   const f = frame.f;
   const legs = level.legs.map(q => ({ ...q }));
-  const aBrief = LOCKED.legLength * bodyLength(level) * LOCKED.kneeFraction;
   const wallDistance = (footX, side) => {
     const w = walls(footX, side, level.across);
     return (w === null || w === undefined) ? 1.5 - level.headWidth / 2 : Math.abs(w - level.across) - level.headWidth / 2;
   };
   for (let pair = 0; pair < 4; pair++) {
     const bend = backBend * bendFactor(pair);
-    const forward = pair < 2 ? 1 : -1;
     const t = hip * DEG, u = (hip - bend) * DEG;
+    // Reach per unit of leg length at these angles; the wall sets the length.
+    const unit = Math.max(0.05, LOCKED.kneeFraction * Math.cos(t) + (1 - LOCKED.kneeFraction) * Math.cos(u));
     for (const side of [1, -1]) {
       const j = legIndex(pair, side);
       const root = frame.toAlley(rootAlongOffset(level, pair), 0, side * level.headWidth / 2);
-      let a, b, h, phi = 0, footX = root[0];
-      if (azimuths) {
-        phi = azimuths[pair] * DEG;
-        // Reach per unit of leg length at these angles; the wall sets the length.
-        const unit = LOCKED.kneeFraction * Math.cos(t) + (1 - LOCKED.kneeFraction) * Math.cos(u);
-        let total = 1;
-        for (let pass = 0; pass < 4; pass++) {
-          h = wallDistance(footX, side) / Math.cos(phi);
-          total = Math.max(0.2, h / Math.max(unit, 0.05));
-          footX = root[0] + f * h * Math.sin(phi);
-        }
-        a = total * LOCKED.kneeFraction;
-        b = total - a;
-      } else {
-        a = uppers ? uppers[j] : aBrief;
-        b = lower;
-        h = a * Math.cos(t) + b * Math.cos(u); // horizontal reach, root to foot
-        // The wall distance depends on where the foot lands; a few passes settle it.
-        for (let pass = 0; pass < 4; pass++) {
-          const dz = wallDistance(footX, side);
-          phi = forward * (h > dz ? Math.acos(dz / h) : 0);
-          footX = root[0] + f * h * Math.sin(phi);
-        }
+      const planDeg = azimuths.length === 8 ? azimuths[j] : azimuths[pair];
+      const phi = Math.max(-MAX_PLAN_ANGLE, Math.min(MAX_PLAN_ANGLE, planDeg)) * DEG;
+      let h = 1, footX = root[0];
+      // The wall distance depends on where the foot lands; a few passes settle it.
+      for (let pass = 0; pass < 4; pass++) {
+        h = wallDistance(footX, side) / Math.cos(phi);
+        footX = root[0] + f * h * Math.sin(phi);
       }
+      const total = Math.max(0.2, h / unit);
+      const a = total * LOCKED.kneeFraction;
+      const b = total - a;
       const rise = a * Math.sin(t) + b * Math.sin(u); // foot height above the root
       const dir = [f * Math.sin(phi), 0, side * Math.cos(phi)]; // level unit vector, root toward the wall
       const knee = [root[0] + a * Math.cos(t) * dir[0], root[1] + a * Math.sin(t), root[2] + a * Math.cos(t) * dir[2]];

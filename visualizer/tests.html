@@ -6,7 +6,7 @@
 <script type="module">
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, flatWalls, rootToFootDistance,
          lowerSegmentFor, solveFeetForLength, bendFactor, placeKnee, kneeParamsAt, footParamsAt,
-         kneeFromBend, upgradeParams, legIndex, legOf, legsFromAngles, SPREAD_AZIMUTHS } from './spider.js';
+         kneeFromBend, upgradeParams, legIndex, legOf, legsFromAngles, SPREAD_AZIMUTHS, planAngles } from './spider.js';
 import { loadSite, wallsFromSite, insideBuilding } from './site.js';
 import { HALLOWEEN_NOON, solarPosition, sunVector } from './sun.js';
 
@@ -157,21 +157,33 @@ try {
   const v = sunVector(HALLOWEEN_NOON, 46.249891, -1.496728);
   check('sun vector points south and up', v[2] < -0.8 && v[1] > 0.4 && v[0] > 0 && near(Math.hypot(...v), 1, 1e-9), JSON.stringify(v));
 
-  // Posing from the two angles: brief lengths, the chosen hip elevation and
-  // bends, feet on the walls; a leg too short to reach points straight across.
+  // Posing from the two angles at given plan angles (one per leg here): the
+  // hip elevation and bends as chosen, the brief's split, feet on the walls,
+  // and the plan angles kept.
   const hipDeg = 15;
-  const posed = buildSpider({ ...p, legs: legsFromAngles(p, walls, { hip: hipDeg, backBend: 60, lower: bBrief }) }, walls);
+  const plan8 = [10, -5, 30, 25, -20, -35, -50, -60];
+  const posed = buildSpider({ ...p, legs: legsFromAngles(p, walls, { hip: hipDeg, backBend: 60, azimuths: plan8 }) }, walls);
+  const planOfLeg = l => Math.atan2(-(l.foot[0] - l.root[0]), Math.abs(l.foot[2] - l.root[2])) / (Math.PI / 180); // facing -1: toward the head is -x
+  const hipOfLeg = l => Math.atan2(l.knee[1] - l.root[1], Math.hypot(l.knee[0] - l.root[0], l.knee[2] - l.root[2])) / (Math.PI / 180);
   for (const l of posed.legs) {
-    const tag = `angles leg ${l.pair}${l.side > 0 ? 'R' : 'L'}`;
-    const horiz = Math.hypot(l.knee[0] - l.root[0], l.knee[2] - l.root[2]);
-    check(`${tag} lengths are the brief's`, near(l.a, aBrief, 2e-3) && near(l.b, bBrief, 3e-3), `${l.a.toFixed(3)} ${l.b.toFixed(3)}`);
-    check(`${tag} hip is ${hipDeg}°`, near(Math.atan2(l.knee[1] - l.root[1], horiz) / (Math.PI / 180), hipDeg, 0.3), (Math.atan2(l.knee[1] - l.root[1], horiz) / (Math.PI / 180)).toFixed(2));
+    const j = legIndex(l.pair, l.side), tag = `angles leg ${l.pair}${l.side > 0 ? 'R' : 'L'}`;
+    check(`${tag} plan angle ${plan8[j]}°`, near(planOfLeg(l), plan8[j], 0.5), planOfLeg(l).toFixed(2));
+    check(`${tag} hip is ${hipDeg}°`, near(hipOfLeg(l), hipDeg, 0.3), hipOfLeg(l).toFixed(2));
     check(`${tag} bend as chosen`, near(l.bend, 60 * bendFactor(l.pair), 0.3), l.bend.toFixed(2));
+    check(`${tag} split kept`, near(l.a / (l.a + l.b), LOCKED.kneeFraction, 0.005), (l.a / (l.a + l.b)).toFixed(3));
     check(`${tag} foot on its wall`, near(Math.abs(l.foot[2]), 1.47) && l.status === 'ok');
   }
-  check('angles: front feet forward, back feet back', leg(posed, 0, 1).foot[0] < posed.params.along && leg(posed, 3, 1).foot[0] > posed.params.along);
-  const steep = buildSpider({ ...p, legs: legsFromAngles(p, walls, { hip: 80, backBend: 10, lower: bBrief }) }, walls);
-  check('angles: a leg that cannot reach still builds, straight across', steep.legs.every(l => Number.isFinite(l.b) && near(l.foot[0], l.root[0], 2e-3)), steep.legs.map(l => (l.foot[0] - l.root[0]).toFixed(4)).join(','));
+  const readBack = planAngles(posed.params, walls);
+  check('angles: the plan angles read back from the pose', readBack.every((v, j) => near(v, plan8[j], 0.5)), readBack.map(v => v.toFixed(1)).join(','));
+  // Posing again at other angles, from the plan angles the pose has, keeps
+  // the fan: the feet stay where they are along the walls, the hip, bends,
+  // heights and lengths change.
+  const reposed = buildSpider({ ...posed.params, legs: legsFromAngles(posed.params, walls, { hip: 40, backBend: 90, azimuths: readBack }) }, walls);
+  check('angles: posing again keeps every plan angle', reposed.legs.every(l => near(planOfLeg(l), plan8[legIndex(l.pair, l.side)], 0.5)), reposed.legs.map(planOfLeg).map(v => v.toFixed(1)).join(','));
+  check('angles: posing again keeps the feet in place along the walls', reposed.legs.every((l, i) => near(l.foot[0], posed.legs[i].foot[0], 2e-3)), reposed.legs.map((l, i) => (l.foot[0] - posed.legs[i].foot[0]).toFixed(3)).join(','));
+  check('angles: posing again sets the new hip and bends', reposed.legs.every(l => near(hipOfLeg(l), 40, 0.3) && near(l.bend, 90 * bendFactor(l.pair), 0.3)), reposed.legs.map(l => hipOfLeg(l).toFixed(1) + '/' + l.bend.toFixed(1)).join(','));
+  check('angles: posing again keeps the feet on the walls', reposed.legs.every(l => near(Math.abs(l.foot[2]), 1.47) && l.status === 'ok'));
+  check('angles: steeper legs are longer', reposed.legs.every((l, i) => l.a + l.b > posed.legs[i].a + posed.legs[i].b + 0.05), reposed.legs.map((l, i) => (l.a + l.b - posed.legs[i].a - posed.legs[i].b).toFixed(3)).join(','));
   // The spread: plan angles as the table, the two angles kept, legs scaled to the wall.
   const spread = buildSpider({ ...p, legs: legsFromAngles(p, walls, { hip: hipDeg, backBend: 60, azimuths: SPREAD_AZIMUTHS }) }, walls);
   for (const l of spread.legs) {
@@ -185,6 +197,8 @@ try {
     check(`${tag} foot on its wall`, near(Math.abs(l.foot[2]), 1.47) && l.status === 'ok');
   }
   check('spread: front legs longer than the middle ones', leg(spread, 0, 1).a + leg(spread, 0, 1).b > leg(spread, 1, 1).a + leg(spread, 1, 1).b + 0.3);
+  const spreadPlan = planAngles(spread.params, walls);
+  check('spread: plan angles read back from the pose', spreadPlan.every((v, j) => near(v, SPREAD_AZIMUTHS[Math.floor(j / 2)], 0.5)), spreadPlan.map(v => v.toFixed(1)).join(','));
 
   // Site: alley frame round trip and real walls about 3 m apart near the body.
   const site = await loadSite();

@@ -55,10 +55,12 @@ What it shows:
   segment's angle above level where it leaves the body) and the back-pair
   knee bend (front pair half, the middle pairs between), are locked by
   default: unlocking them, or moving one, poses every leg from the two
-  angles at the brief's leg length, with each foot landing where that
-  puts it on the wall. "Spread the legs like a spider" fans them out in
-  plan instead (55° and 22° forward, 22° and 55° back) at the same two
-  angles, scaling each leg to reach its wall.
+  angles at the plan angle it already has, so a spread survives. Each
+  foot keeps its place along its wall and changes height, and the leg
+  lengths follow from the walls. "Spread the legs like a spider" sets
+  the plan angles to a resting spider's fan (55° and 22° forward, 22°
+  and 55° back) at the same two angles, scaling each leg to reach its
+  wall.
 - Sliders for the abdomen (length, width, height), the head (length in
   front of the abdomen, width, height), the body's position along and
   above the alley, the pitch of the whole spider (body and legs turn
