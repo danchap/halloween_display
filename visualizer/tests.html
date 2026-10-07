@@ -163,7 +163,7 @@ try {
   // and the plan angles kept.
   const hipDeg = 15;
   const plan8 = [10, -5, 30, 25, -20, -35, -50, -60];
-  const posed = buildSpider({ ...p, legs: legsFromAngles(p, walls, { hip: hipDeg, backBend: 60, azimuths: plan8 }) }, walls);
+  const posed = buildSpider({ ...p, legs: legsFromAngles(p, walls, { hip: hipDeg, backBend: 60, azimuths: plan8, maxLength: Infinity }).legs }, walls);
   const planOfLeg = l => Math.atan2(-(l.foot[0] - l.root[0]), Math.abs(l.foot[2] - l.root[2])) / (Math.PI / 180); // facing -1: toward the head is -x
   const hipOfLeg = l => Math.atan2(l.knee[1] - l.root[1], Math.hypot(l.knee[0] - l.root[0], l.knee[2] - l.root[2])) / (Math.PI / 180);
   for (const l of posed.legs) {
@@ -179,14 +179,14 @@ try {
   // Posing again at other angles, from the plan angles the pose has, keeps
   // the fan: the feet stay where they are along the walls, the hip, bends,
   // heights and lengths change.
-  const reposed = buildSpider({ ...posed.params, legs: legsFromAngles(posed.params, walls, { hip: 40, backBend: 90, azimuths: readBack }) }, walls);
+  const reposed = buildSpider({ ...posed.params, legs: legsFromAngles(posed.params, walls, { hip: 40, backBend: 90, azimuths: readBack, maxLength: Infinity }).legs }, walls);
   check('angles: posing again keeps every plan angle', reposed.legs.every(l => near(planOfLeg(l), plan8[legIndex(l.pair, l.side)], 0.5)), reposed.legs.map(planOfLeg).map(v => v.toFixed(1)).join(','));
   check('angles: posing again keeps the feet in place along the walls', reposed.legs.every((l, i) => near(l.foot[0], posed.legs[i].foot[0], 2e-3)), reposed.legs.map((l, i) => (l.foot[0] - posed.legs[i].foot[0]).toFixed(3)).join(','));
   check('angles: posing again sets the new hip and bends', reposed.legs.every(l => near(hipOfLeg(l), 40, 0.3) && near(l.bend, 90 * bendFactor(l.pair), 0.3)), reposed.legs.map(l => hipOfLeg(l).toFixed(1) + '/' + l.bend.toFixed(1)).join(','));
   check('angles: posing again keeps the feet on the walls', reposed.legs.every(l => near(Math.abs(l.foot[2]), 1.47) && l.status === 'ok'));
   check('angles: steeper legs are longer', reposed.legs.every((l, i) => l.a + l.b > posed.legs[i].a + posed.legs[i].b + 0.05), reposed.legs.map((l, i) => (l.a + l.b - posed.legs[i].a - posed.legs[i].b).toFixed(3)).join(','));
   // The spread: plan angles as the table, the two angles kept, legs scaled to the wall.
-  const spread = buildSpider({ ...p, legs: legsFromAngles(p, walls, { hip: hipDeg, backBend: 60, azimuths: SPREAD_AZIMUTHS }) }, walls);
+  const spread = buildSpider({ ...p, legs: legsFromAngles(p, walls, { hip: hipDeg, backBend: 60, azimuths: SPREAD_AZIMUTHS, maxLength: Infinity }).legs }, walls);
   for (const l of spread.legs) {
     const tag = `spread leg ${l.pair}${l.side > 0 ? 'R' : 'L'}`;
     const az = Math.atan2(-(l.foot[0] - l.root[0]), Math.abs(l.foot[2] - l.root[2])) / (Math.PI / 180); // facing -1: toward the head is -x
@@ -205,7 +205,7 @@ try {
   const angles = legAngles(posed.params, walls);
   check('legAngles reads plan, hip and bend', angles.every((x, j) => near(x.plan, plan8[j], 0.5) && near(x.hip, hipDeg, 0.3) && near(x.bend, 60 * bendFactor(Math.floor(j / 2)), 0.3)), JSON.stringify(angles.map(x => [x.plan, x.hip, x.bend].map(v => +v.toFixed(1)))));
   const hips8 = [5, 10, 15, 20, 25, 30, 35, 40], bends8 = [20, 30, 40, 50, 60, 70, 80, 90];
-  const perLeg = buildSpider({ ...p, legs: legsFromAngles(p, walls, { azimuths: plan8, hips: hips8, bends: bends8 }) }, walls);
+  const perLeg = buildSpider({ ...p, legs: legsFromAngles(p, walls, { azimuths: plan8, hips: hips8, bends: bends8, maxLength: Infinity }).legs }, walls);
   check('per-leg hips and bends posed', perLeg.legs.every((l, j) => near(hipOfLeg(l), hips8[j], 0.3) && near(l.bend, bends8[j], 0.3) && near(planOfLeg(l), plan8[j], 0.5) && near(l.a / (l.a + l.b), LOCKED.kneeFraction, 0.005)), perLeg.legs.map(l => hipOfLeg(l).toFixed(1) + '/' + l.bend.toFixed(1)).join(','));
 
   // The split rule after a drag. From a moved knee: the knee stays, the
@@ -242,7 +242,7 @@ try {
   const jF = legIndex(1, -1);
   const movedF = { ...posed.params, legs: posed.params.legs.map(q => ({ ...q })) };
   movedF.legs[jF] = { ...movedF.legs[jF], footAlong: movedF.legs[jF].footAlong + 0.4, footHeight: movedF.legs[jF].footHeight + 0.3 };
-  const fromFoot = solveLegFromFoot(movedF, walls, 1, -1, posed.legs[jF].bend);
+  const fromFoot = solveLegFromFoot(movedF, walls, 1, -1, { bend: posed.legs[jF].bend });
   check('foot rule: solved', !!fromFoot);
   if (fromFoot) {
     movedF.legs[jF] = fromFoot;
@@ -256,6 +256,34 @@ try {
   // The feet solver takes its targets per leg and defaults to each leg's own values.
   const solvedAll = buildSpider({ ...perLeg.params, legs: solveFeetForLength(perLeg.params, walls, bBrief) }, walls);
   check('feet solver keeps each leg\'s own upper and bend', solvedAll.legs.every((l, j) => near(l.a, perLeg.legs[j].a, 3e-3) && near(l.bend, bends8[j], 0.5) && near(l.b, bBrief, 3e-3)), solvedAll.legs.map(l => `${l.a.toFixed(2)}/${l.bend.toFixed(0)}/${l.b.toFixed(2)}`).join(','));
+
+  // The brief's length caps a pose: a leg that would need more is held at
+  // it and its foot slides toward straight across; one that cannot reach
+  // its wall even straight across is stretched to just reach.
+  const reach = 1.47 - p.headWidth / 2;
+  const unitOf = (hipD, bendD) => LOCKED.kneeFraction * Math.cos(hipD * Math.PI / 180) + (1 - LOCKED.kneeFraction) * Math.cos((hipD - bendD) * Math.PI / 180);
+  const capPose = legsFromAngles(p, walls, { hip: 15, backBend: 105, azimuths: SPREAD_AZIMUTHS });
+  const capSpider = buildSpider({ ...p, legs: capPose.legs }, walls);
+  const capBack = leg(capSpider, 3, 1), capFront = leg(capSpider, 0, 1), capMid = leg(capSpider, 1, 1);
+  check('cap: a leg that cannot reach even straight across is stretched', capPose.stretched.includes(legIndex(3, 1)) && near(planOfLeg(capBack), 0, 0.5) && near(capBack.a + capBack.b, reach / unitOf(15, 105), 0.02), `${planOfLeg(capBack).toFixed(1)} ${(capBack.a + capBack.b).toFixed(3)} vs ${(reach / unitOf(15, 105)).toFixed(3)}`);
+  check('cap: a leg that would be too long is held at the brief\'s length, foot moved in', capPose.capped.includes(legIndex(0, 1)) && near(capFront.a + capFront.b, aBrief + bBrief, 3e-3) && near(planOfLeg(capFront), Math.acos(reach / ((aBrief + bBrief) * unitOf(15, 52.5))) * 180 / Math.PI, 0.5), `${(capFront.a + capFront.b).toFixed(3)} ${planOfLeg(capFront).toFixed(2)}`);
+  check('cap: a leg that fits keeps its plan angle', !capPose.capped.includes(legIndex(1, 1)) && !capPose.stretched.includes(legIndex(1, 1)) && near(planOfLeg(capMid), 22, 0.5) && capMid.a + capMid.b < aBrief + bBrief, `${planOfLeg(capMid).toFixed(2)} ${(capMid.a + capMid.b).toFixed(3)}`);
+  check('cap: no leg longer than the brief\'s unless stretched', capSpider.legs.every((l, j) => l.a + l.b <= aBrief + bBrief + 3e-3 || capPose.stretched.includes(j)));
+  check('cap: hips, bends and split kept on held and stretched legs', capSpider.legs.every(l => near(hipOfLeg(l), 15, 0.3) && near(l.bend, 105 * bendFactor(l.pair), 0.3) && near(l.a / (l.a + l.b), LOCKED.kneeFraction, 0.003)), capSpider.legs.map(l => hipOfLeg(l).toFixed(1) + '/' + l.bend.toFixed(1)).join(','));
+  const freePose = buildSpider({ ...p, legs: legsFromAngles(p, walls, { hip: 15, backBend: 105, azimuths: SPREAD_AZIMUTHS, maxLength: Infinity }).legs }, walls);
+  check('cap: without it the fan is exact at any length', near(planOfLeg(leg(freePose, 3, 1)), -55, 0.5) && leg(freePose, 3, 1).a + leg(freePose, 3, 1).b > 4.5, (leg(freePose, 3, 1).a + leg(freePose, 3, 1).b).toFixed(2));
+  // Drags under the cap: a foot pulled past the brief's length unfolds the
+  // leg; past a straight leg's reach it is refused; a knee further from the
+  // body than 48 % of the brief's length is refused.
+  const forwardOf = l => -(l.foot[0] - l.root[0]); // facing -1: toward the head is -x
+  const farF = (ahead) => { const d = { ...posed.params, legs: posed.params.legs.map(q => ({ ...q })) }; d.legs[jF] = { ...d.legs[jF], footAlong: d.legs[jF].footAlong + (ahead - forwardOf(posed.legs[jF])) }; return d; };
+  const unfoldD = farF(2.12), unfolded = solveLegFromFoot(unfoldD, walls, 1, -1, { bend: posed.legs[jF].bend });
+  check('foot rule: past the brief\'s length the leg unfolds instead of growing', !!unfolded && (() => { unfoldD.legs[jF] = unfolded; const l = buildSpider(unfoldD, walls).legs[jF]; return near(l.a + l.b, aBrief + bBrief, 3e-3) && l.bend < posed.legs[jF].bend - 3 && near(l.a / (l.a + l.b), LOCKED.kneeFraction, 0.003); })(), unfolded && JSON.stringify(buildSpider({ ...unfoldD, legs: unfoldD.legs.map((q, i) => i === jF ? unfolded : q) }, walls).legs[jF].bend));
+  check('foot rule: beyond a straight leg\'s reach is refused', solveLegFromFoot(farF(2.4), walls, 1, -1, { bend: posed.legs[jF].bend }) === null);
+  const farK = { ...posed.params, legs: posed.params.legs.map(q => ({ ...q })) };
+  farK.legs[jK] = { ...farK.legs[jK], kneeAlong: rootAlongOffset(p, 3) + 0.3, kneeOut: p.headWidth / 2 + 1.3, kneeHeight: p.bodyHeight + 0.4 };
+  const pulled = solveLegFromKnee(farK, walls, 3, 1);
+  check('knee rule: a knee further out than the brief\'s upper segment is pulled back to it', !!pulled && (() => { farK.legs[jK] = pulled; const l = buildSpider(farK, walls).legs[jK]; return near(l.a, aBrief, 2e-3) && near(l.a / (l.a + l.b), LOCKED.kneeFraction, 0.003) && near(Math.abs(l.foot[2]), 1.47) && l.status === 'ok'; })(), JSON.stringify(pulled));
 
   // Site: alley frame round trip and real walls about 3 m apart near the body.
   const site = await loadSite();

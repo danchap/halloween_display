@@ -90,14 +90,14 @@
     <button id="solveFeet">Move feet to brief leg length</button>
     <div class="row" style="margin-top:8px"><label title="The joint where the leg leaves the body">Hip angle <small>° above level</small></label><input id="hip" type="range" min="-60" max="80" step="1" disabled><input id="hipN" type="number" min="-60" max="80" step="1" disabled></div>
     <div class="row"><label>Knee bend <small>° off straight, back pair; front half</small></label><input id="bend" type="range" min="0" max="120" step="1" disabled><input id="bendN" type="number" min="0" max="120" step="1" disabled></div>
-    <div class="check"><input type="checkbox" id="bendLock" checked><label for="bendLock">Locked. Unlock to pose every leg from these two angles, each keeping its plan angle; the feet keep their place along the walls and the leg lengths follow.</label></div>
+    <div class="check"><input type="checkbox" id="bendLock" checked><label for="bendLock">Locked. Unlock to pose every leg from these two angles, each keeping its plan angle where the brief's leg length allows; the feet keep their place along the walls and the lengths follow.</label></div>
     <button id="spreadLegs" title="Fan the legs out in plan like a resting spider (55° and 22° forward, 22° and 55° back) at these two angles; each leg is scaled to reach its wall">Spread the legs like a spider</button>
 
     <div id="controls"></div>
 
     <h2>Legs</h2>
     <div class="muted">Drag the orange balls in the view (see Controls). Each leg moves on its own.</div>
-    <div class="check"><input type="checkbox" id="keepSplit" checked><label for="keepSplit" title="The knee stays at 48 % of the leg and the leg stays in one vertical plane through its root, as in the brief, so plan angle, hip angle, bend and the wall define each leg. A dragged foot turns and scales its leg; a dragged knee moves its foot along the wall to suit. Ticking this re-solves every leg.">Keep the brief's segment split: knee at 48 % of the leg, the leg in one plane</label></div>
+    <div class="check"><input type="checkbox" id="keepSplit" checked><label for="keepSplit" title="The knee stays at 48 % of the leg, the leg stays in one vertical plane through its root and is never longer than the brief's 3.25 L, so plan angle, hip angle, bend and the wall define each leg. The sliders hold a leg at that length and slide its foot toward straight across when the angles ask for more. A dragged foot turns and scales its leg, then unfolds it at that length; a dragged knee moves its foot along the wall to suit. Ticking this re-solves every leg.">Keep the brief's leg: knee at 48 % of it, one plane, no longer than 3.25 L</label></div>
     <div>
       <button id="copyRightToLeft" title="Right is the right-hand wall when looking into the alley">Copy right legs to the left</button>
       <button id="copyLeftToRight">Copy left legs to the right</button>
@@ -130,7 +130,7 @@
         <h2>Orbit</h2>
         <p>Drag to turn, right-drag or <kbd>Shift</kbd>-drag to pan, wheel to zoom. Keys <kbd>1</kbd> to <kbd>6</kbd> jump to the views.</p>
         <h2>Legs</h2>
-        <p>Drag an orange foot: it slides on its wall. Drag an orange knee: it moves along the alley and up and down. Hold <kbd>Shift</kbd>, <kbd>Ctrl</kbd> or <kbd>Alt</kbd> while dragging a knee to move it across the alley. The balls show while "Mark knees and feet" is on. Each leg moves on its own. With "Keep the brief's segment split" on (the default) a leg is one vertical plane through its root with the knee at 48 % of its length: a dragged foot turns and scales its leg, keeping the bend; a dragged knee moves its foot along the wall to suit, and stops where the lower segment could not reach the wall. Off, each ball moves alone.</p>
+        <p>Drag an orange foot: it slides on its wall. Drag an orange knee: it moves along the alley and up and down. Hold <kbd>Shift</kbd>, <kbd>Ctrl</kbd> or <kbd>Alt</kbd> while dragging a knee to move it across the alley. The balls show while "Mark knees and feet" is on. Each leg moves on its own. With "Keep the brief's leg" on (the default) a leg is one vertical plane through its root, its knee at 48 % of its length and its length at most the brief's: a dragged foot turns and scales its leg, keeping the bend, and unfolds it once at that length; a dragged knee moves its foot along the wall to suit. A ball stops where the leg could not follow. Off, each ball moves alone.</p>
         <h2>Walk</h2>
         <p><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or the arrows move, drag or click the view to look around, <kbd>Shift</kbd> hurries, <kbd>F</kbd> flies (<kbd>Space</kbd> up, <kbd>X</kbd> down). Any move key takes over from the path.</p>
         <h2>On a phone</h2>

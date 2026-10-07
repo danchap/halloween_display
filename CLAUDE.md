@@ -62,9 +62,12 @@ test run before the night.
   the copy-side buttons). The bend series is two locked sliders (hip and
   knee bend) that keep each leg's plan angle (the feet stay put along the
   walls, the lengths follow; Daniel, 2026-10-07) plus a spread button
-  (plan fan 55/22/-22/-55 degrees). The split rule (Legs checkbox, on by
-  default, 2026-10-07) keeps the knee at 48 % of each leg and the leg in
-  one vertical plane through its root under drags too. Controls
+  (plan fan 55/22/-22/-55 degrees). The brief's-leg rule (Legs checkbox
+  "Keep the brief's leg", on by default, 2026-10-07) keeps the knee at
+  48 % of each leg, the leg in one vertical plane through its root and
+  no longer than 3.25 L, under sliders and drags alike; a leg that cannot
+  keep its plan angle within that length slides its foot toward straight
+  across, and the bend is limited to the hip angle plus 90. Controls
   live in a pop-up (C key, Controls button, double-tap), not in a
   paragraph. upgradeParams in spider.js enforces the fixed values.
 

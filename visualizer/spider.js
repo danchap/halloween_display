@@ -276,6 +276,12 @@ function legEnds(p, walls, frame, pair, side) {
   return { root, foot: [footX, footY, wallZ], status };
 }
 
+// Is a knee past its wall, inside the building?
+function kneeInsideWall(walls, p, side, knee) {
+  const w = walls(knee[0], side, p.across);
+  return w !== null && w !== undefined && Math.abs(knee[2] - p.across) > Math.abs(w - p.across) + 1e-6;
+}
+
 // Build the whole spider from a parameter object (see briefPreset/DEFAULTS).
 export function buildSpider(params, walls = flatWalls(3.0)) {
   const p = { ...DEFAULTS, ...params, legs: legsFrom(params) };
@@ -312,6 +318,7 @@ export function buildSpider(params, walls = flatWalls(3.0)) {
         pair, side, root, knee, foot, a, b, d,
         bend: 180 - interior, interiorAngle: interior,
         wallDistance: Math.abs(foot[2] - p.across),
+        kneeInWall: kneeInsideWall(walls, p, side, knee),
         status,
       });
     }
@@ -387,6 +394,13 @@ function computeStats({ p, L, abdomen, head, legs }) {
     };
   });
 
+  // What is wrong with the pose, in words for the HUD.
+  const warnings = [];
+  const say = (n, one, many) => { if (n === 1) warnings.push(one); else if (n > 1) warnings.push(many.replace('N', n)); };
+  say(legs.filter(l => l.status !== 'ok').length, 'a foot has no wall', 'N feet have no wall');
+  say(legs.filter(l => l.kneeInWall).length, 'a knee is inside a wall', 'N knees are inside a wall');
+  say(legs.filter(l => l.foot[1] < 0).length, 'a foot is below the lane', 'N feet are below the lane');
+
   return {
     bodyLength: L,
     abdomenInL: [p.abdomenLength / L, p.abdomenWidth / L, p.abdomenHeight / L],
@@ -399,6 +413,7 @@ function computeStats({ p, L, abdomen, head, legs }) {
     bodyBottom,
     pathClearance: pathLow,
     allOk: legs.every(l => l.status === 'ok'),
+    warnings,
     pairs,
   };
 }
@@ -436,15 +451,21 @@ const MAX_PLAN_ANGLE = 85;
 // stand in for the two when given. Each leg lies in the vertical plane
 // through its root at its plan angle (`azimuths`: one per leg, or one per
 // pair, degrees from straight across, + toward the head) and is scaled,
-// keeping the brief's upper/lower split, until the foot meets the wall:
-// the plan angles are kept, the lengths follow. Returns a new legs array,
-// as the level pose.
-export function legsFromAngles(p, walls, { hip, backBend, azimuths, hips = null, bends = null }) {
+// keeping the brief's upper/lower split, until the foot meets the wall,
+// but never past `maxLength` (the brief's leg length unless given): a leg
+// that would need more is held at that length and its foot slides toward
+// straight across, and one that cannot reach its wall even straight
+// across is stretched to just reach. Returns { legs, capped, stretched }:
+// the new legs as the level pose, and the indexes of the legs held at the
+// length and of those stretched past it.
+export function legsFromAngles(p, walls, { hip, backBend, azimuths, hips = null, bends = null, maxLength = null }) {
   const level = { ...DEFAULTS, ...p, pitch: 0, legs: legsFrom(p) };
   const frame = bodyFrame(level);
   const f = frame.f;
   const legs = level.legs.map(q => ({ ...q }));
-  const wallDistance = (footX, side) => wallReach(level, walls, footX, side);
+  const cap = maxLength === null ? LOCKED.legLength * bodyLength(level) : maxLength;
+  const kf = LOCKED.kneeFraction;
+  const capped = [], stretched = [];
   for (let pair = 0; pair < 4; pair++) {
     for (const side of [1, -1]) {
       const j = legIndex(pair, side);
@@ -452,18 +473,27 @@ export function legsFromAngles(p, walls, { hip, backBend, azimuths, hips = null,
       const bend = bends ? bends[j] : backBend * bendFactor(pair);
       const t = hipDeg * DEG, u = (hipDeg - bend) * DEG;
       // Reach per unit of leg length at these angles; the wall sets the length.
-      const unit = Math.max(0.05, LOCKED.kneeFraction * Math.cos(t) + (1 - LOCKED.kneeFraction) * Math.cos(u));
+      const unit = Math.max(0.05, kf * Math.cos(t) + (1 - kf) * Math.cos(u));
       const root = frame.toAlley(rootAlongOffset(level, pair), 0, side * level.headWidth / 2);
-      const planDeg = azimuths.length === 8 ? azimuths[j] : azimuths[pair];
-      const phi = Math.max(-MAX_PLAN_ANGLE, Math.min(MAX_PLAN_ANGLE, planDeg)) * DEG;
-      let h = 1, footX = root[0];
+      const planDeg = Math.max(-MAX_PLAN_ANGLE, Math.min(MAX_PLAN_ANGLE, azimuths.length === 8 ? azimuths[j] : azimuths[pair]));
+      const sign = planDeg !== 0 ? Math.sign(planDeg) : (pair < 2 ? 1 : -1);
+      let phi = 0, h = 1, total = 1, held = false, over = false, footX = root[0];
       // The wall distance depends on where the foot lands; a few passes settle it.
       for (let pass = 0; pass < 4; pass++) {
-        h = wallDistance(footX, side) / Math.cos(phi);
+        const reach = Math.max(0.01, wallReach(level, walls, footX, side));
+        phi = planDeg * DEG;
+        h = reach / Math.cos(phi); // root to wall, along the plane
+        total = h / unit;
+        held = total > cap + 0.002; over = false;
+        if (held) {
+          total = cap; h = cap * unit;
+          if (h >= reach) phi = sign * Math.acos(reach / h); // the foot slides toward straight across
+          else { phi = 0; h = reach; total = reach / unit; over = true; } // even straight across falls short
+        }
         footX = root[0] + f * h * Math.sin(phi);
       }
-      const total = Math.max(0.2, h / unit);
-      const a = total * LOCKED.kneeFraction;
+      if (over) stretched.push(j); else if (held) capped.push(j);
+      const a = total * kf;
       const b = total - a;
       const rise = a * Math.sin(t) + b * Math.sin(u); // foot height above the root
       const dir = [f * Math.sin(phi), 0, side * Math.cos(phi)]; // level unit vector, root toward the wall
@@ -472,29 +502,34 @@ export function legsFromAngles(p, walls, { hip, backBend, azimuths, hips = null,
       legs[j] = { ...footParamsAt(level, foot), ...kneeParamsAt(level, side, knee) };
     }
   }
-  return legs;
+  return { legs, capped, stretched };
 }
 
-// The split rule: the knee at the brief's fraction of the leg and the leg
-// in one vertical plane through its root, so that its plan angle, hip
-// angle, bend and the wall define it (legsFromAngles). The two functions
-// below re-solve one leg of p under the rule after its knee or foot has
-// been moved, in the level pose. Each returns the leg's new parameters,
-// or null where the rule cannot be met.
+// The brief's-leg rule: the knee at the brief's fraction of the leg, the
+// leg in one vertical plane through its root and no longer than the
+// brief's leg (`maxLength`, the brief's by default), so that its plan
+// angle, hip angle, bend and the wall define it (legsFromAngles). The two
+// functions below re-solve one leg of p under the rule after its knee or
+// foot has been moved, in the level pose. Each returns the leg's new
+// parameters, or null where the rule cannot be met.
 
 // From the knee: it sets the plane, the upper segment's elevation and the
 // scale (the upper segment is the brief's fraction of the leg); the lower
 // segment then meets the wall in that plane, at whichever of its two
-// possible angles is nearer the one it has. Null when the lower segment
-// cannot reach the wall from there.
-export function solveLegFromKnee(p, walls, pair, side) {
+// possible angles is nearer the one it has. A knee further from the body
+// than the upper segment of a leg of `maxLength` is pulled back to that
+// distance. Null when the lower segment cannot reach the wall from there.
+export function solveLegFromKnee(p, walls, pair, side, { maxLength = null } = {}) {
   const level = { ...DEFAULTS, ...p, pitch: 0, legs: legsFrom(p) };
   const frame = bodyFrame(level), f = frame.f;
   const q = legOf(level, pair, side);
   const { root, foot: oldFoot } = legEnds(level, walls, frame, pair, side);
-  const knee = frame.toAlley(q.kneeAlong, q.kneeHeight - level.bodyHeight, side * q.kneeOut);
-  const v = sub(knee, root);
-  const a = norm(v);
+  let knee = frame.toAlley(q.kneeAlong, q.kneeHeight - level.bodyHeight, side * q.kneeOut);
+  let v = sub(knee, root);
+  let a = norm(v);
+  const cap = maxLength === null ? LOCKED.legLength * bodyLength(level) : maxLength;
+  const capA = cap * LOCKED.kneeFraction;
+  if (a > capA) { v = scale(v, capA / a); a = capA; knee = add(root, v); } // pulled back to the brief's upper segment
   const horiz = Math.hypot(v[0], v[2]); // the upper segment's level reach
   if (a < 1e-6 || horiz < 1e-6) return null;
   const phi = Math.atan2(f * v[0], side * v[2]); // the plane's plan angle
@@ -513,15 +548,17 @@ export function solveLegFromKnee(p, walls, pair, side) {
     foot = [root[0] + h * dir[0], knee[1] + b * Math.sin(u), root[2] + h * dir[2]];
     footX = foot[0];
   }
-  return { ...q, ...footParamsAt(level, foot) };
+  return { ...q, ...kneeParamsAt(level, side, knee), ...footParamsAt(level, foot) };
 }
 
-// From the foot: the leg keeps its bend (`bendDeg`, the bend it had before
+// From the foot: the leg keeps its bend (`bend`, the bend it had before
 // the foot moved; without it, the bend of its present knee with the new
 // foot) and the brief's split, and turns and scales in the vertical plane
-// through root and foot to reach it, knee lifted. Null only when the foot
-// sits on the root.
-export function solveLegFromFoot(p, walls, pair, side, bendDeg = null) {
+// through root and foot to reach it, knee lifted, up to `maxLength` (the
+// brief's leg by default); past that it unfolds instead of growing. Null
+// when the foot is beyond even a straight leg's reach, or sits on the
+// root.
+export function solveLegFromFoot(p, walls, pair, side, { bend: bendDeg = null, maxLength = null } = {}) {
   const level = { ...DEFAULTS, ...p, pitch: 0, legs: legsFrom(p) };
   const frame = bodyFrame(level);
   const q = legOf(level, pair, side);
@@ -529,9 +566,18 @@ export function solveLegFromFoot(p, walls, pair, side, bendDeg = null) {
   const oldKnee = frame.toAlley(q.kneeAlong, q.kneeHeight - level.bodyHeight, side * q.kneeOut);
   const d = norm(sub(foot, root));
   if (d < 1e-6) return null;
-  const bend = Math.max(0, Math.min(170, bendDeg === null ? bendAt(root, oldKnee, foot) : bendDeg));
   const kf = LOCKED.kneeFraction;
-  const total = d / rootToFootDistance(kf, 1 - kf, bend); // the same shape, scaled to reach the foot
+  const cap = maxLength === null ? LOCKED.legLength * bodyLength(level) : maxLength;
+  let bend = Math.max(0, Math.min(170, bendDeg === null ? bendAt(root, oldKnee, foot) : bendDeg));
+  let total = d / rootToFootDistance(kf, 1 - kf, bend); // the same shape, scaled to reach the foot
+  if (total > cap) {
+    // At the length allowed the leg unfolds instead of growing further.
+    total = cap;
+    const a = cap * kf, b = cap - a;
+    const c = (d * d - a * a - b * b) / (2 * a * b); // cosine of the bend, by the law of cosines
+    if (c > 1) return null; // beyond even a straight leg's reach
+    bend = Math.acos(Math.max(-1, c)) / DEG;
+  }
   const { knee } = placeKnee(root, foot, total * kf, bend, frame.f);
   return { ...q, ...kneeParamsAt(level, side, knee) };
 }

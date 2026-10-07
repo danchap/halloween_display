@@ -42,7 +42,8 @@ const state = {
   hip: 15,          // the upper segment's angle above level where it leaves the body
   design: '',         // name of the loaded saved design; '' is the brief defaults
   bendLocked: true,   // the bend slider is inert until unlocked
-  keepSplit: true,    // the split rule: drags keep the knee at the brief's fraction of the leg and the leg in one vertical plane
+  keepSplit: true,    // the brief's-leg rule: the knee at 48 % of the leg, one vertical plane per leg, never longer than the brief's leg
+  plans: null,        // the plan angle wanted for each leg (degrees, + toward the head), kept across capped poses; null: as posed
   showJoints: true,
   plants: true,
 };
@@ -97,7 +98,7 @@ function writeDesigns(d) {
   try { localStorage.setItem(DESIGNS_KEY, JSON.stringify(d)); return true; } catch (e) { alert('This browser would not store the design.'); return false; }
 }
 function designSnapshot() {
-  return { params: clone(state.params), briefL: state.briefL, backBend: state.backBend };
+  return { params: clone(state.params), briefL: state.briefL, backBend: state.backBend, hip: state.hip, plans: state.plans };
 }
 // What was last loaded or saved, to warn before it is replaced unsaved.
 let loadedSnapshot = '';
@@ -118,7 +119,7 @@ function loadDesign(name) {
     return;
   }
   if (!name) {
-    state.params = clone(DEFAULTS); state.briefL = 0.8; state.backBend = 60; state.design = '';
+    state.params = clone(DEFAULTS); state.briefL = 0.8; state.backBend = 60; state.hip = 15; state.plans = null; state.design = '';
     applyBrief();
   } else {
     const d = readDesigns()[name];
@@ -126,6 +127,8 @@ function loadDesign(name) {
     state.params = normalizeParams(d.params);
     state.briefL = d.briefL ?? state.briefL;
     state.backBend = d.backBend ?? state.backBend;
+    state.hip = d.hip ?? state.hip;
+    state.plans = d.plans ?? null;
     state.design = name;
     refreshControls();
     onChange();
@@ -344,12 +347,13 @@ function updateHud() {
   const hud = document.getElementById('hud');
   if (!model) return;
   const s = model.stats;
-  let text = `L ${fmt(s.bodyLength)} m · legs ${s.pairs.map(q => fmt(q.total, 2)).join(' / ')} m · bends ${s.pairs.map(q => fmt(q.bend, 0)).join(' / ')}°` + (s.allOk ? '' : ' · a foot has no wall');
+  let text = `L ${fmt(s.bodyLength)} m · legs ${s.pairs.map(q => fmt(q.total, 2)).join(' / ')} m · bends ${s.pairs.map(q => fmt(q.bend, 0)).join(' / ')}°` + s.warnings.map(w => ' · ' + w).join('') + poseNote;
   const locked = document.pointerLockElement === renderer.domElement;
   if (mode === 'walk') text = (walker.fly ? 'Flying (Space up, X down): ' : 'Walking: ') + 'W A S D or arrows, Shift to hurry, ' + (locked ? 'move the mouse to look, Esc frees it' : 'drag the view to look (a click captures the mouse where the browser allows it)') + ', F to fly · ' + text;
   if (mode === 'path') text = `The path: ${pathT.toFixed(1)} s of ${path.duration.toFixed(0)} s · any move key takes over on foot · ` + text;
   if (jointDrag) text = (jointDrag.kind === 'wall' ? 'Foot: sliding on the wall' + (state.keepSplit ? ', the leg follows' : '') : jointDrag.kind === 'across' ? 'Knee: across the alley' : 'Knee: along the alley and up and down (hold Shift for across)')
-    + (jointDrag.kind !== 'wall' && state.keepSplit ? (jointDrag.stuck ? ' · the lower segment reaches no further that way' : ', the foot follows') : '')
+    + (jointDrag.kind !== 'wall' && state.keepSplit ? ', the foot follows' : '')
+    + (jointDrag.stuck ? ' · the leg reaches no further that way' : '')
     + (jointDrag.edgeOn ? ` · ${jointDrag.edgeOn} is edge-on from here, turn the view to move that way` : '') + ' · ' + text;
   hud.textContent = text;
 }
@@ -480,14 +484,15 @@ function moveJoint(e) {
   }
   Object.assign(q, moved);
   if (state.keepSplit) {
-    // The split rule: the rest of the leg follows the moved joint. A knee
-    // step that takes the lower segment out of reach of the wall is cut
-    // short at the limit, and the HUD says so.
+    // The brief's-leg rule: the rest of the leg follows the moved joint.
+    // A step the leg cannot follow (the lower segment out of reach of the
+    // wall, or the leg past the brief's length) is cut short at the
+    // limit, and the HUD says so.
     const solve = () => jointDrag.joint === 'foot'
-      ? solveLegFromFoot(p, walls, jointDrag.pair, jointDrag.side, jointDrag.bend)
+      ? solveLegFromFoot(p, walls, jointDrag.pair, jointDrag.side, { bend: jointDrag.bend })
       : solveLegFromKnee(p, walls, jointDrag.pair, jointDrag.side);
     let solved = solve(), clamped = false;
-    if (!solved && jointDrag.joint === 'knee') {
+    if (!solved) {
       clamped = true;
       const round3 = v => Math.round(v * 1000) / 1000;
       const partial = s => Object.fromEntries(Object.keys(moved).map(k => [k, round3(before[k] + s * (moved[k] - before[k]))]));
@@ -511,6 +516,11 @@ function moveJoint(e) {
   render();
 }
 function endJointDrag() {
+  // The dragged leg's plan angle is now what the user put it at.
+  if (jointDrag && state.plans) {
+    const j = legIndex(jointDrag.pair, jointDrag.side);
+    state.plans[j] = planAngles(state.params, walls)[j];
+  }
   jointDrag = null;
   hoverKey = '';
   hideGuide(world);
@@ -761,6 +771,7 @@ function refreshControls() {
   const hip = document.getElementById('hip'), hipN = document.getElementById('hipN');
   bend.value = state.backBend; bendN.value = state.backBend;
   hip.value = state.hip; hipN.value = state.hip;
+  bend.max = bendN.max = bendLimit();
   bend.disabled = bendN.disabled = hip.disabled = hipN.disabled = state.bendLocked;
   document.getElementById('bendLock').checked = state.bendLocked;
   for (const key of ['showJoints', 'plants', 'keepSplit']) document.getElementById(key).checked = state[key];
@@ -770,6 +781,7 @@ function showHelp(on) {
   if (on && document.pointerLockElement) document.exitPointerLock();
 }
 function onChange() {
+  poseNote = '';
   rebuildSpider();
   writeState();
 }
@@ -795,26 +807,56 @@ function solveFeet(targets = null) {
   // Under the split rule the upper segment is the brief's too, so the whole leg is.
   if (!targets && state.keepSplit) targets = legAngles(p, walls).map(x => ({ upper: total * LOCKED.kneeFraction, bend: x.bend }));
   p.legs = solveFeetForLength(p, walls, total * (1 - LOCKED.kneeFraction), targets);
+  state.plans = null; // the feet moved along the walls: the plan angles are what they now are
   refreshControls();
   onChange();
 }
 // Pose every leg from the two angle sliders (hip and back-pair knee bend)
-// at the plan angle it has now, so a spread survives a slider move. Each
-// leg is scaled to its wall: the feet keep their place along the walls
-// and change height, and the lengths follow.
+// at the plan angle wanted for it, so a spread survives a slider move.
+// Each leg is scaled to its wall, but under the brief's-leg rule never
+// past the brief's leg length: a leg that would need more is held there
+// and its foot slides toward straight across, and the HUD says so. The
+// wanted plan angles are remembered, so bringing the angles back brings
+// the fan back.
 function applyAngles() {
   const p = state.params;
-  p.legs = legsFromAngles(p, walls, { hip: state.hip, backBend: state.backBend, azimuths: planAngles(p, walls) });
+  state.backBend = Math.min(state.backBend, bendLimit());
+  const posed = legsFromAngles(p, walls, { hip: state.hip, backBend: state.backBend, azimuths: wantedPlans(), maxLength: lengthCap() });
+  p.legs = posed.legs;
   refreshControls();
   onChange();
+  notePose(posed);
+}
+// The plan angle wanted for each leg: as set by the spread or a drag, else as the legs are now.
+function wantedPlans() {
+  if (!state.plans) state.plans = planAngles(state.params, walls);
+  return state.plans;
+}
+// Under the brief's-leg rule a leg is capped at the brief's length; off, it takes the length the angles need.
+function lengthCap() { return state.keepSplit ? null : Infinity; }
+// Past this back-pair bend the lower segment would point back under the knee, with the knee beyond the wall.
+function bendLimit() { return Math.min(120, state.hip + 90); }
+// What the last pose had to give up, shown in the HUD until the next change.
+let poseNote = '';
+function notePose({ capped, stretched }) {
+  const legsWord = n => `${n} leg${n > 1 ? 's' : ''}`;
+  const notes = [];
+  if (capped.length) notes.push(`${legsWord(capped.length)} held at the brief's length, foot moved in`);
+  if (stretched.length) notes.push(`${legsWord(stretched.length)} stretched past the brief's length to reach the wall`);
+  poseNote = notes.map(n => ' · ' + n).join('');
+  updateHud();
 }
 // Fan the legs out in plan like a resting spider, at the two slider angles;
 // each leg is scaled to reach its wall.
 function spreadLegs() {
   const p = state.params;
-  p.legs = legsFromAngles(p, walls, { hip: state.hip, backBend: state.backBend, azimuths: SPREAD_AZIMUTHS });
+  state.backBend = Math.min(state.backBend, bendLimit());
+  state.plans = [0, 1, 2, 3].flatMap(i => [SPREAD_AZIMUTHS[i], SPREAD_AZIMUTHS[i]]);
+  const posed = legsFromAngles(p, walls, { hip: state.hip, backBend: state.backBend, azimuths: state.plans, maxLength: lengthCap() });
+  p.legs = posed.legs;
   refreshControls();
   onChange();
+  notePose(posed);
 }
 // The split rule applied to every leg at the angles it has now: the knee
 // at the brief's fraction and one vertical plane per leg; the lengths
@@ -822,13 +864,19 @@ function spreadLegs() {
 function keepSplitAll() {
   const p = state.params;
   const angles = legAngles(p, walls);
-  p.legs = legsFromAngles(p, walls, { azimuths: angles.map(x => x.plan), hips: angles.map(x => x.hip), bends: angles.map(x => x.bend) });
+  state.plans = angles.map(x => x.plan);
+  const posed = legsFromAngles(p, walls, { azimuths: state.plans, hips: angles.map(x => x.hip), bends: angles.map(x => x.bend) });
+  p.legs = posed.legs;
   onChange();
+  notePose(posed);
 }
 // Make one side the mirror image of the other.
 function copySide(from) {
   const p = state.params;
-  for (let i = 0; i < 4; i++) p.legs[legIndex(i, -from)] = { ...legOf(p, i, from) };
+  for (let i = 0; i < 4; i++) {
+    p.legs[legIndex(i, -from)] = { ...legOf(p, i, from) };
+    if (state.plans) state.plans[legIndex(i, -from)] = state.plans[legIndex(i, from)];
+  }
   onChange();
 }
 

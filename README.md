@@ -55,20 +55,31 @@ What it shows:
   segment's angle above level where it leaves the body) and the back-pair
   knee bend (front pair half, the middle pairs between), are locked by
   default: unlocking them, or moving one, poses every leg from the two
-  angles at the plan angle it already has, so a spread survives. Each
+  angles at the plan angle wanted for it, so a spread survives. Each
   foot keeps its place along its wall and changes height, and the leg
-  lengths follow from the walls. "Spread the legs like a spider" sets
-  the plan angles to a resting spider's fan (55° and 22° forward, 22°
-  and 55° back) at the same two angles, scaling each leg to reach its
-  wall.
-- The split rule, "Keep the brief's segment split" in the Legs section,
-  on by default: the knee stays at 48 % of each leg and the leg stays in
-  one vertical plane through its root, as in the brief, so a leg is fully
-  defined by its plan angle, hip angle, bend and the wall. A dragged foot
-  then turns and scales its leg, keeping the bend; a dragged knee moves
-  its foot along the wall to suit, and stops where the lower segment could
-  not reach the wall. Ticking the box re-solves every leg. Off, each ball
-  moves alone and the segments can take any lengths.
+  lengths follow from the walls, but never past the brief's 3.25 L: a
+  leg that would need more is held at that length and its foot slides
+  toward straight across, one that cannot reach its wall even straight
+  across is stretched to just reach, and the HUD says which. The wanted
+  plan angles are remembered, so bringing the angles back brings the fan
+  back. The knee bend is limited to the hip angle plus 90°; past that
+  the lower segment would point back under the knee and the knee sit
+  inside the wall. "Spread the legs like a spider" sets the plan angles
+  to a resting spider's fan (55° and 22° forward, 22° and 55° back) at
+  the same two angles, scaling each leg to reach its wall under the same
+  cap.
+- The brief's-leg rule, "Keep the brief's leg" in the Legs section, on
+  by default: the knee stays at 48 % of each leg, the leg stays in one
+  vertical plane through its root and is never longer than the brief's
+  3.25 L, so a leg is fully defined by its plan angle, hip angle, bend
+  and the wall. A dragged foot then turns and scales its leg, keeping the
+  bend, and unfolds it once at that length; a dragged knee moves its foot
+  along the wall to suit; a ball stops where the leg could not follow.
+  Ticking the box re-solves every leg. Off, each ball moves alone, the
+  segments can take any lengths, and the sliders let a leg grow as long
+  as its angles need.
+- The HUD names what is wrong with a pose: a foot with no wall, a knee
+  inside a wall, a foot below the lane.
 - Sliders for the abdomen (length, width, height), the head (length in
   front of the abdomen, width, height), the body's position along and
   above the alley, the pitch of the whole spider (body and legs turn
