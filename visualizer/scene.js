@@ -94,7 +94,9 @@ export function setSilhouetteBackground(world, on) {
 
 // ---------------------------------------------------------------- spider meshes
 
-const spiderLit = new THREE.MeshStandardMaterial({ color: 0x0b0b0c, roughness: 0.75, metalness: 0.05 });
+// Dark charcoal with some sheen rather than pure black, so the sun models
+// the body and legs and their shape reads in 3D (Daniel, 2026-10-07).
+const spiderLit = new THREE.MeshStandardMaterial({ color: 0x3a3a42, roughness: 0.45, metalness: 0.12 });
 const spiderFlat = new THREE.MeshBasicMaterial({ color: 0x000000 });
 const jointMat = new THREE.MeshStandardMaterial({ color: 0xe8822a, roughness: 0.6 });
 const badMat = new THREE.MeshStandardMaterial({ color: 0xe05a4a, roughness: 0.6 });
