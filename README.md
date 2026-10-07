@@ -51,10 +51,14 @@ What it shows:
   walls at staggered heights), with Daniel's choices: a capsule body
   2.5 m up on the alley's centreline, 6.5 m into the alley with the head
   toward the street, legs 4.8 cm and 3.6 cm thick. Pick another L and
-  press "Apply brief ratios at L". The back-pair bend is one slider,
-  locked by default: unlocking it sets every knee to that bend (front
-  pair half, the middle pairs between) and slides the feet so the legs
-  keep the brief's length, and so does moving it.
+  press "Apply brief ratios at L". Two angle sliders, the hip (the upper
+  segment's angle above level where it leaves the body) and the back-pair
+  knee bend (front pair half, the middle pairs between), are locked by
+  default: unlocking them, or moving one, poses every leg from the two
+  angles at the brief's leg length, with each foot landing where that
+  puts it on the wall. "Spread the legs like a spider" fans them out in
+  plan instead (55° and 22° forward, 22° and 55° back) at the same two
+  angles, scaling each leg to reach its wall.
 - Sliders for the abdomen (length, width, height), the head (length in
   front of the abdomen, width, height), the body's position along and
   above the alley, the pitch of the whole spider (body and legs turn

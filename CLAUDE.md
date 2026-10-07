@@ -59,7 +59,8 @@ test run before the night.
   centreline with no head lift, the body is a capsule, roofs and the lane
   from the photo are always shown, the sky is blue (no silhouette mode),
   no person for scale, legs are edited one by one (no mirror option, only
-  the copy-side buttons). The bend series is one locked slider. Controls
+  the copy-side buttons). The bend series is two locked sliders (hip and knee bend) plus a
+  spread button (plan fan 55/22/-22/-55 degrees). Controls
   live in a pop-up (C key, Controls button, double-tap), not in a
   paragraph. upgradeParams in spider.js enforces the fixed values.
 

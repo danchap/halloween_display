@@ -88,8 +88,10 @@
     <div class="row"><label>Body length <small>L</small></label><input id="briefL" type="range" min="0.3" max="1.6" step="0.01"><input id="briefLn" type="number" min="0.3" max="1.6" step="0.01"></div>
     <button id="applyBrief" class="primary">Apply brief ratios at L</button>
     <button id="solveFeet">Move feet to brief leg length</button>
-    <div class="row" style="margin-top:8px"><label>Back-pair bend <small>° off straight, front pair half</small></label><input id="bend" type="range" min="0" max="120" step="1" disabled><input id="bendN" type="number" min="0" max="120" step="1" disabled></div>
-    <div class="check"><input type="checkbox" id="bendLock" checked><label for="bendLock">Locked. Unlock to set every knee to this bend; the feet follow.</label></div>
+    <div class="row" style="margin-top:8px"><label title="The joint where the leg leaves the body">Hip angle <small>° above level</small></label><input id="hip" type="range" min="-60" max="80" step="1" disabled><input id="hipN" type="number" min="-60" max="80" step="1" disabled></div>
+    <div class="row"><label>Knee bend <small>° off straight, back pair; front half</small></label><input id="bend" type="range" min="0" max="120" step="1" disabled><input id="bendN" type="number" min="0" max="120" step="1" disabled></div>
+    <div class="check"><input type="checkbox" id="bendLock" checked><label for="bendLock">Locked. Unlock to pose every leg from these two angles at the brief's leg length; the feet follow.</label></div>
+    <button id="spreadLegs" title="Fan the legs out in plan like a resting spider (55° and 22° forward, 22° and 55° back) at these two angles; each leg is scaled to reach its wall">Spread the legs like a spider</button>
 
     <div id="controls"></div>
 

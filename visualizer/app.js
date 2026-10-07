@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, bendFactor,
-         flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams, legIndex, legOf } from './spider.js';
+         flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams, legIndex, legOf, legsFromAngles,
+         SPREAD_AZIMUTHS } from './spider.js';
 import { wallsFromSite, insideBuilding } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildExtras, setRoofsVisible,
          setPlantsVisible, showGuide, hideGuide } from './scene.js';
@@ -37,7 +38,8 @@ const SLIDERS = [
 const state = {
   params: clone(DEFAULTS),
   briefL: 0.8,
-  backBend: 60,
+  backBend: 60,     // knee bend of the back pair, degrees off straight; the front pair gets half
+  hip: 15,          // the upper segment's angle above level where it leaves the body
   design: '',         // name of the loaded saved design; '' is the brief defaults
   bendLocked: true,   // the bend slider is inert until unlocked
   showJoints: true,
@@ -727,8 +729,10 @@ function refreshControls() {
   const l = document.getElementById('briefL'), ln = document.getElementById('briefLn');
   l.value = state.briefL; ln.value = state.briefL;
   const bend = document.getElementById('bend'), bendN = document.getElementById('bendN');
+  const hip = document.getElementById('hip'), hipN = document.getElementById('hipN');
   bend.value = state.backBend; bendN.value = state.backBend;
-  bend.disabled = bendN.disabled = state.bendLocked;
+  hip.value = state.hip; hipN.value = state.hip;
+  bend.disabled = bendN.disabled = hip.disabled = hipN.disabled = state.bendLocked;
   document.getElementById('bendLock').checked = state.bendLocked;
   for (const key of ['showJoints', 'plants']) document.getElementById(key).checked = state[key];
 }
@@ -763,16 +767,23 @@ function solveFeet(targets = null) {
   refreshControls();
   onChange();
 }
-// Set every knee to the chosen back-pair bend (front pair half, the
-// middle pairs between), keeping each leg's upper segment length, and
-// slide the feet so the legs keep the brief's length at that bend.
-function applyBend(b) {
-  state.backBend = b;
+// Pose every leg from the two angle sliders (hip and back-pair knee bend)
+// at the brief's segment lengths; the feet land where that puts them on
+// the walls.
+function applyAngles() {
   const p = state.params;
-  for (const l of model.legs) {
-    p.legs[legIndex(l.pair, l.side)] = kneeFromBend(p, walls, l.pair, l.a, b * bendFactor(l.pair), l.side);
-  }
-  solveFeet([0, 1, 2, 3].map(i => ({ upper: model.legs.find(l => l.pair === i && l.side === 1).a, bend: b * bendFactor(i) })));
+  const lower = LOCKED.legLength * bodyLength(p) * (1 - LOCKED.kneeFraction);
+  p.legs = legsFromAngles(p, walls, { hip: state.hip, backBend: state.backBend, lower });
+  refreshControls();
+  onChange();
+}
+// Fan the legs out in plan like a resting spider, at the two slider angles;
+// each leg is scaled to reach its wall.
+function spreadLegs() {
+  const p = state.params;
+  p.legs = legsFromAngles(p, walls, { hip: state.hip, backBend: state.backBend, azimuths: SPREAD_AZIMUTHS });
+  refreshControls();
+  onChange();
 }
 // Make one side the mirror image of the other.
 function copySide(from) {
@@ -791,13 +802,18 @@ function applyPanes() {
 }
 
 function wireUI() {
-  const bend = document.getElementById('bend'), bendN = document.getElementById('bendN');
-  const setBend = e => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) applyBend(Math.max(0, Math.min(120, v))); };
-  bend.addEventListener('input', setBend); bendN.addEventListener('change', setBend);
+  const angle = (id, key, lo, hi) => {
+    const set = e => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { state[key] = Math.max(lo, Math.min(hi, v)); applyAngles(); } };
+    document.getElementById(id).addEventListener('input', set);
+    document.getElementById(id + 'N').addEventListener('change', set);
+  };
+  angle('hip', 'hip', -60, 80);
+  angle('bend', 'backBend', 0, 120);
   document.getElementById('bendLock').addEventListener('change', e => {
     state.bendLocked = e.target.checked;
-    if (!state.bendLocked) applyBend(state.backBend); else { refreshControls(); writeState(); }
+    if (!state.bendLocked) applyAngles(); else { refreshControls(); writeState(); }
   });
+  document.getElementById('spreadLegs').addEventListener('click', spreadLegs);
   document.getElementById('helpButton').addEventListener('click', () => showHelp(true));
   document.getElementById('helpClose').addEventListener('click', () => showHelp(false));
   document.getElementById('help').addEventListener('click', e => { if (e.target.id === 'help') showHelp(false); });
@@ -909,6 +925,6 @@ async function main() {
   if (view === 'walk') { orbit.update(); setMode('walk'); }
   else (VIEWS[view] || VIEWS.Street)();
   window.spider = { state, panes, get model() { return model; }, VIEWS, rebuildSpider, render, walker, setMode, startPath, stepWalker, get mode() { return mode; },
-    pickJoint, startJointDrag, moveJoint, endJointDrag, get jointDrag() { return jointDrag; }, loadDesign, saveDesignAs, applyBend, showHelp, camera, world };
+    pickJoint, startJointDrag, moveJoint, endJointDrag, get jointDrag() { return jointDrag; }, loadDesign, saveDesignAs, applyAngles, spreadLegs, showHelp, camera, world };
 }
 main();
