@@ -61,6 +61,14 @@ What it shows:
   the plan angles to a resting spider's fan (55° and 22° forward, 22°
   and 55° back) at the same two angles, scaling each leg to reach its
   wall.
+- The split rule, "Keep the brief's segment split" in the Legs section,
+  on by default: the knee stays at 48 % of each leg and the leg stays in
+  one vertical plane through its root, as in the brief, so a leg is fully
+  defined by its plan angle, hip angle, bend and the wall. A dragged foot
+  then turns and scales its leg, keeping the bend; a dragged knee moves
+  its foot along the wall to suit, and stops where the lower segment could
+  not reach the wall. Ticking the box re-solves every leg. Off, each ball
+  moves alone and the segments can take any lengths.
 - Sliders for the abdomen (length, width, height), the head (length in
   front of the abdomen, width, height), the body's position along and
   above the alley, the pitch of the whole spider (body and legs turn

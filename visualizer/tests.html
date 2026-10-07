@@ -6,7 +6,8 @@
 <script type="module">
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, flatWalls, rootToFootDistance,
          lowerSegmentFor, solveFeetForLength, bendFactor, placeKnee, kneeParamsAt, footParamsAt,
-         kneeFromBend, upgradeParams, legIndex, legOf, legsFromAngles, SPREAD_AZIMUTHS, planAngles } from './spider.js';
+         kneeFromBend, upgradeParams, legIndex, legOf, legsFromAngles, SPREAD_AZIMUTHS, planAngles, legAngles,
+         solveLegFromKnee, solveLegFromFoot, rootAlongOffset } from './spider.js';
 import { loadSite, wallsFromSite, insideBuilding } from './site.js';
 import { HALLOWEEN_NOON, solarPosition, sunVector } from './sun.js';
 
@@ -199,6 +200,62 @@ try {
   check('spread: front legs longer than the middle ones', leg(spread, 0, 1).a + leg(spread, 0, 1).b > leg(spread, 1, 1).a + leg(spread, 1, 1).b + 0.3);
   const spreadPlan = planAngles(spread.params, walls);
   check('spread: plan angles read back from the pose', spreadPlan.every((v, j) => near(v, SPREAD_AZIMUTHS[Math.floor(j / 2)], 0.5)), spreadPlan.map(v => v.toFixed(1)).join(','));
+
+  // Per-leg angles read back, and per-leg hips and bends posed.
+  const angles = legAngles(posed.params, walls);
+  check('legAngles reads plan, hip and bend', angles.every((x, j) => near(x.plan, plan8[j], 0.5) && near(x.hip, hipDeg, 0.3) && near(x.bend, 60 * bendFactor(Math.floor(j / 2)), 0.3)), JSON.stringify(angles.map(x => [x.plan, x.hip, x.bend].map(v => +v.toFixed(1)))));
+  const hips8 = [5, 10, 15, 20, 25, 30, 35, 40], bends8 = [20, 30, 40, 50, 60, 70, 80, 90];
+  const perLeg = buildSpider({ ...p, legs: legsFromAngles(p, walls, { azimuths: plan8, hips: hips8, bends: bends8 }) }, walls);
+  check('per-leg hips and bends posed', perLeg.legs.every((l, j) => near(hipOfLeg(l), hips8[j], 0.3) && near(l.bend, bends8[j], 0.3) && near(planOfLeg(l), plan8[j], 0.5) && near(l.a / (l.a + l.b), LOCKED.kneeFraction, 0.005)), perLeg.legs.map(l => hipOfLeg(l).toFixed(1) + '/' + l.bend.toFixed(1)).join(','));
+
+  // The split rule after a drag. From a moved knee: the knee stays, the
+  // foot moves along the wall so the lower segment is the brief's share,
+  // in the knee's vertical plane.
+  const splitOf = l => l.a / (l.a + l.b);
+  const planar = l => { // the knee in the vertical plane through root and foot
+    const u = [l.foot[0] - l.root[0], l.foot[2] - l.root[2]], k = [l.knee[0] - l.root[0], l.knee[2] - l.root[2]];
+    return Math.abs(u[0] * k[1] - u[1] * k[0]) / Math.hypot(...u) < 2e-3;
+  };
+  const lifted = l => { // the knee above the root-foot line
+    const u = [l.foot[0] - l.root[0], l.foot[1] - l.root[1], l.foot[2] - l.root[2]], k = [l.knee[0] - l.root[0], l.knee[1] - l.root[1], l.knee[2] - l.root[2]];
+    const s = (u[0] * k[0] + u[1] * k[1] + u[2] * k[2]) / (u[0] * u[0] + u[1] * u[1] + u[2] * u[2]);
+    return k[1] > s * u[1] - 1e-6;
+  };
+  const jK = legIndex(3, 1);
+  const movedK = { ...posed.params, legs: posed.params.legs.map(q => ({ ...q })) };
+  movedK.legs[jK] = { ...movedK.legs[jK], kneeAlong: movedK.legs[jK].kneeAlong + 0.15, kneeHeight: movedK.legs[jK].kneeHeight + 0.2 };
+  const fromKnee = solveLegFromKnee(movedK, walls, 3, 1);
+  check('knee rule: solved', !!fromKnee);
+  if (fromKnee) {
+    movedK.legs[jK] = fromKnee;
+    const l = buildSpider(movedK, walls).legs[jK], was = posed.legs[jK];
+    check('knee rule: the knee is where it was put', near(l.knee[0], was.knee[0] - 0.15, 2e-3) && near(l.knee[1], was.knee[1] + 0.2, 2e-3) && near(l.knee[2], was.knee[2], 2e-3), JSON.stringify([was.knee, l.knee]));
+    check('knee rule: split is the brief\'s', near(splitOf(l), LOCKED.kneeFraction, 0.003), splitOf(l).toFixed(3));
+    check('knee rule: foot on its wall, in the knee\'s plane', near(Math.abs(l.foot[2]), 1.47) && l.status === 'ok' && planar(l));
+    check('knee rule: the foot moved', Math.hypot(l.foot[0] - was.foot[0], l.foot[1] - was.foot[1]) > 0.02, Math.hypot(l.foot[0] - was.foot[0], l.foot[1] - was.foot[1]).toFixed(3));
+    check('knee rule: the lower segment still points down', l.foot[1] < l.knee[1]);
+  }
+  const tooClose = { ...movedK, legs: movedK.legs.map(q => ({ ...q })) };
+  tooClose.legs[jK] = { ...tooClose.legs[jK], kneeOut: p.headWidth / 2 + 0.1, kneeAlong: rootAlongOffset(p, 3), kneeHeight: p.bodyHeight + 0.02 };
+  check('knee rule: a knee too near the body for the lower segment to reach the wall is refused', solveLegFromKnee(tooClose, walls, 3, 1) === null);
+  // From a moved foot: the leg keeps its bend and split, turning and scaling to reach.
+  const jF = legIndex(1, -1);
+  const movedF = { ...posed.params, legs: posed.params.legs.map(q => ({ ...q })) };
+  movedF.legs[jF] = { ...movedF.legs[jF], footAlong: movedF.legs[jF].footAlong + 0.4, footHeight: movedF.legs[jF].footHeight + 0.3 };
+  const fromFoot = solveLegFromFoot(movedF, walls, 1, -1, posed.legs[jF].bend);
+  check('foot rule: solved', !!fromFoot);
+  if (fromFoot) {
+    movedF.legs[jF] = fromFoot;
+    const l = buildSpider(movedF, walls).legs[jF], was = posed.legs[jF];
+    check('foot rule: the foot is where it was put', near(l.foot[0], was.foot[0] - 0.4, 2e-3) && near(l.foot[1], was.foot[1] + 0.3, 2e-3) && near(Math.abs(l.foot[2]), 1.47), JSON.stringify([was.foot, l.foot]));
+    check('foot rule: bend kept', near(l.bend, was.bend, 0.3), `${was.bend.toFixed(2)} -> ${l.bend.toFixed(2)}`);
+    check('foot rule: split is the brief\'s', near(splitOf(l), LOCKED.kneeFraction, 0.003), splitOf(l).toFixed(3));
+    check('foot rule: knee in the plane, lifted', planar(l) && lifted(l));
+    check('foot rule: the leg scaled to reach', near(l.a + l.b, (was.a + was.b) * l.d / was.d, 5e-3), `${(l.a + l.b).toFixed(3)} vs ${((was.a + was.b) * l.d / was.d).toFixed(3)}`);
+  }
+  // The feet solver takes its targets per leg and defaults to each leg's own values.
+  const solvedAll = buildSpider({ ...perLeg.params, legs: solveFeetForLength(perLeg.params, walls, bBrief) }, walls);
+  check('feet solver keeps each leg\'s own upper and bend', solvedAll.legs.every((l, j) => near(l.a, perLeg.legs[j].a, 3e-3) && near(l.bend, bends8[j], 0.5) && near(l.b, bBrief, 3e-3)), solvedAll.legs.map(l => `${l.a.toFixed(2)}/${l.bend.toFixed(0)}/${l.b.toFixed(2)}`).join(','));
 
   // Site: alley frame round trip and real walls about 3 m apart near the body.
   const site = await loadSite();

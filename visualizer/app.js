@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, bendFactor,
          flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams, legIndex, legOf, legsFromAngles,
-         SPREAD_AZIMUTHS, planAngles } from './spider.js';
+         SPREAD_AZIMUTHS, planAngles, legAngles, solveLegFromKnee, solveLegFromFoot } from './spider.js';
 import { wallsFromSite, insideBuilding } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildExtras, setRoofsVisible,
          setPlantsVisible, showGuide, hideGuide } from './scene.js';
@@ -42,6 +42,7 @@ const state = {
   hip: 15,          // the upper segment's angle above level where it leaves the body
   design: '',         // name of the loaded saved design; '' is the brief defaults
   bendLocked: true,   // the bend slider is inert until unlocked
+  keepSplit: true,    // the split rule: drags keep the knee at the brief's fraction of the leg and the leg in one vertical plane
   showJoints: true,
   plants: true,
 };
@@ -347,7 +348,8 @@ function updateHud() {
   const locked = document.pointerLockElement === renderer.domElement;
   if (mode === 'walk') text = (walker.fly ? 'Flying (Space up, X down): ' : 'Walking: ') + 'W A S D or arrows, Shift to hurry, ' + (locked ? 'move the mouse to look, Esc frees it' : 'drag the view to look (a click captures the mouse where the browser allows it)') + ', F to fly · ' + text;
   if (mode === 'path') text = `The path: ${pathT.toFixed(1)} s of ${path.duration.toFixed(0)} s · any move key takes over on foot · ` + text;
-  if (jointDrag) text = (jointDrag.kind === 'wall' ? 'Foot: sliding on the wall' : jointDrag.kind === 'across' ? 'Knee: across the alley' : 'Knee: along the alley and up and down (hold Shift for across)')
+  if (jointDrag) text = (jointDrag.kind === 'wall' ? 'Foot: sliding on the wall' + (state.keepSplit ? ', the leg follows' : '') : jointDrag.kind === 'across' ? 'Knee: across the alley' : 'Knee: along the alley and up and down (hold Shift for across)')
+    + (jointDrag.kind !== 'wall' && state.keepSplit ? (jointDrag.stuck ? ' · the lower segment reaches no further that way' : ', the foot follows') : '')
     + (jointDrag.edgeOn ? ` · ${jointDrag.edgeOn} is edge-on from here, turn the view to move that way` : '') + ' · ' + text;
   hud.textContent = text;
 }
@@ -396,6 +398,7 @@ function startJointDrag(j, e) {
   if (j.joint === 'foot') {
     drag.kind = 'wall';
     drag.axes = [[1, 0, 0], [0, 1, 0]];
+    drag.bend = modelLeg(j).bend; // under the split rule the leg keeps this bend while its foot moves
     showGuide(world, 'wall', point, { inward: -j.side });
   } else if (modifierHeld(e)) {
     drag.kind = 'across';
@@ -462,6 +465,7 @@ function moveJoint(e) {
   if (!t) return;
   const p = state.params;
   const q = legOf(p, jointDrag.pair, jointDrag.side);
+  const before = { ...q };
   // The world point is stored as the level pose (see kneeParamsAt), so a
   // vertical or level move changes both stored coordinates when pitched.
   let moved;
@@ -475,6 +479,31 @@ function moveJoint(e) {
     moved = { kneeAlong: k.kneeAlong, kneeHeight: k.kneeHeight };
   }
   Object.assign(q, moved);
+  if (state.keepSplit) {
+    // The split rule: the rest of the leg follows the moved joint. A knee
+    // step that takes the lower segment out of reach of the wall is cut
+    // short at the limit, and the HUD says so.
+    const solve = () => jointDrag.joint === 'foot'
+      ? solveLegFromFoot(p, walls, jointDrag.pair, jointDrag.side, jointDrag.bend)
+      : solveLegFromKnee(p, walls, jointDrag.pair, jointDrag.side);
+    let solved = solve(), clamped = false;
+    if (!solved && jointDrag.joint === 'knee') {
+      clamped = true;
+      const round3 = v => Math.round(v * 1000) / 1000;
+      const partial = s => Object.fromEntries(Object.keys(moved).map(k => [k, round3(before[k] + s * (moved[k] - before[k]))]));
+      let lo = 0, hi = 1;
+      for (let i = 0; i < 7; i++) {
+        const s = (lo + hi) / 2;
+        Object.assign(q, before, partial(s));
+        if (solve()) lo = s; else hi = s;
+      }
+      Object.assign(q, before, partial(lo));
+      solved = lo > 0 ? solve() : null;
+    }
+    jointDrag.stuck = clamped;
+    if (!solved) { Object.assign(q, before); updateHud(); return; }
+    Object.assign(q, solved);
+  }
   onChange();
   const point = jointPoint(jointDrag);
   jointDrag.point = point;
@@ -734,7 +763,7 @@ function refreshControls() {
   hip.value = state.hip; hipN.value = state.hip;
   bend.disabled = bendN.disabled = hip.disabled = hipN.disabled = state.bendLocked;
   document.getElementById('bendLock').checked = state.bendLocked;
-  for (const key of ['showJoints', 'plants']) document.getElementById(key).checked = state[key];
+  for (const key of ['showJoints', 'plants', 'keepSplit']) document.getElementById(key).checked = state[key];
 }
 function showHelp(on) {
   document.getElementById('help').hidden = !on;
@@ -762,8 +791,10 @@ function applyBrief() {
 // at the given (or the current) upper lengths and bends.
 function solveFeet(targets = null) {
   const p = state.params;
-  const lowerTarget = LOCKED.legLength * bodyLength(p) * (1 - LOCKED.kneeFraction);
-  p.legs = solveFeetForLength(p, walls, lowerTarget, targets);
+  const total = LOCKED.legLength * bodyLength(p);
+  // Under the split rule the upper segment is the brief's too, so the whole leg is.
+  if (!targets && state.keepSplit) targets = legAngles(p, walls).map(x => ({ upper: total * LOCKED.kneeFraction, bend: x.bend }));
+  p.legs = solveFeetForLength(p, walls, total * (1 - LOCKED.kneeFraction), targets);
   refreshControls();
   onChange();
 }
@@ -783,6 +814,15 @@ function spreadLegs() {
   const p = state.params;
   p.legs = legsFromAngles(p, walls, { hip: state.hip, backBend: state.backBend, azimuths: SPREAD_AZIMUTHS });
   refreshControls();
+  onChange();
+}
+// The split rule applied to every leg at the angles it has now: the knee
+// at the brief's fraction and one vertical plane per leg; the lengths
+// follow from the walls.
+function keepSplitAll() {
+  const p = state.params;
+  const angles = legAngles(p, walls);
+  p.legs = legsFromAngles(p, walls, { azimuths: angles.map(x => x.plan), hips: angles.map(x => x.hip), bends: angles.map(x => x.bend) });
   onChange();
 }
 // Make one side the mirror image of the other.
@@ -842,6 +882,10 @@ function wireUI() {
       onChange();
     });
   }
+  document.getElementById('keepSplit').addEventListener('change', e => {
+    state.keepSplit = e.target.checked;
+    if (state.keepSplit) keepSplitAll(); else writeState();
+  });
   document.getElementById('savePng').addEventListener('click', () => {
     render();
     const a = document.createElement('a');
