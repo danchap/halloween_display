@@ -13,7 +13,9 @@ danielsknowledge.com, from a clone of this repo on that server;
 `visualizer/tools/deploy_site.sh` pushes and pulls it. The walk-through
 video is at https://claude.ai/artifact/KqzFnsro5Svw8bLHnKhrSw. (An earlier
 copy of the viewer on claude.ai was retired on 2026-10-04 and now points
-here.)
+here.) The build plan, with the parts to order, the suppliers near the
+island, the cut list and the schedule, is `docs/construction.md`, also
+published as a page at https://claude.ai/artifact/CNaM4SD2g21dMZypXPYdvd.
 
 ## 3D visualizer
 
