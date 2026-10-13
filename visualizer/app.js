@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, bendFactor,
          flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams, legIndex, legOf, legsFromAngles,
-         SPREAD_AZIMUTHS, planAngles, legAngles, solveLegFromKnee, solveLegFromFoot, spreadLegsAt, spreadPreset, faceOf } from './spider.js';
+         SPREAD_AZIMUTHS, CLIMB_BEND_FACTORS, planAngles, legAngles, solveLegFromKnee, solveLegFromFoot, spreadLegsAt, spreadPreset, faceOf } from './spider.js';
 import { wallsFromSite, insideBuilding } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildBuildMeshes, rebuildFaceMeshes, rebuildExtras, setRoofsVisible,
          setPlantsVisible, showGuide, hideGuide } from './scene.js';
@@ -1053,7 +1053,7 @@ function spreadLegs() {
   // knee slider and scaled to its wall, never past the brief's length.
   const heights = model ? model.legs.map(l => l.foot[1]) : p.legs.map(q => q.footHeight);
   const posed = settle(() => {
-    const r = spreadLegsAt(p, { azimuths: SPREAD_AZIMUTHS, footHeights: heights, backBend: state.backBend, walls });
+    const r = spreadLegsAt(p, { azimuths: SPREAD_AZIMUTHS, footHeights: heights, backBend: state.backBend, bends: CLIMB_BEND_FACTORS.map(f => state.backBend * f), walls }); // the climbing series: the front pairs bend most
     p.legs = r.legs;
     return { capped: r.held, stretched: [] };
   });

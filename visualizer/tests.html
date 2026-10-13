@@ -7,7 +7,7 @@
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, flatWalls, rootToFootDistance,
          lowerSegmentFor, solveFeetForLength, bendFactor, placeKnee, kneeParamsAt, footParamsAt,
          kneeFromBend, upgradeParams, legIndex, legOf, legsFromAngles, SPREAD_AZIMUTHS, planAngles, legAngles,
-         solveLegFromKnee, solveLegFromFoot, rootAlongOffset, bodyFrame, faceOf, faceTilt, FACE, EYE_CHOICES } from './spider.js';
+         solveLegFromKnee, solveLegFromFoot, rootAlongOffset, bodyFrame, faceOf, faceTilt, FACE, EYE_CHOICES, spreadLegsAt, CLIMB_BEND_FACTORS } from './spider.js';
 import { loadSite, wallsFromSite, insideBuilding } from './site.js';
 import { HALLOWEEN_NOON, solarPosition, sunVector } from './sun.js';
 import { SYSTEMS, BRACINGS, systemById, buildParts, stockPlan, recipeFor, recipeText, pairAngle, straightWalls } from './build.js';
@@ -97,6 +97,15 @@ try {
     check(`pitch ${tag}: centre of the feet turns about the body`, near(dist(leg(up, 0, 1).foot, [up.params.along, up.params.bodyHeight, 1.47]), dist(leg(flat, 0, 1).foot, [flat.params.along, flat.params.bodyHeight, 1.47]), 1e-9));
     check(`pitch ${tag}: mesh tilt sign`, Math.sign(up.head.rotZ) === Math.sign(facing));
     check(`pitch ${tag}: top is higher`, up.stats.topHeight >= flat.stats.topHeight);
+  }
+  // The default pose climbs: the front pairs bend most (the climbing
+  // series on the knee slider's 60°), the feet step down from 2.6 to 2.0 m.
+  {
+    const dm = buildSpider(DEFAULTS, walls);
+    const bendsOf = model => [0, 1, 2, 3].map(i => model.legs.find(l => l.pair === i && l.side > 0).bend);
+    check('default pose: the climbing series of bends, front first', bendsOf(dm).every((b, i) => near(b, 60 * [1.07, 0.93, 0.80, 0.67][i], 0.6)) && JSON.stringify(CLIMB_BEND_FACTORS) === '[1.07,0.93,0.8,0.67]', bendsOf(dm).map(b => b.toFixed(1)).join(','));
+    check('default pose: the feet step down from 2.6 to 2.0 m, the front knees highest', [0, 1, 2, 3].every(i => near(dm.legs.find(l => l.pair === i && l.side > 0).foot[1], [2.6, 2.4, 2.2, 2.0][i], 0.01)) && dm.legs.find(l => l.pair === 0 && l.side > 0).knee[1] > dm.legs.find(l => l.pair === 3 && l.side > 0).knee[1] + 0.3 && dm.legs.find(l => l.pair === 0 && l.side > 0).knee[1] > dm.head.center[1] + 0.3, JSON.stringify(dm.legs.filter(l => l.side > 0).map(l => [l.knee[1], l.foot[1]])));
+    check('spread: given bends replace the brief\'s series', (() => { const r = spreadLegsAt({ ...DEFAULTS }, { footHeights: [2.6, 2.4, 2.2, 2.0], bends: [50, 50, 50, 50], walls }); const mm = buildSpider({ ...DEFAULTS, legs: r.legs }, walls); return mm.legs.every(l => near(l.bend, 50, 0.6)); })());
   }
   // The face: eight eyes on the head's front cap, facing out, two big,
   // in mirrored pairs; they turn with the body when pitched.
@@ -625,7 +634,7 @@ try {
     check('frame: the rigid bases keep their 0.15 m overhang and two bags', ['R', 'L'].every(side => { const s = rigid.skis.find(k => k.side === side); return near(s.from, Math.min(...s.posts) - 0.15, 1e-3) && near(s.to, Math.max(...s.posts) + 0.15, 1e-3); }) && rigid.bom.sandbags === 4 && rigid.members.filter(x => x.role === 'ballast').every(x => x.kind === 'ski') && rigid.bom.stays.count === 0);
     // The face in the parts list.
     const withEyes = eyes => buildParts(m, p, walls, { system: pvc, maxPiece: 2.0, eyes });
-    check('eyes: the parts list carries the kit chosen, googly by default', frameParts.eyes === 'googly' && frameParts.bom.cost.lines.filter(l => l.eyes === 'googly').length === 2 && withEyes('lit').eyes === 'lit' && withEyes('lit').bom.cost.lines.filter(l => l.eyes === 'lit').length === 2 && withEyes('none').bom.cost.lines.every(l => !l.eyes) && withEyes('none').eyes === 'none' && withEyes('owl').eyes === 'none' && withEyes('lit').bom.cost.total > withEyes('none').bom.cost.total && frameParts.bom.cost.total > withEyes('none').bom.cost.total && frameParts.bom.cost.lines.every(l => l.group !== 'covering and body' || !l.eyes || /eyes/.test(l.item)));
+    check('eyes: the parts list carries the kit chosen, googly by default', frameParts.eyes === 'googly' && frameParts.bom.cost.lines.filter(l => l.eyes === 'googly').length === 2 && withEyes('lit').eyes === 'lit' && withEyes('lit').bom.cost.lines.filter(l => l.eyes === 'lit').length === 3 && withEyes('none').bom.cost.lines.every(l => !l.eyes) && withEyes('none').eyes === 'none' && withEyes('owl').eyes === 'none' && withEyes('lit').bom.cost.total > withEyes('none').bom.cost.total && frameParts.bom.cost.total > withEyes('none').bom.cost.total && frameParts.bom.cost.lines.every(l => l.group !== 'covering and body' || !l.eyes || /eyes/.test(l.item)));
   }
 
   // Site: alley frame round trip and real walls about 3 m apart near the body.

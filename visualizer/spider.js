@@ -26,6 +26,12 @@ export const BEND_SERIES = [15, 30, 45, 60, 75, 90, 105];
 // A resting spider's leg spread in plan: each pair's angle from straight
 // across, degrees, positive toward the head. Front pair first.
 export const SPREAD_AZIMUTHS = [55, 22, -22, -55];
+// The climbing series of knee bends for the spread, as fractions of the
+// knee slider (the back pair's bend in the brief's series): the front
+// pairs bend most, so their knees rise above the head and the back legs
+// trail, which with the body pitched up reads as climbing (Daniel,
+// 2026-10-13). At 60° on the slider: 64 / 56 / 48 / 40° front to back.
+export const CLIMB_BEND_FACTORS = [1.07, 0.93, 0.80, 0.67];
 
 // Where the four leg roots sit along the visible head (cephalothorax), as
 // fractions of its length measured from the front of the abdomen, front
@@ -274,7 +280,7 @@ function levelFootHeight(target, { pitch, bodyHeight, rootAlong, forward, d, dz 
 // brief's leg: a leg that would need more is held at that length and its
 // foot slides toward straight across. The feet keep their heights, so a
 // pitch does not throw them up or down the walls.
-export function spreadLegsAt(p, { azimuths = SPREAD_AZIMUTHS, footHeights, backBend = 60, wallDistance = 1.47, walls = null } = {}) {
+export function spreadLegsAt(p, { azimuths = SPREAD_AZIMUTHS, footHeights, backBend = 60, bends = null, wallDistance = 1.47, walls = null } = {}) {
   const frame = bodyFrame(p);
   const L = bodyLength(p);
   const cap = LOCKED.legLength * L;
@@ -282,7 +288,7 @@ export function spreadLegsAt(p, { azimuths = SPREAD_AZIMUTHS, footHeights, backB
   const legs = [];
   const held = [];
   for (let i = 0; i < 4; i++) {
-    const bend = backBend * bendFactor(i);
+    const bend = bends ? bends[i] : backBend * bendFactor(i); // bends: one knee bend per pair, front first, instead of the brief's series
     const unitD = rootToFootDistance(kf, 1 - kf, bend); // root-to-foot distance of a unit leg
     for (const side of [1, -1]) {
       const j = legIndex(i, side);
@@ -325,7 +331,7 @@ export function spreadPreset(L, options = {}) {
   const o = { pitch: 45, azimuths: SPREAD_AZIMUTHS, footHeights: [2.6, 2.4, 2.2, 2.0], backBend: 60, bodyHeight: 2.5, along: 6.5, wallDistance: 1.47, walls: null, ...options }; // feet 2.6 m at most: a child hanging on a front stay would buckle a taller post (structural check, 2026-10-13); 2.0 m at least: out of reach
   const p = briefPreset(L, { backBend: o.backBend, bodyHeight: o.bodyHeight, along: o.along, wallDistance: o.wallDistance });
   p.pitch = o.pitch;
-  p.legs = spreadLegsAt(p, { azimuths: o.azimuths, footHeights: o.footHeights, backBend: o.backBend, wallDistance: o.wallDistance, walls: o.walls }).legs;
+  p.legs = spreadLegsAt(p, { azimuths: o.azimuths, footHeights: o.footHeights, backBend: o.backBend, bends: o.bends || CLIMB_BEND_FACTORS.map(f => o.backBend * f), wallDistance: o.wallDistance, walls: o.walls }).legs;
   return p;
 }
 

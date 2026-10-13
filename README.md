@@ -92,11 +92,12 @@ What it shows:
   tubes with a fitting at the hip, the knee and the foot, a spine in the
   body carrying the eight hips, a vertical post under each foot down to
   the ground, a ski (a horizontal beam along the base of each wall)
-  joining the four posts of a side, so nothing stands in the alley, cord
-  X-braces in the plane of each wall (in every bay between two posts a
-  cord from each post top down to the ski at the other post) and three
-  sandbags over each ski, so each side frame stands on its own with
-  nothing beyond the skis and nothing in the walls. The systems
+  joining the four posts of a side, so nothing stands in the alley, two
+  cord stays from each post top down to the ski (one to its near end,
+  which runs 1.5 m past the end posts for that, one to the far post's
+  tee) and twelve sandbags on the skis where the cords pull up, so each
+  side frame stands on its own with nothing beyond the skis and nothing
+  in the walls. The systems
   are a table in `visualizer/build.js`: PVC Ø 40 legs with a black foam
   sleeve on Ø 50 posts and skis (the recommended build), PVC Ø 50
   throughout with the legs painted black, aluminium Ø 30 tube with bolted
@@ -156,13 +157,16 @@ What it shows:
   block). Off, the feet
   sit on the real wall and the HUD warns about the lean, as before.
   Bracing: "Bracing" chooses how the posts are held along the walls.
-  Cord X-braces is the default (in every bay between two posts a cord
-  from each post top down to the ski at the other post, 12 cords with
-  tensioners, three sandbags on each ski; nothing beyond the skis and
-  nothing in the walls, which Daniel ruled out on 2026-10-13). Cord
-  stays to sandbags past the ski ends (two cords per post, anchor
-  sandbags 1.5 m past the skis) is the alternative with cords. Rigid
-  wood bases replace the posts and skis with treated pine 45 × 45
+  Cord stays to the skis' ends is the default: the skis run 1.5 m past
+  the end posts, two cords per post go through one hole at its top, one
+  down to the near ski end and one to the ski at the far post's tee,
+  each with a tensioner, twelve sandbags sit on the skis where the cords
+  pull up, and a leg-size liner stiffens each front post; nothing beyond
+  the skis and nothing in the walls (hooks were ruled out by Daniel on
+  2026-10-13; per-bay X-cords and loose anchor bags on the ground were
+  rejected by the structural check the same day). The HUD warns about a
+  foot above 2.6 m, which a child hanging on its stay would buckle.
+  Rigid wood bases replace the posts and skis with treated pine 45 × 45
   battens: each post stands on the ski on a pair of angle brackets with
   a plywood gusset, the foot elbows sit on a 0.30 m stub of leg pipe
   clipped to the post top, battens longer than the stock are lapped

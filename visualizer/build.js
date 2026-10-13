@@ -108,12 +108,13 @@ const PAINT = { name: 'black spray paint, 400 ml', coversM: 4, price: 7.00 }; //
 // on Amazon.fr 2026-10-13.
 export const FACE_KITS = {
   googly: [
-    { size: 'big', name: 'googly eyes {cm} cm, pair (the two big eyes)', qty: 1, price: 16.99 },
-    { size: 'small', name: 'googly eyes {cm} cm, pack of 6 (the six small eyes)', qty: 1, price: 19.59 },
+    { size: 'big', name: 'googly eyes {cm} cm, pair (the two big eyes)', qty: 1, price: 10.99 }, // DRERIO 18 cm pair; smaller pairs cost about the same
+    { size: 'small', name: 'googly eyes {cm} cm, pack of 6 (the six small eyes)', qty: 1, price: 6.59 }, // Zwenjuan 7 cm lot of 6
   ],
   lit: [
-    { size: 'big', name: 'LED eyes {cm} cm, red, battery pair (the two big eyes)', qty: 1, price: 12.99 },
-    { size: 'small', name: 'LED eyes {cm} cm, red, battery pairs (the six small eyes)', qty: 3, price: 9.99 },
+    { size: 'big', name: 'clear two-part ball {cm} cm, the shell of a big lit eye', qty: 2, price: 9.76 }, // Rayher 18 cm, sold by Amazon
+    { size: 'small', name: 'clear two-part balls 5 to 8 cm, pack of 20 (the six small lit eyes)', qty: 1, price: 14.98 }, // QWORK
+    { name: 'red LED pucks IP68, pack of 12 (three in each big eye, one in each small)', qty: 1, price: 12.95 }, // Joycabin, CR2032 fitted
   ],
 };
 export const EYE_OPTIONS = [{ value: 'googly', label: 'Googly eyes (2 × 18 cm, 6 × 7 cm)' }, { value: 'lit', label: 'Lit eyes (red LED domes)' }, { value: 'none', label: 'No eyes' }];

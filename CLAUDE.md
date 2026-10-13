@@ -38,8 +38,9 @@ test run before the night.
   Nicoll's 27 mm sockets and Z values; elbow ends (M/F or F/F) decide
   where a coupler or a link of pipe is needed. pvc40 (the default) has
   Ø 50 posts and skis with a 50/40 reducer and a Ø 50 coupler at each
-  post top; knees and hub glued, the rest screwed; cord X-braces
-  between the posts and three sandbags per ski. scene.js draws it all,
+  post top; knees and hub glued, the rest screwed; two cord stays per
+  post to the ski, which runs 1.5 m past the end posts, twelve sandbags
+  on the skis, a liner in each front post. scene.js draws it all,
   and the face (spider.js faceOf: googly or lit eyes on the head's front
   cap, sized from the head, turned to look down the alley when pitched);
   the Construction section's state (system, longest piece delivered,
@@ -69,16 +70,20 @@ test run before the night.
   they occupy, so every post stands vertical; app.js keeps `realWalls`
   and recomputes `walls` from it before each rebuild and each drag, and
   buildParts gets `realWalls` to report the gap between each ski and a
-  wall that steps out. Bracing (state key bracing: 'frame', 'stays' or
-  'rigid', the BRACING data in build.js, shared by every system): cord
-  X-braces in the plane of each wall (a cord from each post top down to
-  the ski at the next post, both ways in every bay) with three sandbags
-  per ski, the default; cord stays to sandbags past the skis; or rigid
-  pine 45 × 45 bases with brackets, gussets and lapped battens and no
-  cords. Hooks in the walls were an option until Daniel ruled them out
-  on 2026-10-13: nothing goes into the walls. The keys are saved with
-  designs, carried in the hash and honoured by walk.html, as is the
-  face (state key eyes: 'googly', 'lit' or 'none').
+  wall that steps out. Bracing (state key bracing: 'frame' or 'rigid',
+  the BRACING data in build.js, shared by every system): the default is
+  two cord stays per post through one hole at its top, one down to the
+  near end of the ski (the skis run 1.5 m past the end posts for that)
+  and one to the ski at the far post's tee, twelve sandbags on the skis
+  where the cords pull up, a leg-size liner in each front post, and a
+  warning for a foot above 2.6 m (a child hanging on its stay would
+  buckle the post); or rigid pine 45 × 45 bases with brackets, gussets
+  and lapped battens and no cords. Hooks in the walls were an option
+  until Daniel ruled them out on 2026-10-13; per-bay X-cords and loose
+  anchor bags on the ground were rejected by the structural check the
+  same day (docs/construction.md, "The bracing"). The keys are saved
+  with designs, carried in the hash and honoured by walk.html, as is
+  the face (state key eyes: 'googly', 'lit' or 'none').
 - Put screenshots and Chrome profiles under visualizer/out/ (ignored), not
   /tmp: /tmp is a quota-limited tmpfs shared with other sessions. Pass
   `--user-data-dir=out/chrome --disk-cache-size=1` to headless Chrome or
@@ -108,17 +113,22 @@ test run before the night.
   paragraph. upgradeParams in spider.js enforces the fixed values.
 - 2026-10-13: the page starts from a resting pose, not the brief's: the
   whole spider pitched up 45° (climbing up and out toward the street),
-  the legs fanned out in plan (the spread), the feet at 3.0 / 2.6 / 2.3 /
-  2.0 m front to back so none is within a child's reach (DEFAULTS =
+  the legs fanned out in plan (the spread) with the front pairs bent
+  most (the climbing series CLIMB_BEND_FACTORS, 64 / 56 / 48 / 40° at
+  the slider's 60; Daniel, 2026-10-13: front legs higher, back legs
+  lower, like the body's pitch), the feet at 2.6 / 2.4 / 2.2 /
+  2.0 m front to back, none within a child's reach and none so high that
+  a child hanging on its stay would buckle the post (DEFAULTS =
   spreadPreset in spider.js; BRIEF_DEFAULTS is the brief's own pose).
   Every pose solver (sliders, spread, drags, feet solver) works in the
   alley frame as the spider stands, pitched, so the hip angle is above
   the alley's level and the fan is the one seen from above; results are
   stored as the level pose. The construction: feet on posts joined by a
   ski per side, posts plumb (feet on one straight line per side), and a
-  bracing choice (cord X-braces, cord stays, rigid wood bases); the
+  bracing choice (cord stays to the skis' ends, rigid wood bases); the
   cords are not beams. No hooks or fixings in the walls; the side
-  frames stand on their own. Nothing travels in the car: every part is
+  frames stand on their own, the skis running 1.5 m past the end posts
+  to anchor the stays, with the sandbags on them. Nothing travels in the car: every part is
   delivered to Les Portes-en-Ré, where the neighbours receive parcels.
   The bench on the east wall can be moved. Both eye options are on the
   page (googly, lit); the pose is not final.
@@ -130,8 +140,8 @@ test run before the night.
   (Construction section) and not yet by Daniel (docs/construction.md,
   "Open questions for Daniel").
 - Power, weather, how the spider is hung and how the feet fix to the walls.
-- Whether the cord X-braces (the default) or one of the alternatives
-  holds the posts (docs/construction.md, "Bracing: three ways"), and
+- Whether the cord stays to the skis' ends (the default) or the rigid
+  wood bases hold the posts (docs/construction.md, "The bracing"), and
   which eyes (googly or lit).
 
 ## This machine (feta)
