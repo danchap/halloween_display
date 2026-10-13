@@ -24,7 +24,7 @@ test run before the night.
 - `walk.js` + `walk.html` are "the path": the scripted camera walk and its
   MP4 recorder (WebCodecs + mp4-muxer, vendored). `scene.js` holds the
   world shared by both pages. Headless recording: launch Chrome with the
-  walk URL as its first tab (`?record=1&upload=<name>`); a tab opened
+  walk URL as its first tab (`?record=1&upload=<name>.mp4`: the name is the whole file name, and the server saves out/<name> as given); a tab opened
   through the debugging port is throttled and never finishes. The page
   posts progress to the server's stdout via /log. feta has no ffmpeg.
 - `build.js` is the construction (2026-10-13): SYSTEMS, a table of part
