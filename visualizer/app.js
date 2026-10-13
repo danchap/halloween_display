@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, bendFactor,
          flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams, legIndex, legOf, legsFromAngles,
-         SPREAD_AZIMUTHS, planAngles, legAngles, solveLegFromKnee, solveLegFromFoot, spreadLegsAt, spreadPreset } from './spider.js';
+         SPREAD_AZIMUTHS, planAngles, legAngles, solveLegFromKnee, solveLegFromFoot, spreadLegsAt, spreadPreset, faceOf } from './spider.js';
 import { wallsFromSite, insideBuilding } from './site.js';
-import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildBuildMeshes, rebuildExtras, setRoofsVisible,
+import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildBuildMeshes, rebuildFaceMeshes, rebuildExtras, setRoofsVisible,
          setPlantsVisible, showGuide, hideGuide } from './scene.js';
 import { buildPath, cameraAt } from './walk.js';
-import { SYSTEMS, MAX_PIECES, DEFAULT_MAX_PIECE, BRACINGS, DEFAULT_BRACING, systemById, buildParts, recipeText, straightWalls } from './build.js';
+import { SYSTEMS, MAX_PIECES, DEFAULT_MAX_PIECE, BRACINGS, DEFAULT_BRACING, EYE_OPTIONS, DEFAULT_EYES, systemById, buildParts, recipeText, straightWalls } from './build.js';
 
 // Hosted on claude.ai the page cannot use the URL hash or start downloads;
 // the design is then remembered in the browser instead.
@@ -51,7 +51,8 @@ const state = {
   maxPiece: DEFAULT_MAX_PIECE, // the longest piece that can be shipped, metres (build.js MAX_PIECES; any positive number from an old link); longer pipes are split with couplers
   frameOnly: false,   // hide the covers and the shell so the frame shows
   plumbPosts: true,   // the feet of a side sit on one straight line (build.js straightWalls), so every post stands vertical
-  bracing: DEFAULT_BRACING, // how the posts are held along the walls: 'stays', 'rigid' or 'ties' (build.js BRACING)
+  bracing: DEFAULT_BRACING, // how the posts are held along the walls: 'frame', 'stays' or 'rigid' (build.js BRACING)
+  eyes: DEFAULT_EYES,  // the face: 'googly', 'lit' or 'none' (build.js EYE_OPTIONS, spider.js faceOf)
 };
 const SAVED_KEYS = Object.keys(state);
 // Which panels show. Not remembered: the numbers start hidden every visit.
@@ -77,6 +78,7 @@ function applySaved(s) {
   state.frameOnly = !!state.frameOnly;
   state.plumbPosts = !!state.plumbPosts; // absent in an old link: the default above stays
   state.bracing = BRACINGS.some(b => b.value === state.bracing) ? state.bracing : DEFAULT_BRACING;
+  state.eyes = EYE_OPTIONS.some(o => o.value === state.eyes) ? state.eyes : DEFAULT_EYES;
   return true;
 }
 function readState() {
@@ -111,7 +113,7 @@ function writeDesigns(d) {
 }
 function designSnapshot() {
   return { params: clone(state.params), briefL: state.briefL, backBend: state.backBend, hip: state.hip, plans: state.plans,
-    system: state.system, maxPiece: state.maxPiece, frameOnly: state.frameOnly, plumbPosts: state.plumbPosts, bracing: state.bracing };
+    system: state.system, maxPiece: state.maxPiece, frameOnly: state.frameOnly, plumbPosts: state.plumbPosts, bracing: state.bracing, eyes: state.eyes };
 }
 // What was last loaded or saved, to warn before it is replaced unsaved.
 let loadedSnapshot = '';
@@ -146,6 +148,7 @@ function loadDesign(name) {
     if (typeof d.frameOnly === 'boolean') state.frameOnly = d.frameOnly;
     if (typeof d.plumbPosts === 'boolean') state.plumbPosts = d.plumbPosts; // a design saved before the setting existed keeps the current one
     if (BRACINGS.some(b => b.value === d.bracing)) state.bracing = d.bracing;
+    if (EYE_OPTIONS.some(o => o.value === d.eyes)) state.eyes = d.eyes;
     state.design = name;
     refreshControls();
     onChange();
@@ -753,8 +756,10 @@ function rebuildSpider() {
   // The construction: the real parts replace the design's body and legs in
   // the view; the orange balls still drive the pose.
   const system = systemById(state.system);
-  parts = system ? buildParts(model, p, walls, { system, maxPiece: state.maxPiece, bracing: state.bracing, realWalls: state.plumbPosts ? realWalls : null }) : null;
+  parts = system ? buildParts(model, p, walls, { system, maxPiece: state.maxPiece, bracing: state.bracing, realWalls: state.plumbPosts ? realWalls : null, eyes: state.eyes }) : null;
   rebuildSpiderMeshes(world, model, p, { showJoints: state.showJoints, showSpider: !parts });
+  // The face sits on the shell, so it goes when the frame alone shows.
+  rebuildFaceMeshes(world, state.eyes !== 'none' && !(parts && state.frameOnly) ? faceOf(model, p, state.eyes) : [], state.eyes);
   rebuildBuildMeshes(world, parts, system, { frameOnly: state.frameOnly });
   rebuildExtras(world, p, { showPerson: false, wallMode: site ? 'site' : 'flat', flatWidth: 3.0 });
   updateStats();
@@ -893,14 +898,12 @@ function partsTables(parts) {
   if (spine.length) h += `<tr><td>Spine</td><td class="wrap">${spine.map(run).join(', ')}</td></tr>`;
   for (const side of ['R', 'L']) {
     const stays = parts.members.filter(x => x.role === 'stay' && x.side === side);
-    if (stays.length) h += `<tr><td>Stays ${side === 'R' ? 'right' : 'left'}</td><td class="wrap">${stays.map(x => fmt(x.length, 2)).join(', ')}</td></tr>`;
-    const ties = parts.members.filter(x => x.role === 'tie' && x.side === side);
-    if (ties.length) h += `<tr><td>Ties ${side === 'R' ? 'right' : 'left'}</td><td class="wrap">${ties.map(x => fmt(x.length, 2)).join(', ')}</td></tr>`;
+    if (stays.length) h += `<tr><td>${parts.bracing === 'frame' ? 'X-braces' : 'Stays'} ${side === 'R' ? 'right' : 'left'}</td><td class="wrap">${stays.map(x => fmt(x.length, 2)).join(', ')}</td></tr>`;
   }
   h += '</table>';
   const rolls = `${fmt(b.stays.metres, 1)} m of cord in ${b.stays.rolls} roll${b.stays.rolls > 1 ? 's' : ''}`;
   if (b.bracing === 'stays' && b.stays.count) h += `<div class="muted" style="margin-top:4px">Stays: from each post top one cord to the sandbag on the ground past the ski's end and one to the ski under the post farthest from it; ${rolls}; ${b.sandbags} sandbags, two at the anchors and two over each ski.</div>`;
-  if (b.bracing === 'ties') h += `<div class="muted" style="margin-top:4px">Ties: ${b.hooks} hook${b.hooks > 1 ? 's' : ''} in the walls, one per post pair at the higher foot's height, with a short cord from each post top; ${rolls}; ${b.sandbags} sandbags, two over each ski. No cords to the ground.</div>`;
+  if (b.bracing === 'frame' && b.stays.count) h += `<div class="muted" style="margin-top:4px">X-braces: in every bay between two posts a cord from each post top down to the ski at the other post, ${b.stays.count} cords with a tensioner each, through a hole under each post's top coupler and round the ski at the tee; ${rolls}; ${b.sandbags} sandbags, three over each ski. Nothing beyond the skis, nothing in the walls.</div>`;
   if (b.bracing === 'rigid') h += `<div class="muted" style="margin-top:4px">Rigid bases: each post stands on the ski on a pair of angle brackets with a plywood gusset; posts and skis longer than the stock are lapped 0.40 m; ${b.sandbags} sandbags, two over each ski. No cords.</div>`;
   return h;
 }
@@ -948,6 +951,7 @@ function refreshControls() {
   document.getElementById('bendLock').checked = state.bendLocked;
   for (const key of ['showJoints', 'plants', 'keepSplit', 'frameOnly', 'plumbPosts']) document.getElementById(key).checked = state[key];
   document.getElementById('bracing').value = state.bracing;
+  document.getElementById('eyes').value = state.eyes;
   document.getElementById('system').value = systemById(state.system) ? state.system : '';
   if (document.getElementById('system').value !== state.system) state.system = document.getElementById('system').value;
   setMaxPieceOptions();
@@ -1150,6 +1154,9 @@ function wireUI() {
   const bracingEl = document.getElementById('bracing');
   bracingEl.innerHTML = BRACINGS.map(b => `<option value="${b.value}">${b.label.replace(/</g, '&lt;')}</option>`).join('');
   bracingEl.addEventListener('change', e => { state.bracing = e.target.value; onChange(); });
+  const eyesEl = document.getElementById('eyes');
+  eyesEl.innerHTML = EYE_OPTIONS.map(o => `<option value="${o.value}">${o.label.replace(/</g, '&lt;')}</option>`).join('');
+  eyesEl.addEventListener('change', e => { state.eyes = e.target.value; onChange(); });
   document.getElementById('savePng').addEventListener('click', () => {
     render();
     const a = document.createElement('a');

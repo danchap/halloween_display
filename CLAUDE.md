@@ -38,11 +38,13 @@ test run before the night.
   Nicoll's 27 mm sockets and Z values; elbow ends (M/F or F/F) decide
   where a coupler or a link of pipe is needed. pvc40 (the default) has
   Ø 50 posts and skis with a 50/40 reducer and a Ø 50 coupler at each
-  post top; knees and hub glued, the rest screwed; two stay cords per
-  post and two sandbags per ski. scene.js draws it all; the Construction
-  section's state (system, longest piece to ship, frame only) travels in
-  the hash, so walk.html shows the same build. docs/construction.md is
-  the plan with the shopping list.
+  post top; knees and hub glued, the rest screwed; cord X-braces
+  between the posts and three sandbags per ski. scene.js draws it all,
+  and the face (spider.js faceOf: googly or lit eyes on the head's front
+  cap, sized from the head, turned to look down the alley when pitched);
+  the Construction section's state (system, longest piece delivered,
+  frame only, bracing, eyes) travels in the hash, so walk.html shows the
+  same build. docs/construction.md is the plan with the shopping list.
 - `sun.js` puts the sun at noon CET on 2026-10-31 over the alley (Daniel's
   choice, 2026-10-05); change HALLOWEEN_NOON there for another moment.
 - `textures.js` draws the village materials on canvases from colours in
@@ -67,13 +69,16 @@ test run before the night.
   they occupy, so every post stands vertical; app.js keeps `realWalls`
   and recomputes `walls` from it before each rebuild and each drag, and
   buildParts gets `realWalls` to report the gap between each ski and a
-  wall that steps out. Bracing (state key bracing: 'stays', 'rigid' or
-  'ties', the BRACING data in build.js, shared by every system): cord
-  stays to sandbags, rigid pine 45 × 45 bases with brackets, gussets
-  and lapped battens and no cords, or one wall hook per post pair (posts within 1.5 m share one) with
-  short ties and no cords. Both keys are saved with designs, carried in
-  the hash and honoured by walk.html. Daniel asked for the posts to go
-  straight down vertically on 2026-10-13; which bracing is still open.
+  wall that steps out. Bracing (state key bracing: 'frame', 'stays' or
+  'rigid', the BRACING data in build.js, shared by every system): cord
+  X-braces in the plane of each wall (a cord from each post top down to
+  the ski at the next post, both ways in every bay) with three sandbags
+  per ski, the default; cord stays to sandbags past the skis; or rigid
+  pine 45 × 45 bases with brackets, gussets and lapped battens and no
+  cords. Hooks in the walls were an option until Daniel ruled them out
+  on 2026-10-13: nothing goes into the walls. The keys are saved with
+  designs, carried in the hash and honoured by walk.html, as is the
+  face (state key eyes: 'googly', 'lit' or 'none').
 - Put screenshots and Chrome profiles under visualizer/out/ (ignored), not
   /tmp: /tmp is a quota-limited tmpfs shared with other sessions. Pass
   `--user-data-dir=out/chrome --disk-cache-size=1` to headless Chrome or
@@ -111,8 +116,12 @@ test run before the night.
   the alley's level and the fan is the one seen from above; results are
   stored as the level pose. The construction: feet on posts joined by a
   ski per side, posts plumb (feet on one straight line per side), and a
-  bracing choice (cord stays, rigid wood bases, wall ties); the cords
-  are not beams.
+  bracing choice (cord X-braces, cord stays, rigid wood bases); the
+  cords are not beams. No hooks or fixings in the walls; the side
+  frames stand on their own. Nothing travels in the car: every part is
+  delivered to Les Portes-en-Ré, where the neighbours receive parcels.
+  The bench on the east wall can be moved. Both eye options are on the
+  page (googly, lit); the pose is not final.
 
 ## Still open (ask Daniel)
 
@@ -121,8 +130,9 @@ test run before the night.
   (Construction section) and not yet by Daniel (docs/construction.md,
   "Open questions for Daniel").
 - Power, weather, how the spider is hung and how the feet fix to the walls.
-- Which bracing holds the posts: cord stays to sandbags, rigid wood bases,
-  or wall ties (docs/construction.md, "Bracing: three ways").
+- Whether the cord X-braces (the default) or one of the alternatives
+  holds the posts (docs/construction.md, "Bracing: three ways"), and
+  which eyes (googly or lit).
 
 ## This machine (feta)
 

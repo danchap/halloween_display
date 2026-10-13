@@ -213,6 +213,55 @@ export function rebuildSpiderMeshes(world, model, params, { silhouette = false, 
   }
 }
 
+// ---------------------------------------------------------------- the face
+
+// The eyes (spider.js faceOf) on the head: googly eyes as white discs
+// with a black pupil hanging low in each, lit eyes as domes that glow
+// red. They go into the spider group after rebuildSpiderMeshes, which
+// clears it, so each rebuild of the spider calls this again; an empty
+// list removes them.
+const eyeWhite = new THREE.MeshStandardMaterial({ color: 0xf4f4f0, roughness: 0.35 });
+const eyeBlack = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.3 });
+const eyeLit = new THREE.MeshStandardMaterial({ color: 0x3a0000, emissive: 0xff2a00, emissiveIntensity: 1.6, roughness: 0.4 });
+const unitDisc = new THREE.CylinderGeometry(1, 1, 1, 32, 1); // axis y, radius 1, height 1
+shared.add(unitDisc);
+const DISC_THICKNESS = 0.012, PUPIL_THICKNESS = 0.006;
+export function rebuildFaceMeshes(world, face, kind = 'googly') {
+  for (const m of world.spiderGroup.children.filter(o => o.userData.face)) world.spiderGroup.remove(m);
+  if (!face || !face.length) return;
+  const up = new THREE.Vector3(0, 1, 0);
+  for (const e of face) {
+    const n = new THREE.Vector3(...e.normal);
+    const at = new THREE.Vector3(...e.centre);
+    const r = e.diameter / 2;
+    if (kind === 'lit') {
+      const dome = new THREE.Mesh(unitSphere, eyeLit);
+      dome.position.copy(at).addScaledVector(n, r * 0.3); // a ball sunk most of the way into the head
+      dome.scale.setScalar(r);
+      dome.userData = { face: true, eye: e.big ? 'big' : 'small' };
+      world.spiderGroup.add(dome);
+      continue;
+    }
+    const q = new THREE.Quaternion().setFromUnitVectors(up, n);
+    const disc = new THREE.Mesh(unitDisc, eyeWhite);
+    disc.scale.set(r, DISC_THICKNESS, r);
+    disc.position.copy(at).addScaledVector(n, DISC_THICKNESS / 2);
+    disc.quaternion.copy(q);
+    disc.castShadow = true;
+    disc.userData = { face: true, eye: e.big ? 'big' : 'small' };
+    const pupil = new THREE.Mesh(unitDisc, eyeBlack);
+    pupil.scale.set(r * 0.45, PUPIL_THICKNESS, r * 0.45);
+    // The pupil hangs low in its eye, as a googly eye's does: down the
+    // disc's own plane, which is world down less its part along the normal.
+    const down = new THREE.Vector3(0, -1, 0).addScaledVector(n, n.y);
+    if (down.lengthSq() > 1e-9) down.normalize();
+    pupil.position.copy(at).addScaledVector(n, DISC_THICKNESS + PUPIL_THICKNESS / 2).addScaledVector(down, r * 0.38);
+    pupil.quaternion.copy(q);
+    pupil.userData = { face: true, pupil: true };
+    world.spiderGroup.add(disc, pupil);
+  }
+}
+
 // ---------------------------------------------------------------- build meshes
 
 // Materials for the real parts, by colour and finish: matte for PVC and
@@ -234,11 +283,11 @@ function buildMat(color, finish) {
 // cylinders along each socket direction from the joint centre (a hinge,
 // a lap joint, a clamp or a bracket as a small plate; a reducer as a
 // stepped cylinder), couplers where a member is split, the hub, posts and
-// skis, the stay or tie cords and the sandbags, the rigid bases (a pair
-// of angle brackets as two L-plates at the post foot, a plywood gusset as
-// a triangular prism on the alley side, two pipe clips as rings around
-// the stub, a lap splice as a plate), the wall hooks as short cylinders
-// out of the wall, and unless frameOnly the covers and the body shell;
+// skis, the cords (X-braces or stays) and the sandbags, the rigid bases
+// (a pair of angle brackets as two L-plates at the post foot, a plywood
+// gusset as a triangular prism on the alley side, two pipe clips as rings
+// around the stub, a lap splice as a plate), and unless frameOnly the
+// covers and the body shell;
 // with frameOnly the hoops show as rings instead of the shell. Every mesh
 // carries its part's role in userData.
 const STAY_DRAWN_OD = 0.012; // a 4 mm cord is drawn this thick so it shows
@@ -252,7 +301,7 @@ export function rebuildBuildMeshes(world, parts, system, { frameOnly = false } =
   const add = (mesh, role) => { mesh.userData.role = role; g.add(mesh); return mesh; };
   for (const m of parts.members) {
     if (m.role === 'cover') { if (!frameOnly) add(segmentMesh(m.a, m.b, m.od, buildMat(m.color, m.finish)), m.role); continue; }
-    if (m.role === 'stay' || m.role === 'tie') { add(segmentMesh(m.a, m.b, Math.max(m.od, STAY_DRAWN_OD), buildMat(m.color, m.finish)), m.role); continue; }
+    if (m.role === 'stay') { add(segmentMesh(m.a, m.b, Math.max(m.od, STAY_DRAWN_OD), buildMat(m.color, m.finish)), m.role); continue; }
     if (m.role === 'ballast') {
       const bag = new THREE.Mesh(new THREE.BoxGeometry(m.dims[0], m.dims[1], m.dims[2]), buildMat(m.color, m.finish));
       bag.position.set(...m.at);

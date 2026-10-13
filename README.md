@@ -92,10 +92,11 @@ What it shows:
   tubes with a fitting at the hip, the knee and the foot, a spine in the
   body carrying the eight hips, a vertical post under each foot down to
   the ground, a ski (a horizontal beam along the base of each wall)
-  joining the four posts of a side, so nothing stands in the alley, two
-  stay cords from each post top (one out to a sandbag on the ground
-  1.5 m past the ski's end, one in to the ski under the post farthest
-  from it) and two sandbags over each ski so it cannot roll. The systems
+  joining the four posts of a side, so nothing stands in the alley, cord
+  X-braces in the plane of each wall (in every bay between two posts a
+  cord from each post top down to the ski at the other post) and three
+  sandbags over each ski, so each side frame stands on its own with
+  nothing beyond the skis and nothing in the walls. The systems
   are a table in `visualizer/build.js`: PVC Ø 40 legs with a black foam
   sleeve on Ø 50 posts and skis (the recommended build), PVC Ø 50
   throughout with the legs painted black, aluminium Ø 30 tube with bolted
@@ -117,17 +118,20 @@ What it shows:
   each post, whose Ø 50 spigot plugs into a Ø 50 coupler on the post;
   the knee elbows and the hub crosses are glued (their
   self-weight moments exceed a screwed socket), the hip, foot and ski
-  joints are screwed so they come apart. "Longest piece to ship" (1.0 m
-  Colissimo, 1.4 m Chronopost, 2.0 m UPS through a packer or store
-  stock, 2.7 m UPS maximum; the default is 2.0 m since the pipe will be
-  bought near the island) splits any pipe longer than it with a coupler;
+  joints are screwed so they come apart. "Longest piece delivered"
+  (1.0 m Amazon lots, 1.4 m a Chronopost box from Paris, 2.0 m Amazon
+  bars or store lengths, 2.7 m a UPS parcel, 4.0 m full lengths
+  delivered by a store; the default is 2.0 m since everything is
+  delivered to the island) splits any pipe longer than it with a coupler;
   "Frame only" hides the covers and the shell and shows the body's
   hoops. The Numbers panel then lists the parts in groups (pipe by size
   and stock length, fittings by name, covering and body, fixings and
   stays, with the prices seen on 2026-10-13) and the cut list (each
   leg's upper, lower and post lengths, the elbows at each joint with the
   hip's turn and the post's plan angle, which joints are glued, the ski
-  and spine pieces, the stays' lengths). The HUD adds the build's
+  and spine pieces, the cords' lengths), and the eyes chosen ("Eyes":
+  googly or lit, two big and six small, sized from the head). The HUD
+  adds the build's
   warnings: roots moved to fit the hub's crosses (and how far the upper
   segments then differ from the design's), pieces split to ship (per
   pipe size when the sizes split at different lengths), an anchor
@@ -152,17 +156,19 @@ What it shows:
   block). Off, the feet
   sit on the real wall and the HUD warns about the lean, as before.
   Bracing: "Bracing" chooses how the posts are held along the walls.
-  Cord stays to sandbags is the default (two cords per post, anchor
-  sandbags past the ski ends). Rigid wood bases replace the posts and
-  skis with treated pine 45 × 45 battens: each post stands on the ski on
-  a pair of angle brackets with a plywood gusset, the foot elbows sit on
-  a 0.30 m stub of leg pipe clipped to the post top, battens longer than
-  the stock are lapped 0.40 m, and there are no cords. Wall ties keep
-  the system's posts and skis and put one hook in the wall per post pair (two posts within 1.5 m of each other)
-  with a short cord from each post top, no cords to the ground; this
-  needs the wall owners' consent and the HUD says so. The parts table,
-  cut list, weight, cost and warnings follow the choice, and both
-  settings travel with the design and the walk video.
+  Cord X-braces is the default (in every bay between two posts a cord
+  from each post top down to the ski at the other post, 12 cords with
+  tensioners, three sandbags on each ski; nothing beyond the skis and
+  nothing in the walls, which Daniel ruled out on 2026-10-13). Cord
+  stays to sandbags past the ski ends (two cords per post, anchor
+  sandbags 1.5 m past the skis) is the alternative with cords. Rigid
+  wood bases replace the posts and skis with treated pine 45 × 45
+  battens: each post stands on the ski on a pair of angle brackets with
+  a plywood gusset, the foot elbows sit on a 0.30 m stub of leg pipe
+  clipped to the post top, battens longer than the stock are lapped
+  0.40 m, and there are no cords. The parts table, cut list, weight,
+  cost and warnings follow the choice, and the settings travel with the
+  design and the walk video.
 - Sliders for the abdomen (length, width, height), the head (length in
   front of the abdomen, width, height), the body's position along and
   above the alley, the pitch of the whole spider (body and legs turn

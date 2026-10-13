@@ -5,10 +5,11 @@
 // four posts of one side are joined by a horizontal beam along the base of
 // that wall (a "ski"), so nothing stands in the alley itself. The legs are
 // tubes with a fitting at the hip, the knee and the foot; a spine inside
-// the body carries the eight hips. Every post is stayed by two cords in
-// the plane of its wall, one outward to a sandbag on the ground past the
-// ski's end and one inward to the ski under the post farthest from it, and
-// two sandbags lie over each ski so it cannot roll. buildParts turns a
+// the body carries the eight hips. Each side's posts and ski are braced
+// in the plane of their wall by cord X-braces, one from each post top
+// down to the ski at the next post, both ways in every bay, so the side
+// frame stands on its own, and sandbags on the skis weigh it down (the
+// 'frame' bracing; see BRACING for the others). buildParts turns a
 // spider model (buildSpider output, alley frame, metres) into the members
 // and fittings of one part system, the cut list, the fitting recipes, the
 // bill of materials and the warnings.
@@ -22,9 +23,10 @@
 // packed with offcuts (where a wall turns away at the alley mouth the
 // ski's end can stand further off, 0.17 m on the right in the default
 // pose, so that overhang is trimmed or packed with a block). Bracing:
-// buildParts takes a `bracing` choice, 'stays'
-// (the cords above), 'rigid' (wood bases, no cords) or 'ties' (hooks in
-// the walls, no cords); see BRACING.
+// buildParts takes a `bracing` choice, 'frame' (the X-braces above),
+// 'stays' (two cords per post to sandbags past the skis) or 'rigid'
+// (wood bases, no cords); see BRACING. Hooks in the walls were an
+// option until Daniel ruled them out (2026-10-13).
 //
 // SYSTEMS is a table: a new part system is a new entry, nothing else. A
 // system names its pipe sizes, which size each member role uses, and a
@@ -58,7 +60,7 @@
 // The reducer 50/40 is female Ø 40 toward the foot elbows and male Ø 50
 // below, so a Ø 50 coupler sits between it and the post pipe.
 
-import { DEFAULTS, bodyFrame, bodyLength, rootAlongOffset } from './spider.js';
+import { DEFAULTS, FACE, bodyFrame, bodyLength, rootAlongOffset } from './spider.js';
 
 const SOCKET = 0.027;
 export const ELBOW_ANGLES = [20, 30, 45, 67.5, 87.5];
@@ -94,34 +96,61 @@ const CAP_50 = { kind: 'cap', name: 'cap Ø 50', size: 'd50', z: 0.006, socket: 
 const REDUCER_50_40 = { kind: 'reducer', name: 'reducer 50/40', size: 'd50', sizeTo: 'd40', z: 0.018, socket: SOCKET, od: 0.057, odTo: 0.046, kg: 0.08, price: 4.87, out: 'spigot', ...PVC_WHITE };
 const PVC_BODY = { kind: 'fabricOverHoops', hoopOd: 0.065, color: '#141416', finish: 'sheen', hoop: { name: 'pool noodle (hoop)', kg: 0.25, price: 6.00 }, fabric: { name: 'stretch fabric, 2 m', kg: 1.2, price: 35.50 } };
 const PLANK_HUB = { kind: 'plank', name: 'plank 0.60 × 0.10 × 0.027', length: 0.60, width: 0.10, thickness: 0.027, spacing: 0.05, kg: 1.0, price: 6, color: '#101012', finish: 'paint' }; // spacing: the hip fittings are 0.05 wide, so the pairs sit at least that far apart along the plank
-const STAYS = { name: 'black polyester cord 4 mm, 50 m roll', roll: 50, price: 15.00, od: 0.004, color: '#141414', anchorBeyond: 1.5, maxSlope: 70 }; // anchorBeyond: the ground anchor sits this far past the ski's end; maxSlope: a cord steeper than this (degrees from horizontal) holds little
+const STAYS = { name: 'black polyester cord 4 mm, 50 m roll', roll: 50, price: 15.00, od: 0.004, color: '#141414', anchorBeyond: 1.5, maxSlope: 70, tensioner: { name: 'rope tensioners, pack of 10', pack: 10, price: 6.99 } }; // anchorBeyond: the ground anchor sits this far past the ski's end; maxSlope: a cord steeper than this (degrees from horizontal) holds little; tensioner: one per cord
 const BALLAST = { sandbag: { name: 'sandbag, empty', price: 2.30 }, sand: { name: 'sand, 25 kg bag (bought locally)', price: 5.00 }, dims: [0.40, 0.12, 0.25], color: '#4a4845', finish: 'matte' }; // dims: along, up, across
 const COMMON_EXTRAS = { zipTies: { name: 'zip ties, pack of 100', price: 8.45 }, tape: { name: 'gaffer tape, roll', price: 14.90 } };
 const PVC_EXTRAS = { ...COMMON_EXTRAS, screws: { name: 'self-drilling screws 4.2 × 16, pack of 100', pack: 100, price: 9.29 }, cement: { name: 'PVC cement, 125 ml', price: 5.00 } };
 const PAINT = { name: 'black spray paint, 400 ml', coversM: 4, price: 7.00 }; // price estimated
+// The face: the parts of each eye choice (the buildParts option `eyes`;
+// spider.js FACE gives the eyes' sizes as fractions of the head's width
+// and faceOf their places). Two big eyes and six small ones either way;
+// {cm} in a name is the eye's size for the head on screen. Prices seen
+// on Amazon.fr 2026-10-13.
+export const FACE_KITS = {
+  googly: [
+    { size: 'big', name: 'googly eyes {cm} cm, pair (the two big eyes)', qty: 1, price: 16.99 },
+    { size: 'small', name: 'googly eyes {cm} cm, pack of 6 (the six small eyes)', qty: 1, price: 19.59 },
+  ],
+  lit: [
+    { size: 'big', name: 'LED eyes {cm} cm, red, battery pair (the two big eyes)', qty: 1, price: 12.99 },
+    { size: 'small', name: 'LED eyes {cm} cm, red, battery pairs (the six small eyes)', qty: 3, price: 9.99 },
+  ],
+};
+export const EYE_OPTIONS = [{ value: 'googly', label: 'Googly eyes (2 × 18 cm, 6 × 7 cm)' }, { value: 'lit', label: 'Lit eyes (red LED domes)' }, { value: 'none', label: 'No eyes' }];
+export const DEFAULT_EYES = 'googly';
 
 // Bracing: how the posts are held along the walls (the buildParts option
-// `bracing`). 'stays': the two cords per post and the anchor sandbags
-// described above. 'rigid': the posts and skis are treated pine 45 × 45
+// `bracing`). 'frame': cord X-braces in the plane of each wall, in every
+// bay between two neighbouring posts a cord from each post top down to
+// the ski at the other post, both tensioned, so each bay is two triangles
+// and the side frame is rigid along the wall on its own; three sandbags
+// on each ski for friction and against overturning; nothing beyond the
+// skis and nothing in the walls. 'stays': two cords per post, one
+// outward to a sandbag on the ground past the ski's end and one inward
+// to the ski under the post farthest from it, and two sandbags over each
+// ski. 'rigid': the posts and skis are treated pine 45 × 45
 // battens; each post stands on top of the ski, fixed by a pair of angle
 // brackets and a plywood gusset screwed to the alley-side faces of post
 // and ski, which makes the base a moment connection; the foot elbows sit
 // on a short stub of leg pipe clipped to the post top with two pipe
 // clips; a post or ski longer than the stock is two battens lapped
-// 0.40 m with four screws; no cords, no anchors. 'ties': the system's own
-// posts and skis, no cords and no anchors; one hook in the wall per post
-// pair (two posts of a side within pairWithin of each other) at the
-// height of the higher foot, with a short tie cord from each post top;
-// a post with no partner gets its own hook. Every system takes these
+// 0.40 m with four screws; no cords, no anchors. Every system takes these
 // definitions (`bracing: BRACING`); a system may give its own entry.
+// bags: sandbags on each ski, spread evenly between its ends.
 // Prices seen on 2026-10-13 at Castorama, Leroy Merlin and Amazon.fr.
 const BATTEN_45 = { label: '45 × 45', shape: 'square', size: 0.045, kgPerM: 0.97, stock: [2.4], stockPrice: [13.20], stockSource: ['Castorama treated pine 45 × 45, 2.4 m'], stockName: 'batten', splitBy: 'lap' }; // splitBy: a piece longer than the stock or the shipping length is lapped, not coupled
 const WOOD_WHITE = { color: '#f1f0ea', finish: 'paint' };
 const METAL = { color: '#8a8a8a', finish: 'metal' };
 export const BRACING = {
-  stays: { kind: 'stays', label: 'Cord stays to sandbags (PVC posts)' },
+  frame: {
+    kind: 'frame', label: 'Cord X-braces between the posts, bags on the skis',
+    bags: 3,
+    maxSlope: 75, // an X-brace steeper than this (degrees from horizontal) holds little along the wall
+    note: 'X-braces: in every bay a cord from each post top down to the ski at the next post, both ways, through a hole under the post\'s top coupler and round the ski at the tee, each with a tensioner; nothing beyond the skis, nothing in the walls',
+  },
+  stays: { kind: 'stays', label: 'Cord stays to sandbags past the skis', bags: 2 },
   rigid: {
-    kind: 'rigid', label: 'Rigid wood bases, no cords',
+    kind: 'rigid', label: 'Rigid wood bases, no cords', bags: 2,
     sizeKey: 'p45', size: BATTEN_45,
     members: { post: { size: 'p45', ...WOOD_WHITE }, ski: { size: 'p45', ...WOOD_WHITE } },
     // z is the drawn reach of each fixing (none is a pipe end): the
@@ -135,11 +164,6 @@ export const BRACING = {
     woodScrews: { name: 'wood screws 5 × 60, pack of 200', pack: 200, price: 11.95 }, // Leroy Merlin
     note: 'A 45 × 45 pine post holds a 200 N push at 1.5 m with a safety factor of about 1.2 on the batten and depends on the gusset; keep the lowest feet at 2.0 m',
   },
-  ties: {
-    kind: 'ties', label: 'Wall ties, no cords (needs the owners\' consent)',
-    hook: { kind: 'hook', name: 'wall hook with plug', z: 0.03, socket: 0, od: 0.008, kg: 0.02, price: 0.75, ...METAL }, // fischer EasyHook with a 6 × 30 plug; z: how far it sticks out of the wall
-    pairWithin: 1.5, // two posts of a side this close along the ski share a hook (the spread pose puts them 1.1 to 1.4 m apart)
-  },
 };
 
 export const SYSTEMS = [
@@ -147,8 +171,8 @@ export const SYSTEMS = [
     id: 'pvc40',
     name: 'PVC Ø 40 legs with black foam, Ø 50 posts and skis',
     sizes: {
-      d40: { label: 'Ø 40', shape: 'round', od: 0.040, kgPerM: 0.50, stock: [2.0, 1.0], stockPrice: [4.75, 7.00], stockSource: ['store price', 'Amazon, per metre in 1 m lots'], stockName: 'pipe' },
-      d50: { label: 'Ø 50', shape: 'round', od: 0.050, kgPerM: 0.63, stock: [2.0], stockPrice: [6.00], stockSource: ['store price, estimated'], stockName: 'pipe' },
+      d40: { label: 'Ø 40', shape: 'round', od: 0.040, kgPerM: 0.50, stock: [4.0, 2.0, 1.0], stockPrice: [6.99, 4.75, 7.00], stockSource: ['Leroy Merlin 4 m, delivered', 'store price', 'Amazon, per metre in 1 m lots'], stockName: 'pipe' },
+      d50: { label: 'Ø 50', shape: 'round', od: 0.050, kgPerM: 0.63, stock: [4.0, 2.0], stockPrice: [9.99, 6.00], stockSource: ['store price, estimated', 'store price, estimated'], stockName: 'pipe' },
     },
     members: { leg: { size: 'd40', color: '#e4e2dc', finish: 'matte' }, post: { size: 'd50', ...PVC_WHITE }, ski: { size: 'd50', ...PVC_WHITE } },
     cover: { name: 'black foam sleeve 42 × 13 mm', od: 0.068, kgPerM: 0.07, pricePerM: 2.24, color: '#1b1b1d', finish: 'sheen' }, // 2 m lengths at 4.48, over the leg segments only
@@ -166,7 +190,7 @@ export const SYSTEMS = [
     id: 'pvc50',
     name: 'PVC Ø 50 throughout, legs painted black, no foam',
     sizes: {
-      d50: { label: 'Ø 50', shape: 'round', od: 0.050, kgPerM: 0.63, stock: [2.0], stockPrice: [6.00], stockSource: ['store price, estimated'], stockName: 'pipe' },
+      d50: { label: 'Ø 50', shape: 'round', od: 0.050, kgPerM: 0.63, stock: [4.0, 2.0], stockPrice: [9.99, 6.00], stockSource: ['store price, estimated', 'store price, estimated'], stockName: 'pipe' },
     },
     members: { leg: { size: 'd50', color: '#131315', finish: 'paint' }, post: { size: 'd50', ...PVC_WHITE }, ski: { size: 'd50', ...PVC_WHITE } },
     cover: null,
@@ -236,16 +260,20 @@ export const SYSTEMS = [
   },
 ];
 export const BRACINGS = Object.values(BRACING).map(b => ({ value: b.kind, label: b.label }));
-export const DEFAULT_BRACING = 'stays';
+export const DEFAULT_BRACING = 'frame';
 
 // The longest piece that can be shipped: the parcel services seen on
 // 2026-10-13. The default is 2.0 m, since the plan is to buy the pipe near
 // the island.
+// The longest piece as delivered: Amazon.fr bars and lots (1 m, 2 m), a
+// store's full lengths delivered to the door (4 m), or a parcel sent from
+// Paris (Chronopost 1.4 m, UPS 2.7 m) if anything is built there.
 export const MAX_PIECES = [
-  { value: 1.0, label: '1.0 m (Colissimo)' },
-  { value: 1.4, label: '1.4 m (Chronopost, box up to 1.5 m)' },
-  { value: 2.0, label: '2.0 m (UPS through a packer, or store stock)' },
-  { value: 2.7, label: '2.7 m (UPS maximum)' },
+  { value: 1.0, label: '1.0 m (Amazon lots of 1 m pieces)' },
+  { value: 1.4, label: '1.4 m (a Chronopost box from Paris)' },
+  { value: 2.0, label: '2.0 m (Amazon bars, store lengths)' },
+  { value: 2.7, label: '2.7 m (a UPS parcel from Paris)' },
+  { value: 4.0, label: '4.0 m (full lengths delivered by a store)' },
 ];
 export const DEFAULT_MAX_PIECE = 2.0;
 export const CHILD_REACH = 2.0; // a foot below this is within reach of children, metres
@@ -538,10 +566,10 @@ function placeHub(model, system) {
 // site's walls when `walls` is a straightened version of them (the gap
 // between each ski and the real wall is then reported); maxPiece the
 // longest piece that can be shipped, metres; bracing one of BRACING.
-export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MAX_PIECE, ground = 0, bracing = DEFAULT_BRACING, realWalls = null } = {}) {
+export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MAX_PIECE, ground = 0, bracing = DEFAULT_BRACING, realWalls = null, eyes = DEFAULT_EYES } = {}) {
   if (!system) throw new Error('buildParts needs a system');
   const systemId = system.id;
-  const base = (system.bracing || BRACING)[bracing] || BRACING.stays;
+  const base = (system.bracing || BRACING)[bracing] || BRACING[DEFAULT_BRACING];
   const rigid = base.kind === 'rigid';
   // With rigid bases the posts and skis are the bracing's battens, not
   // the system's pipe: the system is used with those two members and
@@ -912,36 +940,35 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
         const dims = system.ballast.dims;
         for (const a of anchors) members.push({ role: 'ballast', kind: 'anchor', at: [a[0], ground + dims[1] / 2, a[2] - bagIn], dims, color: system.ballast.color, finish: system.ballast.finish, side: tag });
       }
-    } else if (base.kind === 'ties' && st) {
-      // One hook per post pair (two posts within pairWithin along the
-      // ski; a post with no partner gets its own), in the real wall at
-      // the pair's mean x and the higher foot's height, with a tie cord
-      // from each post top to the hook's tip.
-      const groups = [];
-      for (let i = 0; i < posts.length; i++) {
-        if (i + 1 < posts.length && posts[i + 1].x - posts[i].x <= base.pairWithin + 1e-9) { groups.push([posts[i], posts[i + 1]]); i++; } else groups.push([posts[i]]);
+    } else if (base.kind === 'frame' && st) {
+      // X-braces: in every bay between two neighbouring posts, a cord
+      // from each post's top down to the ski at the other post (its
+      // tee), so the bay is two triangles and the side frame is rigid in
+      // the plane of its wall on its own: nothing beyond the skis and
+      // nothing in the walls. The cords are in the wall plane, so they
+      // stay out of the way of anyone walking. A cord steeper than
+      // base.maxSlope holds little along the wall and is warned about.
+      let steep = false;
+      for (let i = 0; i + 1 < posts.length; i++) {
+        for (const [q, r] of [[posts[i], posts[i + 1]], [posts[i + 1], posts[i]]]) {
+          const to = at(r.x);
+          const slope = Math.atan2(q.top[1] - to[1], Math.abs(to[0] - q.top[0])) / DEG;
+          if (slope > base.maxSlope) steep = true;
+          members.push({ role: 'stay', kind: 'brace', a: q.top, b: to, shape: 'round', od: st.od, color: st.color, finish: 'matte', leg: q.leg, side: tag, bay: i, length: mm(norm(sub(to, q.top))), slope: deg1(slope) });
+        }
       }
-      const hookSpec = resolvePlain(base.hook, 'hook');
-      for (const g of groups) {
-        const x = g.reduce((s, q) => s + q.x, 0) / g.length;
-        const yTop = Math.max(...g.map(q => q.top[1]));
-        const wallFn = realWalls || walls;
-        const w = wallFn ? wallFn(x, side, p.across) : null;
-        if (w === null || w === undefined) warnings.push(`no wall for the ${sideName} hook at x = ${x.toFixed(1)} m`);
-        const wz = (w === null || w === undefined) ? z + side * inset : w;
-        const tip = [x, yTop, wz - side * base.hook.z];
-        fittings.push(fitting(hookSpec, [x, yTop, wz], [[0, 0, -side]], { side: tag, glued: false, legs: g.map(q => q.leg) }));
-        for (const q of g) members.push({ role: 'tie', a: q.top, b: tip, shape: 'round', od: st.od, color: st.color, finish: 'matte', leg: q.leg, side: tag, length: mm(norm(sub(tip, q.top))) });
-      }
+      if (steep) warnings.push(`an X-brace on the ${sideName} is steeper than ${base.maxSlope}° and holds little: two posts there stand close together`);
     }
     if (system.ballast) {
-      // Two sandbags over every ski: at the thirds with stays or ties.
-      // With rigid bases a bag cannot lie over a post's brackets or
-      // gusset, so each bag goes on the first free length of ski inside
-      // the end posts' bases (just past the end post's gusset); a ski
-      // with no free length that long gets the bags at its ends and a
-      // warning.
+      // The bracing's number of sandbags over every ski, spread evenly
+      // between its ends (two at the thirds with stays, three at the
+      // quarters with the X-braces). With rigid bases a bag cannot lie
+      // over a post's brackets or gusset, so each of the two bags goes on
+      // the first free length of ski inside the end posts' bases (just
+      // past the end post's gusset); a ski with no free length that long
+      // gets the bags at its ends and a warning.
       const dims = system.ballast.dims;
+      const bags = base.bags || 2;
       const bagIn = side * (dims[2] / 2 - inset); // the bag's outer face at the wall, like the ski's
       let spots;
       if (rigid) {
@@ -956,7 +983,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
         const first = edges.find(free), last = [...edges].reverse().find(free);
         if (first !== undefined && last !== undefined && last > first + dims[0] - 1e-9) spots = [first + dims[0] / 2, last + dims[0] / 2];
         else { spots = [x0 + dims[0] / 2, x1 - dims[0] / 2]; warnings.push(`the ${sideName} ski has no free length for its two sandbags: they lie over the end posts' bases`); }
-      } else spots = [x0 + (x1 - x0) / 3, x0 + (x1 - x0) * 2 / 3];
+      } else spots = Array.from({ length: bags }, (_, i) => x0 + (x1 - x0) * (i + 1) / (bags + 1));
       for (const x of spots) members.push({ role: 'ballast', kind: 'ski', at: [x, ground + skiTop + dims[1] / 2, z - bagIn], dims, color: system.ballast.color, finish: system.ballast.finish, side: tag });
     }
   }
@@ -1036,13 +1063,10 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     ? (splitBySize[0].byStock ? `at ${splitBySize[0].at.toFixed(2)} m${stockClause(splitBySize[0])}` : `to ship at ${splitBySize[0].at.toFixed(2)} m`)
     : `to ship: ${splitBySize.map(r => `${r.label} at ${r.at.toFixed(2)} m${stockClause(r)}`).join('; ')}`;
   const unsplitOver = cuts.filter(c => c.length > maxLenOf(system.sizes[c.sizeKey]) + 1e-9).map(c => ({ role: c.role, leg: c.leg, side: c.side, length: c.length, pieces: c.pieces }));
-  const stays = members.filter(m => m.role === 'stay' || m.role === 'tie'); // every cord: the stays, or the ties
+  const stays = members.filter(m => m.role === 'stay'); // every cord: the X-braces or the stays
   const stayMetres = mm(stays.reduce((s, m) => s + m.length, 0));
-  const ties = members.filter(m => m.role === 'tie').length;
-  const hooks = fittings.filter(f => f.role === 'hook').length;
   const woodScrews = fittings.reduce((s, f) => s + (f.woodScrews || 0), 0);
   const sandbags = members.filter(m => m.role === 'ballast').length;
-  if (hooks) warnings.push(`${hooks} hooks in the walls: ask the owners first`);
   // The weight is the spider's: the pieces, not the stock bought; the
   // offcuts, the cord and the ballast are given on their own.
   const weight = {
@@ -1063,6 +1087,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   if (system.paintLegs) { const n = Math.ceil(legMetres / system.paintLegs.coversM); line('covering and body', system.paintLegs.name, n, system.paintLegs.price, n * system.paintLegs.price); }
   if (hoopCount) line('covering and body', system.body.hoop.name, hoopCount, system.body.hoop.price, hoopCount * system.body.hoop.price, { kg: mm(hoopCount * system.body.hoop.kg) });
   line('covering and body', system.body.fabric.name, 1, system.body.fabric.price, system.body.fabric.price, { kg: system.body.fabric.kg });
+  if (FACE[eyes] && FACE_KITS[eyes]) for (const k of FACE_KITS[eyes]) line('covering and body', k.name.replace('{cm}', String(Math.round(FACE[eyes][k.size] * model.head.width * 100))), k.qty, k.price, k.qty * k.price, { eyes, cm: Math.round(FACE[eyes][k.size] * model.head.width * 100) });
   const ex = system.extras || {};
   if (ex.screws && screws) { const n = Math.ceil(screws / ex.screws.pack); line('fixings and stays', ex.screws.name, n, ex.screws.price, n * ex.screws.price, { screws }); }
   if (base.woodScrews && woodScrews) { const n = Math.ceil(woodScrews / base.woodScrews.pack); line('fixings and stays', base.woodScrews.name, n, base.woodScrews.price, n * base.woodScrews.price, { screws: woodScrews }); }
@@ -1073,6 +1098,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   if (system.stays && stays.length) {
     cordRolls = Math.ceil(stayMetres / system.stays.roll);
     line('fixings and stays', `${system.stays.name} (${stayMetres.toFixed(1)} m of cord)`, cordRolls, system.stays.price, cordRolls * system.stays.price, { metres: stayMetres });
+    if (system.stays.tensioner) { const n = Math.ceil(stays.length / system.stays.tensioner.pack); line('fixings and stays', `${system.stays.tensioner.name} (one per cord)`, n, system.stays.tensioner.price, n * system.stays.tensioner.price, { cords: stays.length }); }
   }
   if (system.ballast && sandbags) {
     line('fixings and stays', system.ballast.sandbag.name, sandbags, system.ballast.sandbag.price, sandbags * system.ballast.sandbag.price);
@@ -1091,8 +1117,6 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     screws,
     glued: (system.glueJoints || []).slice(),
     stays: { count: stays.length, metres: stayMetres, rolls: cordRolls },
-    ties,
-    hooks,
     woodScrews,
     sandbags,
     bracing: base.kind,
@@ -1119,7 +1143,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   if (stock.unplaced.length) warnings.push(`${stock.unplaced.length} piece${stock.unplaced.length > 1 ? 's are' : ' is'} longer than the stock`);
   if (piecesOver.length) warnings.push(`${piecesOver.length} piece${piecesOver.length > 1 ? 's are' : ' is'} longer than ${maxPiece.toFixed(2)} m`);
 
-  return { system: systemId, bracing: base.kind, maxPiece, ground, sizes: system.sizes, memberSpec: system.members, members, fittings, hub, skis, body, cuts, legsAssembly, bom, warnings };
+  return { system: systemId, bracing: base.kind, eyes: FACE_KITS[eyes] ? eyes : 'none', maxPiece, ground, sizes: system.sizes, memberSpec: system.members, members, fittings, hub, skis, body, cuts, legsAssembly, bom, warnings };
 }
 
 function legIdx(l) { return 2 * l.pair + (l.side > 0 ? 0 : 1); }

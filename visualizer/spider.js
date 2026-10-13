@@ -433,6 +433,64 @@ export function buildSpider(params, walls = flatWalls(3.0)) {
 // `bendDeg` off straight, from that leg's root and foot. Worked out in the
 // level pose; the pitch then rotates the leg rigidly, keeping its lengths
 // and bend.
+// The face: eight eyes on the front of the head, two big and six small,
+// placed as a spider's are (the big pair forward, a small pair beside and
+// below it, two small pairs above), each on the front cap of the head
+// capsule and facing out of it. The sizes are fractions of the head's
+// width (FACE), so the eyes grow with L: at L = 0.8 the googly eyes are
+// discs of 13 and 5 cm, the lit eyes domes of 9 and 4 cm. When the spider
+// is pitched up the face is turned down the cap by most of the pitch
+// (faceTilt), so it still looks down the alley toward the street rather
+// than at the sky. faceOf gives each eye's centre, outward normal and
+// diameter in the alley frame for the model and parameters passed.
+export const FACE = Object.freeze({
+  googly: { big: 0.50, small: 0.18, label: 'googly eyes' },
+  lit: { big: 0.36, small: 0.16, label: 'lit eyes' },
+});
+export const EYE_CHOICES = ['googly', 'lit', 'none'];
+// Each eye: elevation above the head's axis and azimuth off it, degrees;
+// azimuth + is the right-hand side when looking at the face. Spread so
+// that no two eyes overlap on a head as wide as it is high.
+const EYE_PLACES = [
+  { el: -18, az: 38, big: true }, { el: -18, az: -38, big: true },
+  { el: -30, az: 80, big: false }, { el: -30, az: -80, big: false },
+  { el: 22, az: 16, big: false }, { el: 22, az: -16, big: false },
+  { el: 18, az: 62, big: false }, { el: 18, az: -62, big: false },
+];
+// The face looks this many degrees above the alley's level when pitched:
+// the eyes are turned down the cap by the pitch less this.
+const FACE_LOOK_UP = 12;
+export function faceTilt(pitch) { return -Math.max(0, Math.min(pitch || 0, 60) - FACE_LOOK_UP); }
+export function faceOf(model, params, kind = 'googly') {
+  const spec = FACE[kind];
+  if (!spec) return [];
+  const p = { ...DEFAULTS, ...params };
+  const frame = bodyFrame(p);
+  const o = frame.toAlley(0, 0, 0);
+  const dir = (a, u, c) => sub(frame.toAlley(a, u, c), o);
+  const along = dir(1, 0, 0), up = dir(0, 1, 0), across = dir(0, 0, 1);
+  const head = model.head;
+  // The capsule's front cap is a sphere of the larger half-width, drawn
+  // squashed to the head's height and width; the capsule is drawn with a
+  // straight part of at least 0.01 m (scene.js bodyMesh), so the cap's
+  // centre is half that part ahead of the head segment's centre.
+  const rx = Math.max(head.width, head.height) / 2, ry = head.height / 2, rz = head.width / 2;
+  const straight = Math.max(0.01, head.length - 2 * rx);
+  const capCentre = frame.toAlley(bodyLength(p) / 2 - head.length / 2 + straight / 2, p.headLift || 0, 0);
+  // The tilt turns the whole pattern about the across axis, so the eyes
+  // keep their spacing; shifting each elevation instead would crowd them
+  // toward the cap's pole.
+  const tau = faceTilt(p.pitch) * DEG;
+  return EYE_PLACES.map(e => {
+    const t = e.el * DEG, s = e.az * DEG;
+    const u0 = [Math.cos(t) * Math.cos(s), Math.sin(t), Math.cos(t) * Math.sin(s)]; // on the unit sphere: along, up, across
+    const u = [u0[0] * Math.cos(tau) - u0[1] * Math.sin(tau), u0[0] * Math.sin(tau) + u0[1] * Math.cos(tau), u0[2]];
+    const centre = add(add(add(capCentre, scale(along, u[0] * rx)), scale(up, u[1] * ry)), scale(across, u[2] * rz));
+    const normal = unit(add(add(scale(along, u[0] / rx), scale(up, u[1] / ry)), scale(across, u[2] / rz))); // the squashed sphere's normal
+    return { centre: centre.map(round), normal, diameter: round((e.big ? spec.big : spec.small) * head.width), big: e.big };
+  });
+}
+
 export function kneeFromBend(p, walls, pair, upper, bendDeg, side = 1) {
   const full = { ...DEFAULTS, ...p, legs: legsFrom(p) }; // as the spider stands (pitched); the result is stored as the level pose
   const frame = bodyFrame(full);
