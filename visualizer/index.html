@@ -94,7 +94,7 @@
     <div class="row" style="margin-top:8px"><label title="The joint where the leg leaves the body">Hip angle <small>° above level</small></label><input id="hip" type="range" min="-60" max="80" step="1" disabled><input id="hipN" type="number" min="-60" max="80" step="1" disabled></div>
     <div class="row"><label>Knee bend <small>° off straight, back pair; front half</small></label><input id="bend" type="range" min="0" max="120" step="1" disabled><input id="bendN" type="number" min="0" max="120" step="1" disabled></div>
     <div class="check"><input type="checkbox" id="bendLock" checked><label for="bendLock">Locked. Unlock to pose every leg from these two angles, each keeping its plan angle where the brief's leg length allows; the feet keep their place along the walls and the lengths follow.</label></div>
-    <button id="spreadLegs" title="Fan the legs out in plan like a resting spider (55° and 22° forward, 22° and 55° back) at these two angles; each leg is scaled to reach its wall">Spread the legs like a spider</button>
+    <button id="spreadLegs" title="Fan the legs out in plan like a resting spider (55° and 22° forward, 22° and 55° back), each foot keeping its height; each leg is bent by the knee slider and scaled to reach its wall, never longer than the brief's">Spread the legs like a spider</button>
 
     <div id="controls"></div>
 
@@ -107,9 +107,11 @@
     </div>
 
     <h2>Construction</h2>
-    <div class="muted">The real parts: tubes with a fitting at the hip, knee and foot (fixed PVC elbows, singly or in pairs), a spine in the body, a post under each foot, a ski along each wall, two stay cords per post and sandbags. The Numbers panel lists the parts and the cut list.</div>
+    <div class="muted">The real parts: tubes with a fitting at the hip, knee and foot (fixed PVC elbows, singly or in pairs), a spine in the body, a post under each foot, a ski along each wall, the bracing chosen below and sandbags. The Numbers panel lists the parts and the cut list.</div>
     <div class="row" style="grid-template-columns: 1fr 160px"><label for="system">Part system</label><select id="system" title="Which parts to build the spider from; the view shows them"></select></div>
     <div class="row" style="grid-template-columns: 1fr 160px"><label for="maxPiece">Longest piece to ship</label><select id="maxPiece" title="Pipes longer than this are split with a coupler so every piece fits the parcel"></select></div>
+    <div class="check"><input type="checkbox" id="plumbPosts" checked><label for="plumbPosts" title="The walls step 2 to 7 cm at the feet along the alley. On, each side's feet are placed on one straight line at the innermost wall over the stretch they occupy, so every post stands vertical and the gap to a wall that steps out is packed with offcuts; the HUD gives the gap (0.17 m at the right ski's front end in the default pose, where the wall turns away at the alley mouth: trim that overhang or pack it with a block). Off, each foot sits on the real wall and the posts lean across to meet the ski.">Posts plumb: the feet of a side sit on one straight line</label></div>
+    <div class="row" style="grid-template-columns: 1fr 160px"><label for="bracing" title="How the posts are held along the walls: cords from each post top to sandbags on the ground; rigid wood bases (45 × 45 battens, brackets and a gusset at each post foot, no cords); or a hook in the wall per post pair with a short tie from each post top (no cords, but the owners must agree)">Bracing</label><select id="bracing"></select></div>
     <div class="check"><input type="checkbox" id="frameOnly"><label for="frameOnly">Frame only: hide the covers and the shell</label></div>
 
     <h2>Display</h2>
@@ -141,7 +143,7 @@
         <h2>Legs</h2>
         <p>Drag an orange foot: it slides on its wall. Drag an orange knee: it moves along the alley and up and down. Hold <kbd>Shift</kbd>, <kbd>Ctrl</kbd> or <kbd>Alt</kbd> while dragging a knee to move it across the alley. The balls show while "Mark knees and feet" is on. Each leg moves on its own. With "Keep the brief's leg" on (the default) a leg is one vertical plane through its root, its knee at 48 % of its length and its length at most the brief's: a dragged foot turns and scales its leg, keeping the bend, and unfolds it once at that length; a dragged knee moves its foot along the wall to suit. A ball stops where the leg could not follow. Off, each ball moves alone.</p>
         <h2>Construction</h2>
-        <p>The Construction section picks a part system (PVC, aluminium or wood) and the longest piece that can be shipped (by parcel service, or 2.0 m store lengths); the view then shows the real tubes, fittings, posts, skis, stays and sandbags, and the Numbers panel lists the parts and the cut list with the elbows to use at each joint.</p>
+        <p>The Construction section picks a part system (PVC, aluminium or wood) and the longest piece that can be shipped (by parcel service, or 2.0 m store lengths); the view then shows the real tubes, fittings, posts, skis, bracing and sandbags, and the Numbers panel lists the parts and the cut list with the elbows to use at each joint. "Posts plumb" puts each side's feet on one straight line so every post stands vertical (the walls step 2 to 7 cm at the feet); "Bracing" chooses cord stays to sandbags, rigid wood bases or wall ties.</p>
         <h2>Walk</h2>
         <p><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or the arrows move, drag or click the view to look around, <kbd>Shift</kbd> hurries, <kbd>F</kbd> flies (<kbd>Space</kbd> up, <kbd>X</kbd> down). Any move key takes over from the path.</p>
         <h2>On a phone</h2>

@@ -8,9 +8,11 @@ https://danielsknowledge.com/halloween/ shows the same parts in 3D
 (Construction section) and prints the cut list, the elbow pair and twist
 at every joint and the part counts for whatever pose is chosen (live
 since the evening of 2026-10-13). The quantities below are the page's for
-the brief defaults at L = 0.8 m, with spares; that pose has two pairs of
-feet below the 2.0 m rule (see Safety rules), and the pose must be
-settled before the hub is built (see Schedule).
+the pose it starts from, with spares: L = 0.8 m, the whole spider
+pitched up 45° (climbing up and out toward the street), the legs fanned
+out in plan and the feet at 3.0, 2.6, 2.3 and 2.0 m from the front pair
+to the back, none within a child's reach; the pose must be settled
+before the hub is built (see Schedule).
 
 ## The build in one paragraph
 
@@ -27,7 +29,14 @@ turning the fitting in its socket and locked with two screws, so it
 comes apart with a screwdriver; the knee elbows and the hub (spine,
 crosses, stubs and the hip elbow pairs, set at their angles in Paris)
 are glued because they carry the most load, and each upper leg is
-screwed into its hip pair. In this plan only the hub (about 0.6 m
+screwed into its hip pair. The walls step 2 to 7 cm at the feet along
+the alley, so the page's "Posts plumb" setting (on by default) puts each
+side's feet on one straight line at the innermost wall and every post
+stands vertical; the gap between the ski's face and a wall that steps
+out is packed with offcuts, and where a wall turns away at the alley
+mouth the ski's end stands further off (0.17 m on the right in the
+default pose), so that overhang is trimmed or packed with a block; the
+page gives the gap. In this plan only the hub (about 0.6 m
 across with its pairs on), the fittings and the body kit leave Paris;
 the pipe is bought on the way to the island or delivered there.
 
@@ -108,11 +117,11 @@ pipe from an offcut into the reducer instead, which the cut list gives
 
 | Part | Qty | Listing | Price | Seen delivery |
 |---|---|---|---|---|
-| Elbow 45° M/F, DOJA pack of 5 | 4 packs (20) | https://www.amazon.fr/dp/B0G6DJGLK4 | 9.99 | Sat 17 Oct, Prime |
-| Elbow 67.5° F/F, DOJA pack of 5 | 1 pack (5) | https://www.amazon.fr/dp/B0G6FBRGTD | 9.99 | Sat 17 Oct, Prime; none at the defaults, kept for a pose change |
+| Elbow 45° M/F, DOJA pack of 5 | 6 packs (30; 23 at the default pose) | https://www.amazon.fr/dp/B0G6DJGLK4 | 9.99 | Sat 17 Oct, Prime |
+| Elbow 67.5° F/F, DOJA pack of 5 | 1 pack (5) | https://www.amazon.fr/dp/B0G6FBRGTD | 9.99 | Sat 17 Oct, Prime; 1 at the default pose |
 | Elbow 87.5° F/F, DOJA pack of 5 | 1 pack (5) | https://www.amazon.fr/dp/B0G6FVQRHD | 9.49 | Sat 17 Oct, Prime |
-| Elbow 20° M/F, Fitt | 24 (18 at the defaults) | https://www.castorama.fr/coude-en-pvc-male-femelle-20-x-40-mm-fitt/3396047402042_CAFR.prd | 2.09 | in stock, Paris stores, Drive 2h. The Nicoll CH2 on Amazon (https://www.amazon.fr/dp/B00B1T3J70, 4.90) is a third-party seller with 9 in stock, Tue 20 Oct: top-up only |
-| Elbow 30° M/F, Nicoll CH3 | 4 | https://www.amazon.fr/dp/B00BQH2OUU | 9.32 | Tue 20 Oct, third-party seller (Digital Brico); an order after 14 Oct lands 22 to 23 Oct |
+| Elbow 20° M/F, Fitt | 24 (15 at the default pose) | https://www.castorama.fr/coude-en-pvc-male-femelle-20-x-40-mm-fitt/3396047402042_CAFR.prd | 2.09 | in stock, Paris stores, Drive 2h. The Nicoll CH2 on Amazon (https://www.amazon.fr/dp/B00B1T3J70, 4.90) is a third-party seller with 9 in stock, Tue 20 Oct: top-up only |
+| Elbow 30° M/F, Nicoll CH3 | 6 (4 at the default pose) | https://www.amazon.fr/dp/B00BQH2OUU | 9.32 | Tue 20 Oct, third-party seller (Digital Brico); an order after 14 Oct lands 22 to 23 Oct |
 | Cross PN16 for 40 mm pipe, FLUXI-TECH lot of 2 | 2 lots (4) | https://www.amazon.fr/dp/B0H4WHNQR1 | 14.45 | Sat 17 Oct |
 | Coupler F/F, DOJA pack of 5 | 4 packs (20) | https://www.amazon.fr/dp/B0G3MV64FQ | 10.99 | Sat 17 Oct, Prime; 8 hips and 8 knees |
 | Cap PN16, FLUXI-TECH pack of 6 | 1 pack | https://www.amazon.fr/dp/B0FFJWG9ML | 13.85 | Sat 17 Oct |
@@ -166,10 +175,10 @@ a van.
 
 | Part | Qty | Note |
 |---|---|---|
-| PVC Ø 40 evacuation pipe | 16 × 2 m or 6 × 4 m, plus one spare | every leg piece is 1.0 to 1.35 m, so a 2 m length yields one and a 4 m length three; the offcuts make the spine, the stubs and the rungs |
-| PVC Ø 50 evacuation pipe | 16 × 2 m or 8 × 4 m, plus one spare | posts 2.78, 2.59, 1.79 and 1.49 m (two each), skis 4.43 m each; the spare makes the hub prop (step 4) |
+| PVC Ø 40 evacuation pipe | 10 × 2 m or 5 × 4 m (the page buys 9 × 2 m) | the long legs are 1.1 to 1.3 m per piece and the inner legs 0.7 to 0.8 m, so a 2 m length yields one long piece or two short ones; the offcuts make the spine, the stubs and the rungs |
+| PVC Ø 50 evacuation pipe | 21 × 2 m or 11 × 4 m (the page buys 20 × 2 m) | posts 2.95, 2.55, 2.25 and 1.95 m (two each; the three taller ones are two pieces with a coupler), skis 4.0 m each; the spare makes the hub prop (step 4) |
 | Tee Ø 50 F/F 87.5° | 9 | ski to post, one for the prop; fallback if the store is out: Castorama marketplace First Plast F/F 87°30 Ø 50, https://www.castorama.fr/departments/te-pied-de-biche-pvc-ff-87-30-diam-50-mm-first-plast/8019966044340_CAFR.prd, 13.00 shipped |
-| Coupler Ø 50 F/F | 16 | 6 in the skis and tall posts, 8 under the reducers, 2 spare; Castorama Fitt manchon à butée Ø 50, https://www.castorama.fr/manchon-a-butee-pvc-evacuation-fitt-srbman050-matiere-pvc-50-mm/3396047440051_CAFR.prd, 0.99, in stock |
+| Coupler Ø 50 F/F | 16 | 6 in the split posts, 8 under the reducers, 2 spare; Castorama Fitt manchon à butée Ø 50, https://www.castorama.fr/manchon-a-butee-pvc-evacuation-fitt-srbman050-matiere-pvc-50-mm/3396047440051_CAFR.prd, 0.99, in stock |
 | Cap Ø 50 | 5 | ski ends and the prop |
 | Reducer 50/40 | 8 | the 5 Amazon cannot supply, or all 8 |
 | Sand, 25 kg bags, only if sacks are used instead of jerrycans | 12 | Castorama Aytré 4.99 (masonry) or 6.99 (play sand), https://www.castorama.fr/sable-blanc-pour-maconnerie-25kg-cantillana/5413945079355_CAFR.prd ; never beach sand |
@@ -261,33 +270,35 @@ the ski tee sets the leg's direction along the alley. Mark the position
 with a pen, drill 3 mm through socket and spigot, and drive two 4.2 × 16
 screws per socket at 90° apart.
 
-The page's numbers for the brief defaults (L = 0.8 m, feet at 2.9, 1.9,
-2.7 and 1.6 m, site walls, 2 m stock), read on 2026-10-13. Two values
-are right / left where the legs of a pair differ; lengths are the pipe
-between fittings in metres, couplers and links included; a post longer
-than 2 m is two pieces with a coupler; the post is from the reducer to
-the tee and is cut last (step 3).
+The page's numbers for the pose it starts from (L = 0.8 m, pitched 45°,
+the legs fanned out, feet at 3.0, 2.6, 2.3 and 2.0 m front to back, the
+site walls with the posts plumb, cord stays, 2 m stock), read on
+2026-10-13. Two values are right / left where the legs of a pair differ;
+lengths are the pipe between fittings in metres, couplers included; a
+post longer than 2 m is two pieces with a coupler; the post is from the
+reducer to the tee and is cut last (step 3).
 
 | Pair | Hip pair @ twist | Knee | Foot @ twist | Upper | Lower | Post | Post above ski |
 |---|---|---|---|---|---|---|---|
-| 1 (front, feet 2.9 m) | 45 + 20 @ 34° / 39° | 30° | 87.5° F/F with a 54 mm link | 1.296 | 1.285 | 2 × 1.356 | 2.85 |
-| 2 (feet 1.9 m) | 45 + 20 @ 43° / 54° | 45 + 20 @ 115° | 45 + 20 @ 63° / 61° | 1.347 / 1.343 | 1.292 | 1.786 | 1.85 |
-| 3 (feet 2.7 m) | 45 + 20 @ 63° / 64° | 45 + 20 @ 65° | 45 + 30 @ 35° / 38° | 1.053 | 1.285 | 2 × 1.286 | 2.65 |
-| 4 (back, feet 1.6 m) | 45 + 20 @ 114° / 116° | 45 + 20 @ 29° | 45 + 20 @ 122° / 123° | 0.999 / 1.002 | 1.294 | 1.486 | 1.55 |
+| 1 (front, feet 3.0 m) | 45 + 20 @ 46° | 30° | 45 + 45 @ 47° | 1.218 | 1.178 / 1.203 | 2 × 1.436 | 2.95 |
+| 2 (feet 2.6 m) | 45 + 20 @ 123° | 45 + 20 @ 86° / 90° | 45 + 20 @ 28° / 13° | 0.785 | 0.695 / 0.732 | 2 × 1.239 | 2.55 |
+| 3 (feet 2.3 m) | 45 + 20 @ 180° | 67.5° / 45 + 20 @ 15° | 45 + 20 @ 92° / 86° | 0.750 / 0.752 | 0.766 / 0.793 | 2 × 1.089 | 2.25 |
+| 4 (back, feet 2.0 m) | 45 + 20 @ 84° | 45 + 30 @ 20° / 28° | 45° | 1.125 | 1.278 / 1.296 | 1.892 | 1.95 |
 
-Elbows used: 20 × 45° M/F, 18 × 20° M/F, 4 × 30° M/F, 2 × 87.5° F/F.
-Couplers: 16 × Ø 40 (after every hip and knee pair) and 14 × Ø 50 (8
-under the reducers, 4 in the tall posts, 2 in the skis). Hub: four
+The legs are 2.41 / 1.51 / 1.62 / 2.58 m (the brief's full length is
+2.60 m; the inner legs are shorter because they reach the wall at 22°
+in plan), bends 30 / 41 / 52 / 61°, and the posts stand 1.1 to 1.4 m
+apart along each wall. Elbows used: 23 × 45° M/F, 15 × 20° M/F, 4 × 30°
+M/F, 1 × 67.5° F/F. Couplers: 15 × Ø 40 (after every hip and knee pair)
+and 14 × Ø 50 (8 under the reducers, 6 in the split posts). Hub: four
 crosses 0.116 m apart on a 0.53 m spine (five pieces of 0.054 m), eight
-stubs of 0.090 m. Skis 4.43 m each: 0.105, 0.07 to 0.11, 2 × 1.76 to
-1.79 with a coupler, 0.22, 0.105 m from the street end. Sixteen stays,
-60.5 m of cord, 8 ballast positions (4 anchors, each shared by a post
-pair, and 2 per ski). The page's total is about 785 € and 37 kg at its
-own prices; the parts tables above hold the ordered quantities with
-spares. Raising pairs 2 and 4 to 2.0 m makes their posts
-1.95 m, pair 4's hip a single 45° and its knee a single 67.5°, and puts
-the two back posts 0.13 m apart, closer than their tees, so the back feet
-then also move along the wall; the page shows this as a warning.
+stubs of 0.090 m. Skis 4.0 m each: 0.105, 1.334, 1.045, 1.106, 0.105 m
+between the fittings from the street end. Sixteen stays, 59 m of cord,
+8 ballast positions (4 anchors, each shared by two posts, and 2 per
+ski). The page's total is about 755 € and 35 kg at its own prices; the
+parts tables above hold the ordered quantities with spares. The lowest
+point of the body over the walking path is 2.08 m; the body can go up
+0.2 m for more headroom (the feet then follow).
 
 ## Assembly, in order
 
@@ -362,10 +373,10 @@ address: Amazon delivers there at the same speed.
   far tee; the two posts of a pair are joined by two rungs; every ski
   carries two sacks. The page draws the stays and counts the cord.
 - Keep every foot at 2.0 m or higher; the page warns below that, and
-  the brief defaults have two pairs at 1.9 and 1.6 m. A foot at 1.6 m is
-  a handle for a child. A 2.0 m foot keeps children off it, but an adult
-  hanging on it buckles a Ø 50 post: nobody hangs on a foot, and the
-  adults are told so on the night.
+  the pose it starts from has the lowest feet at exactly 2.0 m. A foot
+  at 1.6 m is a handle for a child. A 2.0 m foot keeps children off it,
+  but an adult hanging on it buckles a Ø 50 post: nobody hangs on a
+  foot, and the adults are told so on the night.
 - Knee elbows and the hub glued; two screws in every other socket;
   check all screws every morning, PVC joints work loose in wind.
 - Cap every open pipe end. No screw tips outside the pipe. No cord below
@@ -389,6 +400,36 @@ address: Amazon delivers there at the same speed.
   every stay and post base, and a light on the display. The mairie may
   ask for a civil-liability attestation (responsabilité civile).
 
+## Bracing: three ways
+
+Why the cords are there: a PVC post is a pipe standing in a tee. Pushed
+along the wall at its top, an unbraced post folds at the tee under
+about 15 N, the weight of a bag of sugar; the frame on its own (eight
+legs meeting a spine) does not take the wind along the alley either,
+since every leg lies across it. Something has to hold each post top
+along the wall. The page offers three ways under "Bracing", and the
+parts table, cut list, weight and cost follow the choice.
+
+| Choice | What it is | What it costs | What it needs from the neighbours | What it looks like |
+|---|---|---|---|---|
+| Cord stays to sandbags (the default) | Two 4 mm cords from each post top in the plane of its wall, one out to a sandbag 1.5 m past the ski's end and one in to the ski under the farthest post; four anchor sandbags and two on each ski | About 60 m of cord (two rolls, 30 €) and eight sandbags (about 60 € with sand); the page's total about 790 € with the posts plumb | Nothing | Black diagonals from every post top to the ground along both walls, with white tape at eye height; eight bags in the lane |
+| Rigid wood bases, no cords | The posts and skis are treated pine 45 × 45 battens. Each post stands on top of the ski on a pair of galvanised angle brackets 100 × 100 × 40 and a plywood gusset 300 × 300 × 12 screwed to the alley-side faces of post and ski, which makes the base a moment connection; the foot elbows sit on a 0.30 m stub of Ø 40 pipe held to the post top by two pipe clips; a post or ski longer than the 2.4 m stock is two battens lapped 0.40 m with four screws; two sandbags on each ski, none elsewhere | 18 battens (238 €), 8 bracket pairs (48 €), 8 gussets (32 €), 8 clip pairs (14 €), screws (12 €); about 70 € more than the stays and 19 kg heavier; the page's total about 857 € | Nothing | Nothing in the lane but the skis and four bags; white posts and skis; no cords |
+| Wall ties, no cords | The PVC posts and skis as they are; one hook in the wall per post pair (two posts within 1.5 m of each other), at the height of the higher foot, with a short cord from each post top to the hook; a post with no partner gets its own hook; two sandbags on each ski, no anchors | Four hooks (the page counts 0.75 each, 3.00; the pack of six is 4.51) and 5 m of cord (one roll); the page's total about 748 €, the cheapest | Four 6 mm holes in the walls, which the owners must agree to; the page's HUD says so | Four short cords at head height, nothing on the ground but the skis and four bags |
+
+A 45 × 45 pine post holds a 200 N push at 1.5 m with a safety factor of
+about 1.2 on the batten and depends on the gusset, so with the rigid
+bases the lowest feet stay at 2.0 m; the page prints this under the
+parts table. The parts each choice adds:
+
+| Part | Qty | Listing | Price |
+|---|---|---|---|
+| Rigid: treated pine batten 45 × 45, 2.4 m, Castorama | 18 | https://www.castorama.fr/tasseau-en-sapin-traite-marron-l-240-cm-45-x-45-mm/3428350073388_CAFR.prd | 13.20 |
+| Rigid: galvanised angle brackets 100 × 100 × 40, pairs | 8 | any store | 6.00 a pair |
+| Rigid: plywood gusset 300 × 300 × 12 (cut from one 12 mm sheet offcut) | 8 | any store | 4.00 each |
+| Rigid: pipe clips Ø 40, pairs | 8 | any store | 1.70 a pair |
+| Rigid: wood screws 5 × 60, 200, Leroy Merlin | 1 | https://www.leroymerlin.fr/ | 11.95 |
+| Ties: fischer EasyHook with 6 × 30 plug, 6 (stone or brick only, not hollow block) | 1 | https://www.amazon.fr/dp/B0922T9S2Q | 4.51 |
+
 ## Alternatives, and why they are second
 
 | Build | Weight | Cost | Why not first |
@@ -408,15 +449,19 @@ compared.
   (49.90, 2 to 4 working days) ordered a week ahead is the fallback.
 - Will the neighbours accept four small screw hooks in the walls? Ask
   this first; it changes the ballast and the toward-centre case.
+- Which bracing: cords, rigid wood bases, or wall ties? See "Bracing:
+  three ways"; the page shows each one.
 - Can a neighbour receive parcels at the house before you arrive?
 - The bench: the site model has a 1.5 m bench against the east wall at
   7.0 to 8.5 m down the alley, exactly where that side's ski and both
   back posts go. Is it real, and can it be moved for two weeks? If not,
   the spider moves along the alley or the back feet move forward, and
   the cut list changes.
-- The final pose: L, the hip and bend angles, and the foot heights (the
-  defaults break the 2.0 m rule), plus whether to set the body 0.1 to
-  0.2 m higher so that the settling of the screwed hips lands it at
-  2.5 m. The cut list follows from it; order the pipe after it is set.
+- The final pose: L, the pitch, the fan, the bends and the foot heights
+  (the pose the page starts from keeps every foot at 2.0 m or higher),
+  plus whether to set the body 0.1 to 0.2 m higher so that the settling
+  of the screwed hips lands it at 2.5 m, and for headroom under the
+  pitched abdomen (2.08 m now). The cut list follows from it; order the
+  pipe after it is set.
 - The face: the googly eyes above are the friendly option; lit eyes are
   the alternative.

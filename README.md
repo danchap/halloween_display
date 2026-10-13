@@ -48,28 +48,33 @@ What it shows:
   corner shop's green front, and plants cut out of the photo. Everything
   the screenshots do not show follows the same rules as a guess. The IGN
   orthophoto remains available as the ground ("Ground" in Display).
-- The spider in the brief's locked proportions by default (body length
-  L = 0.8 m, back-pair knee bend 60°, front pair 30°, feet on the real
-  walls at staggered heights), with Daniel's choices: a capsule body
-  2.5 m up on the alley's centreline, 6.5 m into the alley with the head
-  toward the street, legs 4.8 cm and 3.6 cm thick. Pick another L and
-  press "Apply brief ratios at L". Two angle sliders, the hip (the upper
-  segment's angle above level where it leaves the body) and the back-pair
-  knee bend (front pair half, the middle pairs between), are locked by
-  default: unlocking them, or moving one, poses every leg from the two
-  angles at the plan angle wanted for it, so a spread survives. Each
-  foot keeps its place along its wall and changes height, and the leg
-  lengths follow from the walls, but never past the brief's 3.25 L: a
-  leg that would need more is held at that length and its foot slides
-  toward straight across, one that cannot reach its wall even straight
-  across is stretched to just reach, and the HUD says which. The wanted
-  plan angles are remembered, so bringing the angles back brings the fan
-  back. The knee bend is limited to the hip angle plus 90°; past that
-  the lower segment would point back under the knee and the knee sit
-  inside the wall. "Spread the legs like a spider" sets the plan angles
-  to a resting spider's fan (55° and 22° forward, 22° and 55° back) at
-  the same two angles, scaling each leg to reach its wall under the same
-  cap.
+- The spider starts in a resting pose (Daniel, 2026-10-13): the brief's
+  locked proportions at body length L = 0.8 m, a capsule body 2.5 m up on
+  the alley's centreline, 6.5 m into the alley with the head toward the
+  street, the whole spider pitched up 45° so it climbs up and out toward
+  the street, the legs fanned out in plan like a resting spider's (55°
+  and 22° forward, 22° and 55° back) and the feet on the walls at 3.0,
+  2.6, 2.3 and 2.0 m from the front pair to the back, out of a child's
+  reach; legs 4.8 cm and 3.6 cm thick. "Apply brief ratios at L" sets the
+  brief's own pose at a chosen L (every leg the brief's full length with
+  the knee bends 30/40/50/60°, the feet keeping the heights they have).
+  Two angle sliders, the hip (the upper segment's angle above the alley's
+  level where it leaves the body) and the back-pair knee bend (front pair
+  half, the middle pairs between), are locked by default: unlocking
+  them, or moving one, poses every leg from the two angles at the plan
+  angle wanted for it, so a spread survives. Every pose is worked out as
+  the spider stands in the alley, pitched, and stored as the level pose
+  the pitch turns back onto it. Each leg is scaled to its wall, but never
+  past the brief's 3.25 L: a leg that would need more is held at that
+  length and its foot slides toward straight across, one that cannot
+  reach its wall even straight across is stretched to just reach, and
+  the HUD says which. The wanted plan angles are remembered, so bringing
+  the angles back brings the fan back. The knee bend is limited to the
+  hip angle plus 90°; past that the lower segment would point back under
+  the knee and the knee sit inside the wall. "Spread the legs like a
+  spider" fans the legs out in plan as seen from above, each foot
+  keeping its height, each leg bent by the knee slider and scaled to its
+  wall under the same cap.
 - The brief's-leg rule, "Keep the brief's leg" in the Legs section, on
   by default: the knee stays at 48 % of each leg, the leg stays in one
   vertical plane through its root and is never longer than the brief's
@@ -135,6 +140,29 @@ What it shows:
   the hub is kept inside the body. The orange balls still drive the
   pose; the parts follow. The choice travels with the design, so the
   walk video shows the same construction.
+  Plumb posts: the walls step by 2 to 7 cm along the alley, so feet
+  placed on the real wall put the posts of a side at different distances
+  from the ski's line and some lean across to meet it. "Posts plumb"
+  (on by default) places each side's feet on one straight line, the
+  innermost wall over the stretch the feet occupy, so every post stands
+  vertical; the HUD then gives, per side, how far the ski's face stands
+  off the wall where it steps out ("pack the gap with offcuts"; 0.17 m
+  at the right ski's front end in the default pose, where the wall turns
+  away at the alley mouth, so that overhang is trimmed or packed with a
+  block). Off, the feet
+  sit on the real wall and the HUD warns about the lean, as before.
+  Bracing: "Bracing" chooses how the posts are held along the walls.
+  Cord stays to sandbags is the default (two cords per post, anchor
+  sandbags past the ski ends). Rigid wood bases replace the posts and
+  skis with treated pine 45 × 45 battens: each post stands on the ski on
+  a pair of angle brackets with a plywood gusset, the foot elbows sit on
+  a 0.30 m stub of leg pipe clipped to the post top, battens longer than
+  the stock are lapped 0.40 m, and there are no cords. Wall ties keep
+  the system's posts and skis and put one hook in the wall per post pair (two posts within 1.5 m of each other)
+  with a short cord from each post top, no cords to the ground; this
+  needs the wall owners' consent and the HUD says so. The parts table,
+  cut list, weight, cost and warnings follow the choice, and both
+  settings travel with the design and the walk video.
 - Sliders for the abdomen (length, width, height), the head (length in
   front of the abdomen, width, height), the body's position along and
   above the alley, the pitch of the whole spider (body and legs turn

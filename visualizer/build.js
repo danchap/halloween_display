@@ -13,6 +13,19 @@
 // and fittings of one part system, the cut list, the fitting recipes, the
 // bill of materials and the warnings.
 //
+// Plumb posts: the site's walls step by 2 to 7 cm at the feet along the
+// alley, so feet placed on the real wall put the posts of a side at
+// different distances from the ski's line and some lean across to meet
+// it. straightWalls() replaces the walls with one straight line per side
+// over the stretch the feet occupy, so every post stands vertical; the
+// gap between the ski's face and a wall that steps out is reported and
+// packed with offcuts (where a wall turns away at the alley mouth the
+// ski's end can stand further off, 0.17 m on the right in the default
+// pose, so that overhang is trimmed or packed with a block). Bracing:
+// buildParts takes a `bracing` choice, 'stays'
+// (the cords above), 'rigid' (wood bases, no cords) or 'ties' (hooks in
+// the walls, no cords); see BRACING.
+//
 // SYSTEMS is a table: a new part system is a new entry, nothing else. A
 // system names its pipe sizes, which size each member role uses, and a
 // fitting for each joint role. Lengths are metres, weights kg, prices
@@ -45,7 +58,7 @@
 // The reducer 50/40 is female Ø 40 toward the foot elbows and male Ø 50
 // below, so a Ø 50 coupler sits between it and the post pipe.
 
-import { bodyFrame, bodyLength, rootAlongOffset } from './spider.js';
+import { DEFAULTS, bodyFrame, bodyLength, rootAlongOffset } from './spider.js';
 
 const SOCKET = 0.027;
 export const ELBOW_ANGLES = [20, 30, 45, 67.5, 87.5];
@@ -87,6 +100,48 @@ const COMMON_EXTRAS = { zipTies: { name: 'zip ties, pack of 100', price: 8.45 },
 const PVC_EXTRAS = { ...COMMON_EXTRAS, screws: { name: 'self-drilling screws 4.2 × 16, pack of 100', pack: 100, price: 9.29 }, cement: { name: 'PVC cement, 125 ml', price: 5.00 } };
 const PAINT = { name: 'black spray paint, 400 ml', coversM: 4, price: 7.00 }; // price estimated
 
+// Bracing: how the posts are held along the walls (the buildParts option
+// `bracing`). 'stays': the two cords per post and the anchor sandbags
+// described above. 'rigid': the posts and skis are treated pine 45 × 45
+// battens; each post stands on top of the ski, fixed by a pair of angle
+// brackets and a plywood gusset screwed to the alley-side faces of post
+// and ski, which makes the base a moment connection; the foot elbows sit
+// on a short stub of leg pipe clipped to the post top with two pipe
+// clips; a post or ski longer than the stock is two battens lapped
+// 0.40 m with four screws; no cords, no anchors. 'ties': the system's own
+// posts and skis, no cords and no anchors; one hook in the wall per post
+// pair (two posts of a side within pairWithin of each other) at the
+// height of the higher foot, with a short tie cord from each post top;
+// a post with no partner gets its own hook. Every system takes these
+// definitions (`bracing: BRACING`); a system may give its own entry.
+// Prices seen on 2026-10-13 at Castorama, Leroy Merlin and Amazon.fr.
+const BATTEN_45 = { label: '45 × 45', shape: 'square', size: 0.045, kgPerM: 0.97, stock: [2.4], stockPrice: [13.20], stockSource: ['Castorama treated pine 45 × 45, 2.4 m'], stockName: 'batten', splitBy: 'lap' }; // splitBy: a piece longer than the stock or the shipping length is lapped, not coupled
+const WOOD_WHITE = { color: '#f1f0ea', finish: 'paint' };
+const METAL = { color: '#8a8a8a', finish: 'metal' };
+export const BRACING = {
+  stays: { kind: 'stays', label: 'Cord stays to sandbags (PVC posts)' },
+  rigid: {
+    kind: 'rigid', label: 'Rigid wood bases, no cords',
+    sizeKey: 'p45', size: BATTEN_45,
+    members: { post: { size: 'p45', ...WOOD_WHITE }, ski: { size: 'p45', ...WOOD_WHITE } },
+    // z is the drawn reach of each fixing (none is a pipe end): the
+    // brackets' legs, the gusset's legs, half the lap's overlap, half the
+    // distance between the two clips. woodScrews: 5 × 60 wood screws each.
+    base: { kind: 'brackets', name: 'angle brackets, pair', z: 0.10, socket: 0, od: 0.04, kg: 0.25, price: 6.00, woodScrews: 8, ...METAL }, // galvanised 100 × 100 × 40; od: the bracket's width
+    gusset: { kind: 'gusset', name: 'plywood gusset 300 × 300 × 12', z: 0.30, socket: 0, od: 0.012, kg: 0.6, price: 4.00, woodScrews: 6, color: '#c8b388', finish: 'matte' }, // od: the plywood's thickness
+    clip: { kind: 'clips', name: 'pipe clips, pair', z: 0.10, socket: 0, od: 0.006, kg: 0.05, price: 1.70, woodScrews: 2, ...METAL }, // the name takes the pipe size; od: the clip band's thickness
+    lap: { kind: 'lap', name: 'lap splice, 4 screws', z: 0.20, socket: 0, od: 0.045, kg: 0, price: 0, woodScrews: 4, ...METAL },
+    stub: 0.30, // the stub of leg pipe the foot elbows sit on, from the leg pipe's offcuts
+    woodScrews: { name: 'wood screws 5 × 60, pack of 200', pack: 200, price: 11.95 }, // Leroy Merlin
+    note: 'A 45 × 45 pine post holds a 200 N push at 1.5 m with a safety factor of about 1.2 on the batten and depends on the gusset; keep the lowest feet at 2.0 m',
+  },
+  ties: {
+    kind: 'ties', label: 'Wall ties, no cords (needs the owners\' consent)',
+    hook: { kind: 'hook', name: 'wall hook with plug', z: 0.03, socket: 0, od: 0.008, kg: 0.02, price: 0.75, ...METAL }, // fischer EasyHook with a 6 × 30 plug; z: how far it sticks out of the wall
+    pairWithin: 1.5, // two posts of a side this close along the ski share a hook (the spread pose puts them 1.1 to 1.4 m apart)
+  },
+};
+
 export const SYSTEMS = [
   {
     id: 'pvc40',
@@ -105,6 +160,7 @@ export const SYSTEMS = [
     stays: STAYS,
     ballast: BALLAST,
     extras: PVC_EXTRAS,
+    bracing: BRACING,
   },
   {
     id: 'pvc50',
@@ -122,6 +178,7 @@ export const SYSTEMS = [
     stays: STAYS,
     ballast: BALLAST,
     extras: PVC_EXTRAS,
+    bracing: BRACING,
   },
   {
     id: 'alu30',
@@ -148,6 +205,7 @@ export const SYSTEMS = [
     stays: STAYS,
     ballast: BALLAST,
     extras: COMMON_EXTRAS,
+    bracing: BRACING,
   },
   {
     id: 'wood34',
@@ -174,8 +232,11 @@ export const SYSTEMS = [
     stays: STAYS,
     ballast: BALLAST,
     extras: COMMON_EXTRAS,
+    bracing: BRACING,
   },
 ];
+export const BRACINGS = Object.values(BRACING).map(b => ({ value: b.kind, label: b.label }));
+export const DEFAULT_BRACING = 'stays';
 
 // The longest piece that can be shipped: the parcel services seen on
 // 2026-10-13. The default is 2.0 m, since the plan is to buy the pipe near
@@ -307,7 +368,7 @@ function resolveJoint(system, role, theta) {
 // A plain fitting (cross, tee, coupler, cap, reducer) resolved the same
 // way; the reducer's Ø 50 end is a spigot, so it has one socket.
 function resolvePlain(spec, role) {
-  return { ...spec, role, items: [{ name: spec.name, kg: spec.kg, price: spec.price }], sockets: { cross: 4, tee: 3, coupler: 2, cap: 1, reducer: 1, clamp: 0, bracket: 0 }[spec.kind] ?? 2 };
+  return { ...spec, role, items: [{ name: spec.name, kg: spec.kg, price: spec.price }], sockets: { cross: 4, tee: 3, coupler: 2, cap: 1, reducer: 1, clamp: 0, bracket: 0, brackets: 0, gusset: 0, clips: 0, lap: 0, hook: 0 }[spec.kind] ?? 2 };
 }
 // Pipe lost at one end into a resolved fitting, at its run or its branch.
 function allowance(spec, port = 'run') {
@@ -330,6 +391,59 @@ function splitPiece(length, maxLen, couplerSpec) {
   const each = Math.max(0, pipe / n);
   const down = Math.floor(each * 1000 + 1e-6) / 1000;
   return { pieces: Array.from({ length: n }, () => down), couplers: n - 1 };
+}
+
+// Split a batten of `length` into pieces no longer than `maxLen` that
+// overlap by `overlap` at each lap. Pieces equal, rounded up to the
+// millimetre, so the lapped pieces are never shorter than the member.
+function splitLap(length, maxLen, overlap) {
+  if (length <= 0) return { pieces: [0], laps: 0 };
+  if (length <= maxLen + 1e-9) return { pieces: [mm(length)], laps: 0 };
+  let n = Math.ceil(length / maxLen - 1e-9);
+  while ((length + (n - 1) * overlap) / n > maxLen + 1e-9) n++;
+  const each = Math.ceil((length + (n - 1) * overlap) / n * 1000 - 1e-6) / 1000;
+  return { pieces: Array.from({ length: n }, () => each), laps: n - 1 };
+}
+
+// The walls straightened for plumb posts. Returns a walls function with
+// wallsFromSite's contract (x, side, fromZ). Per side, over the stretch
+// the feet occupy (their x range from `params`, in the level pose,
+// extended by `margin` each way) the wall is one z: the innermost real
+// wall over that stretch (the smallest |z|). That z is returned for every
+// x within the stretch extended by `reach`, so the skis, their anchors
+// and a foot dragged a little further see the same line; elsewhere the
+// real wall is returned. Null wherever the real wall is null.
+const WALL_STEP = 0.01; // how finely a wall function is sampled along the alley
+export function straightWalls(walls, params, { margin = 0.5, reach = 1.5 } = {}) {
+  const p = { ...DEFAULTS, ...params };
+  const legs = params.legs || (params.pairs ? params.pairs.flatMap(q => [q, q]) : DEFAULTS.legs);
+  const f = p.facing >= 0 ? 1 : -1;
+  const across = p.across || 0;
+  const xs = legs.map(q => p.along + f * q.footAlong);
+  const lo = Math.min(...xs) - margin, hi = Math.max(...xs) + margin;
+  const line = {};
+  // Sampled every 0.01 m with both ends, so a step or a narrow feature of
+  // the wall inside the stretch is not missed.
+  const n = Math.max(1, Math.ceil((hi - lo) / WALL_STEP));
+  for (const side of [1, -1]) {
+    let best = null;
+    for (let i = 0; i <= n; i++) {
+      const w = walls(lo + (hi - lo) * i / n, side, across);
+      if (w === null || w === undefined) continue;
+      if (best === null || Math.abs(w - across) < Math.abs(best - across)) best = w;
+    }
+    line[side] = best;
+  }
+  const fn = (x, side, fromZ = 0) => {
+    const w = walls(x, side, fromZ);
+    fn.last = walls.last;
+    if (w === null || w === undefined) return null;
+    const z = line[side > 0 ? 1 : -1];
+    if (z === null || x < lo - reach || x > hi + reach) return w;
+    return z;
+  };
+  fn.stretch = { from: mm(lo), to: mm(hi), line: { R: line[1], L: line[-1] } };
+  return fn;
 }
 
 // First-fit decreasing of the pieces into the stock lengths (preferred
@@ -420,9 +534,19 @@ function placeHub(model, system) {
 
 // Build the parts of one system for a spider model. `walls` is the wall
 // function the model was built with (used to check the skis against the
-// walls); maxPiece the longest piece that can be shipped, metres.
-export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MAX_PIECE, ground = 0 } = {}) {
+// walls, and straightened when the posts are plumb); `realWalls` the
+// site's walls when `walls` is a straightened version of them (the gap
+// between each ski and the real wall is then reported); maxPiece the
+// longest piece that can be shipped, metres; bracing one of BRACING.
+export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MAX_PIECE, ground = 0, bracing = DEFAULT_BRACING, realWalls = null } = {}) {
   if (!system) throw new Error('buildParts needs a system');
+  const systemId = system.id;
+  const base = (system.bracing || BRACING)[bracing] || BRACING.stays;
+  const rigid = base.kind === 'rigid';
+  // With rigid bases the posts and skis are the bracing's battens, not
+  // the system's pipe: the system is used with those two members and
+  // that size swapped in.
+  if (rigid) system = { ...system, sizes: { ...system.sizes, [base.sizeKey]: base.size }, members: { ...system.members, ...base.members } };
   const p = model.params;
   const warnings = [];
   const members = [];   // { role, a, b, shape, od|size, sizeKey, color, finish, leg?, side?, pieces? } ; ballast: { role, at, dims }
@@ -436,7 +560,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   let splitCount = 0;
   const tooShort = []; // pipes shorter than the two sockets they sit in: the fittings would collide
   const memberDims = size => size.shape === 'square' ? { shape: 'square', size: thickness(size) } : { shape: 'round', od: thickness(size) };
-  const couplerFor = sizeKey => { const c = system.fittings.coupler[sizeKey]; if (!c) throw new Error(`no coupler for ${sizeKey} in ${system.id}`); return resolvePlain(c, 'coupler'); };
+  const couplerFor = sizeKey => { const c = system.fittings.coupler[sizeKey]; if (!c) throw new Error(`no coupler for ${sizeKey} in ${systemId}`); return { ...resolvePlain(c, 'coupler'), shape: system.sizes[sizeKey].shape }; };
   const capFor = sizeKey => { const c = system.fittings.cap[sizeKey]; return c ? resolvePlain(c, 'cap') : null; };
 
   // A pipe between two fitting centres: the member for drawing, its cut
@@ -451,17 +575,36 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     const length = Math.max(0, span - lost[0] - lost[1]);
     const sockets = ends.map(e => (Array.isArray(e) ? e[0] : e).socket || 0);
     if (length < sockets[0] + sockets[1] - 1e-9) tooShort.push(role);
-    const coupler = couplerFor(sizeKey);
-    const { pieces, couplers } = splitPiece(length, maxLenOf(size), coupler);
-    if (couplers) {
-      splitCount++;
-      const dir = unit(sub(b, a));
-      // Couplers sit at the piece boundaries along the pipe.
-      let at = lost[0];
-      for (let i = 0; i < couplers; i++) {
-        at += pieces[i] + allowance(coupler);
-        fittings.push(fitting(coupler, add(a, scale(dir, at)), [dir], { ...extra, glued: false }));
-        at += allowance(coupler);
+    let pieces;
+    if (size.splitBy === 'lap') {
+      // A batten: the pieces overlap at each lap, the splice drawn at
+      // the overlap's centre.
+      const lap = resolvePlain(base.lap, 'lap');
+      const split = splitLap(length, maxLenOf(size), 2 * base.lap.z);
+      pieces = split.pieces;
+      if (split.laps) {
+        splitCount++;
+        const dir = unit(sub(b, a));
+        let start = lost[0];
+        for (let i = 0; i < split.laps; i++) {
+          fittings.push(fitting(lap, add(a, scale(dir, start + pieces[i] - base.lap.z)), [dir], { ...extra, glued: false }));
+          start += pieces[i] - 2 * base.lap.z;
+        }
+      }
+    } else {
+      const coupler = couplerFor(sizeKey);
+      const split = splitPiece(length, maxLenOf(size), coupler);
+      pieces = split.pieces;
+      if (split.couplers) {
+        splitCount++;
+        const dir = unit(sub(b, a));
+        // Couplers sit at the piece boundaries along the pipe.
+        let at = lost[0];
+        for (let i = 0; i < split.couplers; i++) {
+          at += pieces[i] + allowance(coupler);
+          fittings.push(fitting(coupler, add(a, scale(dir, at)), [dir], { ...extra, glued: false }));
+          at += allowance(coupler);
+        }
       }
     }
     members.push({ role, a, b, ...memberDims(size), sizeKey, color: part.color, finish: part.finish, pieces, ...extra });
@@ -471,7 +614,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   // A fitting instance from a resolved spec.
   const fitting = (s, at, dirs, extra = {}) => ({
     role: s.role, kind: s.kind, name: s.items.length ? s.items[0].name : s.name, at, dirs, od: s.od, odTo: s.odTo, centreToEnd: (s.z || 0) + (s.socket || 0),
-    color: s.color, finish: s.finish || 'matte', items: s.items, sockets: s.sockets, recipe: s.recipe, out: s.out, ...extra,
+    color: s.color, finish: s.finish || 'matte', items: s.items, sockets: s.sockets, recipe: s.recipe, out: s.out, shape: s.shape, woodScrews: s.woodScrews || 0, ...extra,
   });
   const legName = l => `${l.pair + 1}${l.side > 0 ? 'R' : 'L'}`;
 
@@ -524,13 +667,22 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   const skiTop = thickness(skiSize);
   const skiTee = resolvePlain(system.fittings.ski, 'tee');
   const postSize = sizeOf(system, 'post');
-  const needsReducer = system.fittings.reducer && system.members.post.size !== system.fittings.foot.size;
+  const needsReducer = !rigid && system.fittings.reducer && system.members.post.size !== system.fittings.foot.size;
   const reducer = needsReducer ? resolvePlain(system.fittings.reducer, 'reducer') : null;
   // The widest fitting on the wall line (the foot elbows, the reducer, the
-  // ski's tees, couplers and caps) sets how far inside the wall plane the
-  // feet and the ski sit.
-  const onWall = [system.fittings.foot, system.fittings.ski, reducer, system.fittings.coupler[system.members.ski.size], system.fittings.cap[system.members.ski.size]].filter(Boolean);
+  // ski's tees, couplers and caps; with rigid bases the foot elbows, a
+  // coupler on the stub and the battens) sets how far inside the wall
+  // plane the feet and the ski sit.
+  const onWall = rigid
+    ? [system.fittings.foot, system.fittings.coupler[system.members.leg.size], { od: thickness(postSize) }, { od: skiTop }].filter(Boolean)
+    : [system.fittings.foot, system.fittings.ski, reducer, system.fittings.coupler[system.members.ski.size], system.fittings.cap[system.members.ski.size]].filter(Boolean);
   const inset = Math.max(...onWall.map(s => s.od || 0)) / 2 + WALL_CLEARANCE;
+  // Rigid bases: the stub of leg pipe clipped to the post's face along
+  // the alley, so the post's axis sits this far from the foot's along x.
+  const stubOffset = rigid ? thickness(postSize) / 2 + thickness(sizeOf(system, 'leg')) / 2 : 0;
+  // The clips are named by the leg size and carry the stub's outside size
+  // (odTo) so the rings are drawn around it; a square stub gets its diagonal.
+  const clipSpec = rigid ? resolvePlain({ ...base.clip, name: `pipe clips ${sizeOf(system, 'leg').label}, pair`, odTo: thickness(sizeOf(system, 'leg')) * (sizeOf(system, 'leg').shape === 'square' ? Math.SQRT2 : 1) }, 'clip') : null;
   const feet = model.legs.map(l => [l.foot[0], l.foot[1], l.foot[2] - l.side * inset]);
   const skiZ = {};
   for (const side of [1, -1]) {
@@ -605,15 +757,32 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     // post is a bigger size than the foot fitting, and a coupler after a
     // spigot) down to the tee's branch.
     const footExtra = { leg: j, joint: 'foot', glued: glued('foot') };
-    let postTop = foot, topSpec = footSpec;
-    if (reducer) {
-      postTop = toSocket(footSpec, reducer, foot, postDir, footExtra);
-      fittings.push(fitting(reducer, postTop, [scale(postDir, -1), postDir], footExtra));
-      topSpec = reducer;
+    let post;
+    let postX = foot[0];
+    if (rigid) {
+      // The stub: base.stub of leg pipe down from the foot set (through
+      // a coupler after a spigot-ended set), clipped to the post's face
+      // along the alley; the post's top is level with the stub's top end
+      // and it stands on the ski.
+      const stubSpec = toPipe(footSpec, foot, postDir, footExtra);
+      const stubTop = add(foot, scale(postDir, stubSpec.z));
+      pipe('stub', foot, add(foot, scale(postDir, stubSpec.z + base.stub)), [stubSpec, NONE], { leg: j, joint: 'foot' });
+      fittings.push(fitting(clipSpec, add(stubTop, scale(postDir, base.clip.z + 0.05)), [postDir], { leg: j, joint: 'foot', glued: false }));
+      const postTop = [stubTop[0] + stubOffset, stubTop[1], stubTop[2]];
+      postX = postTop[0];
+      const postBottom = [postX, ground + skiTop, bottom[2]];
+      post = pipe('post', postTop, postTop[1] > postBottom[1] + 0.001 ? postBottom : postTop, [NONE, NONE], { leg: j });
+    } else {
+      let postTop = foot, topSpec = footSpec;
+      if (reducer) {
+        postTop = toSocket(footSpec, reducer, foot, postDir, footExtra);
+        fittings.push(fitting(reducer, postTop, [scale(postDir, -1), postDir], footExtra));
+        topSpec = reducer;
+      }
+      post = pipe('post', postTop, standing ? bottom : postTop, [toPipe(topSpec, postTop, postDir, footExtra), [skiTee, 'branch']], { leg: j });
     }
-    const post = pipe('post', postTop, standing ? bottom : postTop, [toPipe(topSpec, postTop, postDir, footExtra), [skiTee, 'branch']], { leg: j });
     const lean = Math.abs(foot[2] - bottom[2]);
-    legPosts.push({ leg: j, side: l.side, x: foot[0], top: foot, z: bottom[2], lean });
+    legPosts.push({ leg: j, side: l.side, x: postX, top: foot, z: bottom[2], lean });
     const toAxis = unit(sub(axisPoint(pairAlong[l.pair]), root));
     fittings.push(fitting(hipSpec, root, [toAxis, unit(sub(l.knee, root))], { leg: j, joint: 'hip', glued: glued('hip') }));
     fittings.push(fitting(kneeSpec, l.knee, [unit(sub(root, l.knee)), unit(sub(foot, l.knee))], { leg: j, joint: 'knee', glued: glued('knee') }));
@@ -646,42 +815,84 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     const y = ground + skiTop / 2;
     const x0 = posts[0].x - SKI_OVERHANG, x1 = posts[posts.length - 1].x + SKI_OVERHANG;
     const at = x => [x, y, z];
-    const stations = [{ spec: skiCap || NONE, x: x0 }, ...posts.map(q => ({ spec: skiTee, x: q.x, leg: q.leg })), { spec: skiCap || NONE, x: x1 }];
-    for (let i = 0; i + 1 < stations.length; i++) {
-      const s0 = stations[i], s1 = stations[i + 1];
-      const len = pipe('ski', at(s0.x), at(s1.x), [s0.spec, s1.spec], { side: tag });
-      if (s0.leg !== undefined && s1.leg !== undefined && len < 2 * (skiTee.socket || 0) + 0.01) warnings.push(`two posts on the ${sideName} ski are closer than their tees`);
+    if (rigid) {
+      // One batten; each post stands on it on a pair of brackets, with
+      // the gusset on the alley-side faces, its along leg toward the
+      // ski's middle.
+      pipe('ski', at(x0), at(x1), [NONE, NONE], { side: tag });
+      for (let i = 0; i + 1 < posts.length; i++) if (posts[i + 1].x - posts[i].x < 2 * base.base.z + skiTop) warnings.push(`two posts on the ${sideName} ski are closer than their brackets`);
+      const bracket = resolvePlain(base.base, 'base'), gusset = resolvePlain(base.gusset, 'gusset');
+      for (const q of posts) {
+        const dirX = Math.sign((x0 + x1) / 2 - q.x) || 1;
+        fittings.push(fitting(bracket, [q.x, ground + skiTop, z], [[1, 0, 0], [-1, 0, 0]], { side: tag, leg: q.leg, glued: false, post: skiTop }));
+        fittings.push(fitting(gusset, [q.x + dirX * skiTop / 2, ground + skiTop, z - side * (skiTop / 2 + base.gusset.od / 2)], [[dirX, 0, 0], [0, 1, 0]], { side: tag, leg: q.leg, glued: false }));
+      }
+    } else {
+      const stations = [{ spec: skiCap || NONE, x: x0 }, ...posts.map(q => ({ spec: skiTee, x: q.x, leg: q.leg })), { spec: skiCap || NONE, x: x1 }];
+      for (let i = 0; i + 1 < stations.length; i++) {
+        const s0 = stations[i], s1 = stations[i + 1];
+        const len = pipe('ski', at(s0.x), at(s1.x), [s0.spec, s1.spec], { side: tag });
+        if (s0.leg !== undefined && s1.leg !== undefined && len < 2 * (skiTee.socket || 0) + 0.01) warnings.push(`two posts on the ${sideName} ski are closer than their tees`);
+      }
+      for (const q of posts) fittings.push(fitting(skiTee, at(q.x), [[1, 0, 0], [-1, 0, 0], [0, 1, 0]], { side: tag, leg: q.leg, glued: glued('ski') }));
+      if (skiCap) fittings.push(fitting(skiCap, at(x0), [[1, 0, 0]], { side: tag, glued: false }), fitting(skiCap, at(x1), [[-1, 0, 0]], { side: tag, glued: false }));
     }
-    for (const q of posts) fittings.push(fitting(skiTee, at(q.x), [[1, 0, 0], [-1, 0, 0], [0, 1, 0]], { side: tag, leg: q.leg, glued: glued('ski') }));
-    if (skiCap) fittings.push(fitting(skiCap, at(x0), [[1, 0, 0]], { side: tag, glued: false }), fitting(skiCap, at(x1), [[-1, 0, 0]], { side: tag, glued: false }));
     const lean = Math.max(...posts.map(q => q.lean));
-    skis.push({ side: tag, z: mm(z), y: mm(y), from: mm(x0), to: mm(x1), length: mm(x1 - x0), posts: posts.map(q => mm(q.x)), lean: mm(lean) });
+    const ski = { side: tag, z: mm(z), y: mm(y), from: mm(x0), to: mm(x1), length: mm(x1 - x0), posts: posts.map(q => mm(q.x)), lean: mm(lean), gap: 0, gapAt: null };
+    skis.push(ski);
     if (lean > 0.01) warnings.push(`the ${sideName} posts lean up to ${lean.toFixed(2)} m across to meet the ski (the wall steps along the alley)`);
+    // Plumb posts: the feet of this side sit on one straight line, the
+    // innermost real wall; where the real wall steps out the ski stands
+    // off it. The largest gap along the ski, from the ski's outer face
+    // (half the ski's thickness out from its axis; the fittings on the
+    // wall line stand a little further out) to the real wall, is
+    // reported, sampled every 0.01 m.
+    if (realWalls) {
+      const face = Math.abs(z - p.across) + skiTop / 2;
+      const n = Math.max(1, Math.ceil((x1 - x0) / WALL_STEP));
+      for (let i = 0; i <= n; i++) {
+        const x = x0 + (x1 - x0) * i / n;
+        const w = realWalls(x, side, p.across);
+        if (w === null || w === undefined) continue;
+        const gap = Math.abs(w - p.across) - face;
+        if (gap > ski.gap) { ski.gap = gap; ski.gapAt = x; }
+      }
+      ski.gap = mm(ski.gap);
+      if (ski.gapAt !== null) ski.gapAt = mm(ski.gapAt);
+      if (ski.gap > 0.005) warnings.push(`the ${sideName} ski stands up to ${ski.gap.toFixed(2)} m off the wall at x = ${ski.gapAt.toFixed(1)} m (the wall steps along the alley): pack the gap with offcuts`);
+    }
     // The ski must lie against its wall, not inside it, along its whole
     // run: a wall that steps in along the alley can put the straight ski
     // partly inside it. The ski's outer surface is checked, so a flat
-    // wall gives nothing.
-    if (walls) {
+    // wall gives nothing. Sampled every 0.01 m, so a narrow step is seen.
+    if (walls || realWalls) {
       let deepest = 0;
-      for (let i = 0; i <= 10; i++) {
-        const x = x0 + (x1 - x0) * i / 10;
-        const w = walls(x, side, p.across);
+      const n = Math.max(1, Math.ceil((x1 - x0) / WALL_STEP));
+      for (let i = 0; i <= n; i++) {
+        const x = x0 + (x1 - x0) * i / n;
+        const w = (realWalls || walls)(x, side, p.across);
         if (w === null || w === undefined) continue;
         deepest = Math.max(deepest, Math.abs(z - p.across) + skiTop / 2 - Math.abs(w - p.across));
       }
       if (deepest > 0.001) warnings.push(`the ${sideName} ski runs ${deepest.toFixed(2)} m into the wall`);
     }
-    // ---- stays and ballast for this side
-    if (system.stays) {
-      const st = system.stays;
+    // ---- bracing and ballast for this side
+    const st = system.stays;
+    if (base.kind === 'stays' && st) {
       // Each anchor sits against the wall found at its x, which may step
       // out past the ski's end (the alley mouth); where there is no wall
       // it sits on the ski's line and its sandbag stands in the open.
+      // With plumb posts the walls are the straight line, so the anchor
+      // stays on it and the stays stay in the wall plane; when the real
+      // wall is further out there, the sandbag stands away from it and
+      // the warning says so.
       const anchors = [x0 - st.anchorBeyond, x1 + st.anchorBeyond].map(x => {
         const w = walls ? walls(x, side, p.across) : null;
         if (w === null || w === undefined) { warnings.push(`no wall at the ${sideName} anchor at x = ${x.toFixed(1)} m; its sandbag stands in the open`); return [x, ground, z]; }
         const az = w - side * inset;
         if (Math.abs(az - z) > 0.3) warnings.push(`the ${sideName} anchor at x = ${x.toFixed(1)} m is ${Math.abs(az - z).toFixed(2)} m out from the ski's line (the wall steps out there); its stays leave the wall plane`);
+        const rw = realWalls ? realWalls(x, side, p.across) : null;
+        if (rw !== null && rw !== undefined && Math.abs(rw - w) > 0.3) warnings.push(`the ${sideName} anchor at x = ${x.toFixed(1)} m stands ${Math.abs(rw - w).toFixed(2)} m from the wall (the wall steps out there); its sandbag stands in the open`);
         return [x, ground, az];
       });
       const bagIn = system.ballast ? side * (system.ballast.dims[2] / 2 - inset) : 0; // the bag's outer face at the wall, like the ski's
@@ -700,8 +911,53 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
       if (system.ballast) {
         const dims = system.ballast.dims;
         for (const a of anchors) members.push({ role: 'ballast', kind: 'anchor', at: [a[0], ground + dims[1] / 2, a[2] - bagIn], dims, color: system.ballast.color, finish: system.ballast.finish, side: tag });
-        for (const t of [1 / 3, 2 / 3]) members.push({ role: 'ballast', kind: 'ski', at: [x0 + (x1 - x0) * t, ground + skiTop + dims[1] / 2, z - bagIn], dims, color: system.ballast.color, finish: system.ballast.finish, side: tag });
       }
+    } else if (base.kind === 'ties' && st) {
+      // One hook per post pair (two posts within pairWithin along the
+      // ski; a post with no partner gets its own), in the real wall at
+      // the pair's mean x and the higher foot's height, with a tie cord
+      // from each post top to the hook's tip.
+      const groups = [];
+      for (let i = 0; i < posts.length; i++) {
+        if (i + 1 < posts.length && posts[i + 1].x - posts[i].x <= base.pairWithin + 1e-9) { groups.push([posts[i], posts[i + 1]]); i++; } else groups.push([posts[i]]);
+      }
+      const hookSpec = resolvePlain(base.hook, 'hook');
+      for (const g of groups) {
+        const x = g.reduce((s, q) => s + q.x, 0) / g.length;
+        const yTop = Math.max(...g.map(q => q.top[1]));
+        const wallFn = realWalls || walls;
+        const w = wallFn ? wallFn(x, side, p.across) : null;
+        if (w === null || w === undefined) warnings.push(`no wall for the ${sideName} hook at x = ${x.toFixed(1)} m`);
+        const wz = (w === null || w === undefined) ? z + side * inset : w;
+        const tip = [x, yTop, wz - side * base.hook.z];
+        fittings.push(fitting(hookSpec, [x, yTop, wz], [[0, 0, -side]], { side: tag, glued: false, legs: g.map(q => q.leg) }));
+        for (const q of g) members.push({ role: 'tie', a: q.top, b: tip, shape: 'round', od: st.od, color: st.color, finish: 'matte', leg: q.leg, side: tag, length: mm(norm(sub(tip, q.top))) });
+      }
+    }
+    if (system.ballast) {
+      // Two sandbags over every ski: at the thirds with stays or ties.
+      // With rigid bases a bag cannot lie over a post's brackets or
+      // gusset, so each bag goes on the first free length of ski inside
+      // the end posts' bases (just past the end post's gusset); a ski
+      // with no free length that long gets the bags at its ends and a
+      // warning.
+      const dims = system.ballast.dims;
+      const bagIn = side * (dims[2] / 2 - inset); // the bag's outer face at the wall, like the ski's
+      let spots;
+      if (rigid) {
+        const taken = [];
+        for (const q of posts) {
+          const dirX = Math.sign((x0 + x1) / 2 - q.x) || 1;
+          taken.push([q.x - skiTop / 2 - base.base.z, q.x + skiTop / 2 + base.base.z]);
+          taken.push([Math.min(q.x, q.x + dirX * (skiTop / 2 + base.gusset.z)), Math.max(q.x, q.x + dirX * (skiTop / 2 + base.gusset.z))]);
+        }
+        const free = x => taken.every(([a, b]) => x + dims[0] <= a + 1e-9 || x >= b - 1e-9); // a bag from x to x + its length clears every base
+        const edges = [x0, ...taken.map(([a, b]) => b), ...taken.map(([a, b]) => a - dims[0])].filter(x => x >= x0 - 1e-9 && x + dims[0] <= x1 + 1e-9).sort((a, b) => a - b);
+        const first = edges.find(free), last = [...edges].reverse().find(free);
+        if (first !== undefined && last !== undefined && last > first + dims[0] - 1e-9) spots = [first + dims[0] / 2, last + dims[0] / 2];
+        else { spots = [x0 + dims[0] / 2, x1 - dims[0] / 2]; warnings.push(`the ${sideName} ski has no free length for its two sandbags: they lie over the end posts' bases`); }
+      } else spots = [x0 + (x1 - x0) / 3, x0 + (x1 - x0) * 2 / 3];
+      for (const x of spots) members.push({ role: 'ballast', kind: 'ski', at: [x, ground + skiTop + dims[1] / 2, z - bagIn], dims, color: system.ballast.color, finish: system.ballast.finish, side: tag });
     }
   }
 
@@ -780,9 +1036,13 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     ? (splitBySize[0].byStock ? `at ${splitBySize[0].at.toFixed(2)} m${stockClause(splitBySize[0])}` : `to ship at ${splitBySize[0].at.toFixed(2)} m`)
     : `to ship: ${splitBySize.map(r => `${r.label} at ${r.at.toFixed(2)} m${stockClause(r)}`).join('; ')}`;
   const unsplitOver = cuts.filter(c => c.length > maxLenOf(system.sizes[c.sizeKey]) + 1e-9).map(c => ({ role: c.role, leg: c.leg, side: c.side, length: c.length, pieces: c.pieces }));
-  const stays = members.filter(m => m.role === 'stay');
+  const stays = members.filter(m => m.role === 'stay' || m.role === 'tie'); // every cord: the stays, or the ties
   const stayMetres = mm(stays.reduce((s, m) => s + m.length, 0));
+  const ties = members.filter(m => m.role === 'tie').length;
+  const hooks = fittings.filter(f => f.role === 'hook').length;
+  const woodScrews = fittings.reduce((s, f) => s + (f.woodScrews || 0), 0);
   const sandbags = members.filter(m => m.role === 'ballast').length;
+  if (hooks) warnings.push(`${hooks} hooks in the walls: ask the owners first`);
   // The weight is the spider's: the pieces, not the stock bought; the
   // offcuts, the cord and the ballast are given on their own.
   const weight = {
@@ -805,6 +1065,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   line('covering and body', system.body.fabric.name, 1, system.body.fabric.price, system.body.fabric.price, { kg: system.body.fabric.kg });
   const ex = system.extras || {};
   if (ex.screws && screws) { const n = Math.ceil(screws / ex.screws.pack); line('fixings and stays', ex.screws.name, n, ex.screws.price, n * ex.screws.price, { screws }); }
+  if (base.woodScrews && woodScrews) { const n = Math.ceil(woodScrews / base.woodScrews.pack); line('fixings and stays', base.woodScrews.name, n, base.woodScrews.price, n * base.woodScrews.price, { screws: woodScrews }); }
   if (ex.cement && (system.glueJoints || []).length) line('fixings and stays', ex.cement.name, 1, ex.cement.price, ex.cement.price);
   if (ex.zipTies) line('fixings and stays', ex.zipTies.name, 1, ex.zipTies.price, ex.zipTies.price);
   if (ex.tape) line('fixings and stays', ex.tape.name, 1, ex.tape.price, ex.tape.price);
@@ -830,7 +1091,12 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     screws,
     glued: (system.glueJoints || []).slice(),
     stays: { count: stays.length, metres: stayMetres, rolls: cordRolls },
+    ties,
+    hooks,
+    woodScrews,
     sandbags,
+    bracing: base.kind,
+    notes: base.note ? [base.note] : [],
     weight,
     cost,
     longestPiece: mm(longestPiece),
@@ -844,11 +1110,16 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     pricesSeen: PRICES_SEEN,
   };
   if (splitCount) warnings.push(`${splitCount} piece${splitCount > 1 ? 's were' : ' was'} split ${splitNote}`);
-  for (const r of stockBySize) if (!r.lengths.some(q => q.length <= maxPiece + 1e-9)) warnings.push(`${r.stockName} ${r.label} comes in ${Math.min(...r.lengths.map(q => q.length)).toFixed(1)} m lengths, longer than the ${maxPiece.toFixed(2)} m to ship`);
+  for (const r of stockBySize) {
+    if (r.lengths.some(q => q.length <= maxPiece + 1e-9)) continue;
+    const shortest = Math.min(...r.lengths.map(q => q.length)).toFixed(1);
+    if (system.sizes[r.sizeKey].splitBy === 'lap') warnings.push(`${r.stockName}s ${r.label} come in ${shortest} m lengths, longer than the ${maxPiece.toFixed(2)} m to ship: each is cut to ${maxPiece.toFixed(2)} m and the posts and skis are lapped ${(2 * base.lap.z).toFixed(2)} m`);
+    else warnings.push(`${r.stockName} ${r.label} comes in ${shortest} m lengths, longer than the ${maxPiece.toFixed(2)} m to ship`);
+  }
   if (stock.unplaced.length) warnings.push(`${stock.unplaced.length} piece${stock.unplaced.length > 1 ? 's are' : ' is'} longer than the stock`);
   if (piecesOver.length) warnings.push(`${piecesOver.length} piece${piecesOver.length > 1 ? 's are' : ' is'} longer than ${maxPiece.toFixed(2)} m`);
 
-  return { system: system.id, maxPiece, ground, members, fittings, hub, skis, body, cuts, legsAssembly, bom, warnings };
+  return { system: systemId, bracing: base.kind, maxPiece, ground, sizes: system.sizes, memberSpec: system.members, members, fittings, hub, skis, body, cuts, legsAssembly, bom, warnings };
 }
 
 function legIdx(l) { return 2 * l.pair + (l.side > 0 ? 0 : 1); }

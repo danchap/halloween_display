@@ -46,7 +46,7 @@ import * as THREE from 'three';
 import { DEFAULTS, buildSpider, flatWalls, upgradeParams } from './spider.js';
 import { wallsFromSite } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildBuildMeshes } from './scene.js';
-import { systemById, buildParts, DEFAULT_MAX_PIECE } from './build.js';
+import { systemById, buildParts, straightWalls, DEFAULT_MAX_PIECE, DEFAULT_BRACING, BRACINGS } from './build.js';
 import { WALK_DEFAULTS, buildPath, cameraAt } from './walk.js';
 import { Muxer, ArrayBufferTarget } from './vendor/mp4-muxer.mjs';
 
@@ -58,9 +58,10 @@ if (q.has('bob')) walk.bob = q.get('bob') !== '0';
 
 // The spider design travels in the URL hash, as the design page writes it,
 // with the construction choices: the part system, the longest piece to
-// ship and whether the frame alone shows.
+// ship, whether the frame alone shows, whether the posts are plumb and
+// the bracing.
 let params = { ...DEFAULTS };
-const construction = { system: '', maxPiece: DEFAULT_MAX_PIECE, frameOnly: false };
+const construction = { system: '', maxPiece: DEFAULT_MAX_PIECE, frameOnly: false, plumbPosts: true, bracing: DEFAULT_BRACING };
 try {
   const h = location.hash.slice(1);
   if (h) {
@@ -69,6 +70,8 @@ try {
     if (typeof s.system === 'string') construction.system = s.system;
     if (Number.isFinite(s.maxPiece) && s.maxPiece > 0) construction.maxPiece = s.maxPiece; // any positive number: old links carry 1.2
     if (typeof s.frameOnly === 'boolean') construction.frameOnly = s.frameOnly;
+    if (typeof s.plumbPosts === 'boolean') construction.plumbPosts = s.plumbPosts;
+    if (BRACINGS.some(b => b.value === s.bracing)) construction.bracing = s.bracing;
   }
 } catch (e) { console.warn('bad design in URL', e); }
 document.getElementById('back').href = './' + location.hash;
@@ -90,10 +93,12 @@ const world = createWorld();
 let path = null;
 const site = await loadWorldSite(world, {});
 if (!site) { document.getElementById('status').textContent = 'Site data missing: run site/fetch_site.py'; }
-const walls = site ? wallsFromSite(site) : flatWalls(3);
-const model = buildSpider(params, walls);
+const realWalls = site ? wallsFromSite(site) : flatWalls(3);
 const system = systemById(construction.system);
-const parts = system ? buildParts(model, params, walls, { system, maxPiece: construction.maxPiece }) : null;
+// Plumb posts: the feet of a side sit on one straight line, as on the design page.
+const walls = system && construction.plumbPosts ? straightWalls(realWalls, params) : realWalls;
+const model = buildSpider(params, walls);
+const parts = system ? buildParts(model, params, walls, { system, maxPiece: construction.maxPiece, bracing: construction.bracing, realWalls: construction.plumbPosts ? realWalls : null }) : null;
 rebuildSpiderMeshes(world, model, params, { showJoints: false, showSpider: !parts });
 rebuildBuildMeshes(world, parts, system, { frameOnly: construction.frameOnly });
 

@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, bendFactor,
          flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams, legIndex, legOf, legsFromAngles,
-         SPREAD_AZIMUTHS, planAngles, legAngles, solveLegFromKnee, solveLegFromFoot } from './spider.js';
+         SPREAD_AZIMUTHS, planAngles, legAngles, solveLegFromKnee, solveLegFromFoot, spreadLegsAt, spreadPreset } from './spider.js';
 import { wallsFromSite, insideBuilding } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildBuildMeshes, rebuildExtras, setRoofsVisible,
          setPlantsVisible, showGuide, hideGuide } from './scene.js';
 import { buildPath, cameraAt } from './walk.js';
-import { SYSTEMS, MAX_PIECES, DEFAULT_MAX_PIECE, systemById, buildParts, recipeText } from './build.js';
+import { SYSTEMS, MAX_PIECES, DEFAULT_MAX_PIECE, BRACINGS, DEFAULT_BRACING, systemById, buildParts, recipeText, straightWalls } from './build.js';
 
 // Hosted on claude.ai the page cannot use the URL hash or start downloads;
 // the design is then remembered in the browser instead.
@@ -50,6 +50,8 @@ const state = {
   system: 'pvc40',    // the part system shown (build.js SYSTEMS id), '' for the design alone
   maxPiece: DEFAULT_MAX_PIECE, // the longest piece that can be shipped, metres (build.js MAX_PIECES; any positive number from an old link); longer pipes are split with couplers
   frameOnly: false,   // hide the covers and the shell so the frame shows
+  plumbPosts: true,   // the feet of a side sit on one straight line (build.js straightWalls), so every post stands vertical
+  bracing: DEFAULT_BRACING, // how the posts are held along the walls: 'stays', 'rigid' or 'ties' (build.js BRACING)
 };
 const SAVED_KEYS = Object.keys(state);
 // Which panels show. Not remembered: the numbers start hidden every visit.
@@ -73,6 +75,8 @@ function applySaved(s) {
   state.system = typeof state.system === 'string' ? state.system : 'pvc40';
   state.maxPiece = Number.isFinite(+state.maxPiece) && +state.maxPiece > 0 ? +state.maxPiece : DEFAULT_MAX_PIECE;
   state.frameOnly = !!state.frameOnly;
+  state.plumbPosts = !!state.plumbPosts; // absent in an old link: the default above stays
+  state.bracing = BRACINGS.some(b => b.value === state.bracing) ? state.bracing : DEFAULT_BRACING;
   return true;
 }
 function readState() {
@@ -107,7 +111,7 @@ function writeDesigns(d) {
 }
 function designSnapshot() {
   return { params: clone(state.params), briefL: state.briefL, backBend: state.backBend, hip: state.hip, plans: state.plans,
-    system: state.system, maxPiece: state.maxPiece, frameOnly: state.frameOnly };
+    system: state.system, maxPiece: state.maxPiece, frameOnly: state.frameOnly, plumbPosts: state.plumbPosts, bracing: state.bracing };
 }
 // What was last loaded or saved, to warn before it is replaced unsaved.
 let loadedSnapshot = '';
@@ -128,8 +132,7 @@ function loadDesign(name) {
     return;
   }
   if (!name) {
-    state.params = clone(DEFAULTS); state.briefL = 0.8; state.backBend = 60; state.hip = 15; state.plans = null; state.design = '';
-    applyBrief();
+    loadDefaults();
   } else {
     const d = readDesigns()[name];
     if (!d) return;
@@ -141,12 +144,25 @@ function loadDesign(name) {
     if (typeof d.system === 'string') state.system = d.system;
     if (Number.isFinite(d.maxPiece) && d.maxPiece > 0) state.maxPiece = d.maxPiece; // as applySaved: buildParts needs a positive length
     if (typeof d.frameOnly === 'boolean') state.frameOnly = d.frameOnly;
+    if (typeof d.plumbPosts === 'boolean') state.plumbPosts = d.plumbPosts; // a design saved before the setting existed keeps the current one
+    if (BRACINGS.some(b => b.value === d.bracing)) state.bracing = d.bracing;
     state.design = name;
     refreshControls();
     onChange();
   }
   markLoaded();
   refreshDesignList();
+}
+// The pose the page starts from (DEFAULTS in spider.js): the brief's body
+// at L = 0.8 m pitched up 45 degrees, the legs fanned out in plan, the feet
+// at 3.0 to 2.0 m from the front pair to the back (Daniel, 2026-10-13).
+function loadDefaults() {
+  state.briefL = 0.8; state.backBend = 60; state.hip = 15; state.plans = null; state.design = '';
+  state.params = clone(DEFAULTS);
+  updateWalls();
+  state.params = spreadPreset(state.briefL, { walls }); // the same pose, solved on the walls the page uses
+  refreshControls();
+  onChange();
 }
 function saveDesignAs() {
   const name = (prompt('Name for this design', state.design || '') || '').trim();
@@ -186,7 +202,8 @@ const { scene, alleyGroup } = world;
 const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 500);
 
 let site = null;
-let walls = flatWalls(3.0); // the real buildings once the site is loaded; flat 3 m walls only if it is not
+let realWalls = flatWalls(3.0); // the real buildings once the site is loaded; flat 3 m walls only if it is not
+let walls = realWalls; // what the pose solvers and buildSpider see: realWalls, or straightWalls over them when the posts are plumb and a part system shows (updateWalls)
 let model = null;
 let parts = null; // the real parts of the chosen system (buildParts output), null for the design alone
 
@@ -411,6 +428,7 @@ function pickJoint(clientX, clientY) {
 function modelLeg(j) { return model.legs.find(l => l.pair === j.pair && l.side === j.side); }
 function jointPoint(j) { const l = modelLeg(j); return j.joint === 'knee' ? l.knee : l.foot; }
 function startJointDrag(j, e) {
+  updateWalls();
   const point = jointPoint(j);
   const drag = { ...j, point, px: e.clientX, py: e.clientY };
   if (j.joint === 'foot') {
@@ -530,12 +548,36 @@ function moveJoint(e) {
   render();
 }
 function endJointDrag() {
-  // The dragged leg's plan angle is now what the user put it at.
-  if (jointDrag && state.plans) {
-    const j = legIndex(jointDrag.pair, jointDrag.side);
-    state.plans[j] = planAngles(state.params, walls)[j];
+  if (jointDrag) {
+    const drag = jointDrag;
+    jointDrag = null;
+    // The dragged foot may have moved the straight line the feet sit on:
+    // the walls are recomputed and, when the line moved, the drag's
+    // solver runs once more on the new line (as settle() does for the
+    // sliders) and the spider is rebuilt, so the pose and the walls
+    // agree now rather than at the next unrelated change.
+    const lineOf = () => JSON.stringify(walls.stretch ? walls.stretch.line : null);
+    const line = lineOf();
+    updateWalls();
+    const moved = lineOf() !== line;
+    if (moved && state.keepSplit) {
+      const p = state.params;
+      const solved = drag.joint === 'foot'
+        ? solveLegFromFoot(p, walls, drag.pair, drag.side, { bend: drag.bend })
+        : solveLegFromKnee(p, walls, drag.pair, drag.side);
+      if (solved) Object.assign(legOf(p, drag.pair, drag.side), solved);
+    }
+    // The dragged leg's plan angle is now what the user put it at.
+    if (state.plans) {
+      const j = legIndex(drag.pair, drag.side);
+      state.plans[j] = planAngles(state.params, walls)[j];
+    }
+    // A click with no move leaves the walls computed at the drag's start;
+    // the next rebuild must recompute them from the params as they are
+    // then, so the flag is cleared here.
+    wallsFresh = false;
+    if (moved) onChange();
   }
-  jointDrag = null;
   hoverKey = '';
   hideGuide(world);
   renderer.domElement.style.cursor = 'grab';
@@ -670,8 +712,34 @@ function updateHover(clientX, clientY, mod) {
 
 // ---------------------------------------------------------------- spider meshes
 
+// The walls the solvers and the build see. With plumb posts and a part
+// system shown, each side's wall is straightened over the stretch the
+// feet occupy (build.js straightWalls), so every post stands vertical.
+// The line follows the feet, so it is recomputed before a drag and
+// before each pose solver (settle), and kept through the rebuild that
+// follows, so the pose and the walls it was solved on agree; a rebuild
+// with no solver before it (a body slider, a construction setting, a
+// loaded design) recomputes it.
+let wallsFresh = false;
+function updateWalls() {
+  walls = state.plumbPosts && systemById(state.system) ? straightWalls(realWalls, state.params) : realWalls;
+  wallsFresh = true;
+}
+// Run a pose solver on the walls as they are; when the feet it placed
+// move the straight line, run it once more on the new line.
+function settle(solve) {
+  updateWalls();
+  const lineOf = () => JSON.stringify(walls.stretch ? walls.stretch.line : null);
+  let result = solve();
+  const line = lineOf();
+  updateWalls();
+  if (lineOf() !== line) result = solve();
+  return result;
+}
 function rebuildSpider() {
   const p = state.params;
+  if (!wallsFresh && !jointDrag) updateWalls();
+  wallsFresh = false;
   model = buildSpider(p, walls);
   // Designs saved before knees were points: keep the knees the old bend and
   // upper length produced, as points, now that the walls are known.
@@ -685,7 +753,7 @@ function rebuildSpider() {
   // The construction: the real parts replace the design's body and legs in
   // the view; the orange balls still drive the pose.
   const system = systemById(state.system);
-  parts = system ? buildParts(model, p, walls, { system, maxPiece: state.maxPiece }) : null;
+  parts = system ? buildParts(model, p, walls, { system, maxPiece: state.maxPiece, bracing: state.bracing, realWalls: state.plumbPosts ? realWalls : null }) : null;
   rebuildSpiderMeshes(world, model, p, { showJoints: state.showJoints, showSpider: !parts });
   rebuildBuildMeshes(world, parts, system, { frameOnly: state.frameOnly });
   rebuildExtras(world, p, { showPerson: false, wallMode: site ? 'site' : 'flat', flatWidth: 3.0 });
@@ -771,12 +839,13 @@ function partsTables(parts) {
     for (const l of lines) h += `<tr><td>${esc(l.item)}</td><td>${qty(l)}</td><td>${l.kg !== undefined ? fmt(l.kg, 1) : ''}</td><td>${fmt(l.cost, 0)}</td></tr>`;
     if (group === 'pipe') {
       // The pipe in the spider by role (the pieces as cut, between fittings), then the offcuts.
-      for (const m of b.members) h += `<tr><td class="muted">&nbsp;&nbsp;${m.role} ${esc(m.label)}, ${m.pieces} piece${m.pieces > 1 ? 's' : ''} cut</td><td class="muted">${fmt(m.metres, 2)} m</td><td class="muted">${fmt(m.metres * sys.sizes[m.sizeKey].kgPerM, 1)}</td><td></td></tr>`;
+      for (const m of b.members) h += `<tr><td class="muted">&nbsp;&nbsp;${m.role} ${esc(m.label)}, ${m.pieces} piece${m.pieces > 1 ? 's' : ''} cut</td><td class="muted">${fmt(m.metres, 2)} m</td><td class="muted">${fmt(m.metres * parts.sizes[m.sizeKey].kgPerM, 1)}</td><td></td></tr>`;
       h += `<tr><td class="muted">&nbsp;&nbsp;offcuts, not in the total</td><td class="muted">${fmt(b.stock.waste, 2)} m</td><td class="muted">${fmt(b.weight.offcuts, 1)}</td><td></td></tr>`;
     }
   }
   h += `<tr><td><b>Total</b></td><td></td><td><b>${fmt(b.weight.total, 1)}</b></td><td><b>${fmt(b.cost.total, 0)}</b></td></tr>`;
   h += '</table><div class="muted" style="margin-top:4px">The total weight is the spider\'s (the pieces, not the stock; the sandbags are not in it); the cost is everything bought.</div>';
+  for (const note of b.notes || []) h += `<div class="muted" style="margin-top:4px">${esc(note)}.</div>`;
   const splitNote = b.unsplitOver.length ? `; ${b.unsplitOver.length} member${b.unsplitOver.length > 1 ? 's' : ''} split ${esc(b.splitNote)}` : '';
   const stockNote = b.stock.bySize.map(r => `${esc(r.label)}: ${r.lengths.filter(q => q.count).map(q => `${q.count} × ${fmt(q.length, 1)} m`).join(', ') || 'none'}`).join('; ');
   // The pipe price note names where the price of each stock length
@@ -789,7 +858,7 @@ function partsTables(parts) {
   // fits the panel's width; a split cut shows its pieces under the length.
   const cutOf = (role, leg) => parts.cuts.find(c => c.role === role && c.leg === leg);
   const cell = c => c.pieces.length > 1 ? `${fmt(c.length, 3)}<br><span class="muted">${c.pieces.length} × ${fmt(c.pieces[0], 3)}</span>` : fmt(c.length, 3);
-  const sizeNote = role => esc(sys.sizes[sys.members[role].size].label);
+  const sizeNote = role => esc(parts.sizes[parts.memberSpec[role].size].label);
   h += '<h2>Cut list</h2><table class="cuts"><tr><th>Leg</th><th>Upper</th><th>Lower</th><th>Post</th></tr>';
   for (const a of parts.legsAssembly) h += `<tr><td>${a.pair + 1}${a.side}</td><td>${cell(cutOf('upper', a.leg))}</td><td>${cell(cutOf('lower', a.leg))}</td><td>${cell(cutOf('post', a.leg))}</td></tr>`;
   const socket = sys.fittings.knee.socket || 0;
@@ -805,8 +874,10 @@ function partsTables(parts) {
   const joints = parts.legsAssembly.length ? Object.entries(parts.legsAssembly[0].joints).map(([j, how]) => `${j}: ${how}`).join(', ') : '';
   const recipeNote = sys.fittings.knee.angles ? 'Each cell names the elbows ("45 + 20 @ 112°": a 45 and a 20 in series, the second twisted 112° about the first; "45°": one elbow) and under them the angle they make. ' : 'Each cell gives the angle to set at the joint. ';
   h += `</table><div class="muted" style="margin-top:4px">${recipeNote}Hip: the angle from straight across, and the turn of the joint about the stub (0 toward the head, 90 straight up). Knee: the bend off straight. Foot: the bend from the post, and the plan angle the post is turned to (from straight across, + toward the head). Joints: ${joints}.</div>`;
-  const stubs = parts.cuts.filter(c => c.role === 'stub');
+  const stubs = parts.cuts.filter(c => c.role === 'stub' && c.joint !== 'foot');
   if (stubs.length) h += `<div class="muted">Hub stubs: ${stubs.length} × ${fmt(stubs[0].length, 3)} m.</div>`;
+  const footStubs = parts.cuts.filter(c => c.role === 'stub' && c.joint === 'foot');
+  if (footStubs.length) h += `<div class="muted">Foot stubs (clipped to the post tops, from offcuts): ${footStubs.length} × ${fmt(footStubs[0].length, 3)} m.</div>`;
   const links = parts.cuts.filter(c => c.role === 'link');
   if (links.length) {
     const legOf = c => { const a = parts.legsAssembly.find(x => x.leg === c.leg); return a ? `${a.pair + 1}${a.side} ${c.joint}` : c.joint; };
@@ -823,9 +894,14 @@ function partsTables(parts) {
   for (const side of ['R', 'L']) {
     const stays = parts.members.filter(x => x.role === 'stay' && x.side === side);
     if (stays.length) h += `<tr><td>Stays ${side === 'R' ? 'right' : 'left'}</td><td class="wrap">${stays.map(x => fmt(x.length, 2)).join(', ')}</td></tr>`;
+    const ties = parts.members.filter(x => x.role === 'tie' && x.side === side);
+    if (ties.length) h += `<tr><td>Ties ${side === 'R' ? 'right' : 'left'}</td><td class="wrap">${ties.map(x => fmt(x.length, 2)).join(', ')}</td></tr>`;
   }
   h += '</table>';
-  if (b.stays.count) h += `<div class="muted" style="margin-top:4px">Stays: from each post top one cord to the sandbag on the ground past the ski's end and one to the ski under the post farthest from it; ${fmt(b.stays.metres, 1)} m of cord in ${b.stays.rolls} roll${b.stays.rolls > 1 ? 's' : ''}; ${b.sandbags} sandbags, two at the anchors and two over each ski.</div>`;
+  const rolls = `${fmt(b.stays.metres, 1)} m of cord in ${b.stays.rolls} roll${b.stays.rolls > 1 ? 's' : ''}`;
+  if (b.bracing === 'stays' && b.stays.count) h += `<div class="muted" style="margin-top:4px">Stays: from each post top one cord to the sandbag on the ground past the ski's end and one to the ski under the post farthest from it; ${rolls}; ${b.sandbags} sandbags, two at the anchors and two over each ski.</div>`;
+  if (b.bracing === 'ties') h += `<div class="muted" style="margin-top:4px">Ties: ${b.hooks} hook${b.hooks > 1 ? 's' : ''} in the walls, one per post pair at the higher foot's height, with a short cord from each post top; ${rolls}; ${b.sandbags} sandbags, two over each ski. No cords to the ground.</div>`;
+  if (b.bracing === 'rigid') h += `<div class="muted" style="margin-top:4px">Rigid bases: each post stands on the ski on a pair of angle brackets with a plywood gusset; posts and skis longer than the stock are lapped 0.40 m; ${b.sandbags} sandbags, two over each ski. No cords.</div>`;
   return h;
 }
 
@@ -870,7 +946,8 @@ function refreshControls() {
   bend.max = bendN.max = bendLimit();
   bend.disabled = bendN.disabled = hip.disabled = hipN.disabled = state.bendLocked;
   document.getElementById('bendLock').checked = state.bendLocked;
-  for (const key of ['showJoints', 'plants', 'keepSplit', 'frameOnly']) document.getElementById(key).checked = state[key];
+  for (const key of ['showJoints', 'plants', 'keepSplit', 'frameOnly', 'plumbPosts']) document.getElementById(key).checked = state[key];
+  document.getElementById('bracing').value = state.bracing;
   document.getElementById('system').value = systemById(state.system) ? state.system : '';
   if (document.getElementById('system').value !== state.system) state.system = document.getElementById('system').value;
   setMaxPieceOptions();
@@ -897,13 +974,16 @@ function onChange() {
 
 function applyBrief() {
   const old = state.params;
+  // The feet keep the heights they have in the alley (the pitched pose), so a
+  // pitched spider does not throw them up or down the walls.
+  const heights = model ? [0, 1, 2, 3].map(i => model.legs[legIndex(i, 1)].foot[1]) : [0, 1, 2, 3].map(i => legOf(old, i, 1).footHeight);
   const preset = briefPreset(state.briefL, {
     backBend: state.backBend,
-    footHeights: [0, 1, 2, 3].map(i => legOf(old, i, 1).footHeight),
+    footHeights: heights,
     bodyHeight: old.bodyHeight,
     along: old.along,
+    pitch: old.pitch || 0,
   });
-  preset.pitch = old.pitch || 0;
   state.params = preset;
   const leg = LOCKED.legLength * state.briefL;
   solveFeet([0, 1, 2, 3].map(i => ({ upper: leg * LOCKED.kneeFraction, bend: state.backBend * bendFactor(i) })));
@@ -914,8 +994,10 @@ function solveFeet(targets = null) {
   const p = state.params;
   const total = LOCKED.legLength * bodyLength(p);
   // Under the split rule the upper segment is the brief's too, so the whole leg is.
-  if (!targets && state.keepSplit) targets = legAngles(p, walls).map(x => ({ upper: total * LOCKED.kneeFraction, bend: x.bend }));
-  p.legs = solveFeetForLength(p, walls, total * (1 - LOCKED.kneeFraction), targets);
+  settle(() => {
+    const t = !targets && state.keepSplit ? legAngles(p, walls).map(x => ({ upper: total * LOCKED.kneeFraction, bend: x.bend })) : targets;
+    p.legs = solveFeetForLength(p, walls, total * (1 - LOCKED.kneeFraction), t);
+  });
   state.plans = null; // the feet moved along the walls: the plan angles are what they now are
   refreshControls();
   onChange();
@@ -930,8 +1012,11 @@ function solveFeet(targets = null) {
 function applyAngles() {
   const p = state.params;
   state.backBend = Math.min(state.backBend, bendLimit());
-  const posed = legsFromAngles(p, walls, { hip: state.hip, backBend: state.backBend, azimuths: wantedPlans(), maxLength: lengthCap() });
-  p.legs = posed.legs;
+  const posed = settle(() => {
+    const r = legsFromAngles(p, walls, { hip: state.hip, backBend: state.backBend, azimuths: wantedPlans(), maxLength: lengthCap() });
+    p.legs = r.legs;
+    return r;
+  });
   refreshControls();
   onChange();
   notePose(posed);
@@ -960,9 +1045,16 @@ function notePose({ capped, stretched }) {
 function spreadLegs() {
   const p = state.params;
   state.backBend = Math.min(state.backBend, bendLimit());
-  state.plans = [0, 1, 2, 3].flatMap(i => [SPREAD_AZIMUTHS[i], SPREAD_AZIMUTHS[i]]);
-  const posed = legsFromAngles(p, walls, { hip: state.hip, backBend: state.backBend, azimuths: state.plans, maxLength: lengthCap() });
-  p.legs = posed.legs;
+  // Worked out in the alley as the spider stands (pitched): the fan in plan
+  // as seen from above, each foot keeping its height, each leg bent by the
+  // knee slider and scaled to its wall, never past the brief's length.
+  const heights = model ? model.legs.map(l => l.foot[1]) : p.legs.map(q => q.footHeight);
+  const posed = settle(() => {
+    const r = spreadLegsAt(p, { azimuths: SPREAD_AZIMUTHS, footHeights: heights, backBend: state.backBend, walls });
+    p.legs = r.legs;
+    return { capped: r.held, stretched: [] };
+  });
+  state.plans = null; // the plan angles are what the fan made them; the sliders measure them
   refreshControls();
   onChange();
   notePose(posed);
@@ -972,10 +1064,13 @@ function spreadLegs() {
 // follow from the walls.
 function keepSplitAll() {
   const p = state.params;
-  const angles = legAngles(p, walls);
-  state.plans = angles.map(x => x.plan);
-  const posed = legsFromAngles(p, walls, { azimuths: state.plans, hips: angles.map(x => x.hip), bends: angles.map(x => x.bend) });
-  p.legs = posed.legs;
+  const posed = settle(() => {
+    const angles = legAngles(p, walls);
+    state.plans = angles.map(x => x.plan);
+    const r = legsFromAngles(p, walls, { azimuths: state.plans, hips: angles.map(x => x.hip), bends: angles.map(x => x.bend) });
+    p.legs = r.legs;
+    return r;
+  });
   onChange();
   notePose(posed);
 }
@@ -1051,6 +1146,10 @@ function wireUI() {
   setMaxPieceOptions();
   maxPieceEl.addEventListener('change', e => { state.maxPiece = parseFloat(e.target.value); onChange(); });
   document.getElementById('frameOnly').addEventListener('change', e => { state.frameOnly = e.target.checked; onChange(); });
+  document.getElementById('plumbPosts').addEventListener('change', e => { state.plumbPosts = e.target.checked; onChange(); });
+  const bracingEl = document.getElementById('bracing');
+  bracingEl.innerHTML = BRACINGS.map(b => `<option value="${b.value}">${b.label.replace(/</g, '&lt;')}</option>`).join('');
+  bracingEl.addEventListener('change', e => { state.bracing = e.target.value; onChange(); });
   document.getElementById('savePng').addEventListener('click', () => {
     render();
     const a = document.createElement('a');
@@ -1117,7 +1216,8 @@ async function main() {
     document.getElementById('loading').textContent = HOSTED ? 'The site data could not be loaded; showing flat walls.' : 'Site data missing (run site/fetch_site.py); showing flat walls.';
   }
   if (site) document.getElementById('loading').remove();
-  walls = site ? wallsFromSite(site) : flatWalls(3.0);
+  realWalls = site ? wallsFromSite(site) : flatWalls(3.0);
+  updateWalls();
   buildControls();
   wireUI();
   refreshControls();
@@ -1125,7 +1225,7 @@ async function main() {
   applyPanes();
   setRoofsVisible(world, true);
   setPlantsVisible(world, state.plants);
-  if (hadSaved) rebuildSpider(); else applyBrief(); // first visit: brief ratios on the real walls
+  if (hadSaved) rebuildSpider(); else loadDefaults(); // first visit: the resting pose on the real walls
   markLoaded();
   resize();
   spawnWalker();
@@ -1133,7 +1233,7 @@ async function main() {
   const view = new URLSearchParams(location.search).get('view');
   if (view === 'walk') { orbit.update(); setMode('walk'); }
   else (VIEWS[view] || VIEWS.Street)();
-  window.spider = { state, panes, get model() { return model; }, get parts() { return parts; }, VIEWS, rebuildSpider, render, walker, setMode, startPath, stepWalker, get mode() { return mode; },
+  window.spider = { state, panes, get model() { return model; }, get parts() { return parts; }, get walls() { return walls; }, get realWalls() { return realWalls; }, VIEWS, rebuildSpider, render, walker, setMode, startPath, stepWalker, get mode() { return mode; },
     pickJoint, startJointDrag, moveJoint, endJointDrag, get jointDrag() { return jointDrag; }, loadDesign, saveDesignAs, applyAngles, spreadLegs, showHelp, camera, world };
 }
 main();

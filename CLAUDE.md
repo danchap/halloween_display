@@ -59,6 +59,21 @@ test run before the night.
   The earlier claude.ai copy of the viewer was retired on 2026-10-04 (its
   link now points to the live page); window.HOSTED, which hid the URL-hash
   and download buttons there, stays in app.js in case a host needs it.
+- Construction (`build.js`, Construction section of the page): the real
+  parts of one system (SYSTEMS table) for the pose on screen, with the
+  cut list and the parts list in the Numbers panel. Plumb posts (state
+  key plumbPosts, on by default): `straightWalls()` puts each side's
+  feet on one straight line at the innermost real wall over the stretch
+  they occupy, so every post stands vertical; app.js keeps `realWalls`
+  and recomputes `walls` from it before each rebuild and each drag, and
+  buildParts gets `realWalls` to report the gap between each ski and a
+  wall that steps out. Bracing (state key bracing: 'stays', 'rigid' or
+  'ties', the BRACING data in build.js, shared by every system): cord
+  stays to sandbags, rigid pine 45 × 45 bases with brackets, gussets
+  and lapped battens and no cords, or one wall hook per post pair (posts within 1.5 m share one) with
+  short ties and no cords. Both keys are saved with designs, carried in
+  the hash and honoured by walk.html. Daniel asked for the posts to go
+  straight down vertically on 2026-10-13; which bracing is still open.
 - Put screenshots and Chrome profiles under visualizer/out/ (ignored), not
   /tmp: /tmp is a quota-limited tmpfs shared with other sessions. Pass
   `--user-data-dir=out/chrome --disk-cache-size=1` to headless Chrome or
@@ -86,12 +101,28 @@ test run before the night.
   across, and the bend is limited to the hip angle plus 90. Controls
   live in a pop-up (C key, Controls button, double-tap), not in a
   paragraph. upgradeParams in spider.js enforces the fixed values.
+- 2026-10-13: the page starts from a resting pose, not the brief's: the
+  whole spider pitched up 45° (climbing up and out toward the street),
+  the legs fanned out in plan (the spread), the feet at 3.0 / 2.6 / 2.3 /
+  2.0 m front to back so none is within a child's reach (DEFAULTS =
+  spreadPreset in spider.js; BRIEF_DEFAULTS is the brief's own pose).
+  Every pose solver (sliders, spread, drags, feet solver) works in the
+  alley frame as the spider stands, pitched, so the hip angle is above
+  the alley's level and the fan is the one seen from above; results are
+  stored as the level pose. The construction: feet on posts joined by a
+  ski per side, posts plumb (feet on one straight line per side), and a
+  bracing choice (cord stays, rigid wood bases, wall ties); the cords
+  are not beams.
 
 ## Still open (ask Daniel)
 
 - Absolute size (L), knee bend and leg thickness: the visualizer exists to
-  decide these. Materials and construction are not started.
+  decide these. The part system and the bracing are chosen on the page
+  (Construction section) and not yet by Daniel (docs/construction.md,
+  "Open questions for Daniel").
 - Power, weather, how the spider is hung and how the feet fix to the walls.
+- Which bracing holds the posts: cord stays to sandbags, rigid wood bases,
+  or wall ties (docs/construction.md, "Bracing: three ways").
 
 ## This machine (feta)
 
