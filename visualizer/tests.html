@@ -319,8 +319,8 @@ try {
     const d50 = pvc.sizes.d50;
     const Z = pvc.fittings.knee.zByAngle;
     const zOf = r => r.angles.reduce((s, a) => s + Z[a], 0);
-    const parts = buildParts(m, p, walls, { system: pvc, bracing: 'stays', maxPiece: 2.0 });
-    const parts12 = buildParts(m, p, walls, { system: pvc, bracing: 'stays', maxPiece: 1.2 });
+    const parts = buildParts(m, p, walls, { system: pvc, maxPiece: 2.0 });
+    const parts12 = buildParts(m, p, walls, { system: pvc, maxPiece: 1.2 });
     const cutOf = (pp, role, leg) => pp.cuts.find(c => c.role === role && c.leg === leg);
     const fitOf = (pp, role, leg) => pp.fittings.find(f => f.role === role && f.leg === leg);
     const inset = pvc.fittings.ski.od / 2 + 0.005; // the feet, the posts and the ski sit half the widest fitting on the wall line (the Ø 50 tee, reducer, coupler and cap: od 0.057) plus 5 mm inside it; was the foot elbow's 0.046, which left the Ø 50 fittings 0.5 mm inside the wall
@@ -341,7 +341,7 @@ try {
     check('build: the knee coupler sits one Z past the set along the lower leg', parts.legsAssembly.every(a => { const c = jointCouplers.find(f => f.joint === 'knee' && f.leg === a.leg); const l = m.legs[a.leg]; const d = dist(c.at, l.knee); return near(d, zOf(a.knee.recipe) + pvc.fittings.coupler.d40.z, 1e-9) && c.at[1] < l.knee[1]; }));
     const insetFoot = (l, ins) => [l.foot[0], l.foot[1], l.foot[2] - l.side * ins];
     check('build: four systems in the table, pvc40 first', SYSTEMS.length === 4 && SYSTEMS[0].id === 'pvc40' && SYSTEMS.every(s => s.id && s.sizes && s.members && s.fittings && s.hub && s.body && s.stays && s.ballast));
-    check('build: deterministic', JSON.stringify(parts) === JSON.stringify(buildParts(m, p, walls, { system: pvc, bracing: 'stays', maxPiece: 2.0 })));
+    check('build: deterministic', JSON.stringify(parts) === JSON.stringify(buildParts(m, p, walls, { system: pvc, maxPiece: 2.0 })));
     // Recipes: one elbow within 2.5 degrees of the need, else a pair with
     // a twist; the pair formula gives the angle back.
     const r45 = recipeFor(45, pvc, 'knee'), r60 = recipeFor(60, pvc, 'knee'), r15 = recipeFor(15, pvc, 'knee'), r88 = recipeFor(88, pvc, 'knee'), r170 = recipeFor(170, pvc, 'knee');
@@ -401,12 +401,12 @@ try {
     check('build: the split note names one length when every size splits there', buildParts(m, p, walls, { system: pvc, maxPiece: 0.9 }).bom.splitNote === 'to ship at 0.90 m' && buildParts(m, p, walls, { system: systemById('pvc50'), maxPiece: 1.4 }).bom.splitNote === 'to ship at 1.40 m');
     check('build: Ø 50 pipe that cannot ship at 1.2 m is warned about', parts12.warnings.some(w => /pipe Ø 50 comes in 2\.0 m lengths, longer than the 1\.20 m to ship/.test(w)) && !parts.warnings.some(w => /comes in/.test(w)));
     // Skis: Ø 50, caps and tees of that size.
-    const skiEnd = 0.15 - pvc.fittings.cap.d50.z - pvc.fittings.ski.z;
+    const skiEnd = 1.5 - pvc.fittings.cap.d50.z - pvc.fittings.ski.z; // the skis run 1.5 m past the end posts (the frame bracing's anchors)
     for (const side of [1, -1]) {
       const tag = side > 0 ? 'R' : 'L';
       const xs = m.legs.filter(l => l.side === side).map(l => l.foot[0]);
       const ski = parts.skis.find(s => s.side === tag);
-      check(`build: ski ${tag} spans the feet plus 0.15 m`, ski && near(ski.from, Math.min(...xs) - 0.15, 1e-3) && near(ski.to, Math.max(...xs) + 0.15, 1e-3), JSON.stringify(ski));
+      check(`build: ski ${tag} spans the feet plus 1.5 m`, ski && near(ski.from, Math.min(...xs) - 1.5, 1e-3) && near(ski.to, Math.max(...xs) + 1.5, 1e-3), JSON.stringify(ski));
       check(`build: ski ${tag} against the wall, half a pipe up`, ski && near(ski.z, side * (1.47 - inset), 1e-3) && near(ski.y, d50.od / 2, 1e-3) && ski.lean === 0);
       check(`build: ski ${tag} has 4 tees and 2 caps, all Ø 50`, parts.fittings.filter(f => f.side === tag && f.role === 'tee').length === 4 && parts.fittings.filter(f => f.side === tag && f.role === 'cap').length === 2 && parts.fittings.filter(f => f.side === tag && (f.role === 'tee' || f.role === 'cap')).every(f => /Ø 50/.test(f.name)));
       const pieces = parts.cuts.filter(c => c.role === 'ski' && c.side === tag);
@@ -465,27 +465,24 @@ try {
     // Two F/F elbows (a bend past 135 degrees) have a link between them, inside the pair.
     const ffPair = recipeFor(150, pvc, 'knee');
     check('build: two F/F elbows need a link between them', JSON.stringify(ffPair.angles) === '[87.5,67.5]' && near(pairAngle(87.5, 67.5, ffPair.twist), 150, 0.1), JSON.stringify(ffPair));
-    // Stays and ballast: two cords per post, anchors on the ground 1.5 m
-    // past the ski ends, sandbags at the anchors and over the skis.
+    // Stays and ballast (the frame bracing, the default): one cord per
+    // post, two runs each, to the near end of the ski (which runs 1.5 m
+    // past the end posts) and to the far post's tee; the sandbags on the
+    // skis there, two at each end and one outside each end post's tee.
     const stays = parts.members.filter(x => x.role === 'stay');
-    check('build: 16 stays with lengths', stays.length === 16 && stays.every(x => x.length > 1 && near(x.length, dist(x.a, x.b), 2e-3)) && parts.bom.stays.count === 16 && near(parts.bom.stays.metres, stays.reduce((s, x) => s + x.length, 0), 2e-3));
+    const skiOf = side => parts.skis.find(s => s.side === side);
+    check('build: 16 stays, two per post, with lengths and an allowance', stays.length === 16 && stays.every(x => x.length > 1 && near(x.length, dist(x.a, x.b), 2e-3)) && parts.bom.stays.count === 16 && near(parts.bom.stays.metres, stays.reduce((s, x) => s + x.length, 0) + 16 * 0.5, 2e-3), JSON.stringify(parts.bom.stays));
     check('build: stays leave the post tops', stays.every(x => { const l = m.legs[x.leg]; return near(x.a[0], l.foot[0]) && near(x.a[1], l.foot[1]) && near(x.a[2], l.foot[2] - l.side * inset); }));
-    check('build: anchors on the ground 1.5 m past the ski ends', stays.filter(x => x.kind === 'anchor').every(x => { const ski = parts.skis.find(s => s.side === x.side); return x.b[1] === 0 && near(Math.abs(x.b[2]), Math.abs(ski.z), 1e-3) && (near(x.b[0], ski.from - 1.5, 1e-3) || near(x.b[0], ski.to + 1.5, 1e-3)); }) && stays.filter(x => x.kind === 'anchor').length === 8); // on flat walls the anchor sits on the ski's line (ski.z is rounded to the millimetre)
-    // On stepped walls the anchor sits against the wall found at its x, and a bag far off the ski's line, or with no wall at all, is warned about.
-    const stepped = (x, side) => x < 3 ? (side > 0 ? 2.5 : null) : side * 1.47;
-    const steppedParts = buildParts(buildSpider(p, stepped), p, stepped, { system: pvc, bracing: 'stays', maxPiece: 2.0 });
-    const steppedAnchors = steppedParts.members.filter(x => x.role === 'stay' && x.kind === 'anchor' && x.b[0] < 3);
-    check('build: anchors sit against the wall found at their x', steppedAnchors.length === 4 && steppedAnchors.filter(x => x.side === 'R').every(x => near(x.b[2], 2.5 - inset, 1e-9)) && steppedAnchors.filter(x => x.side === 'L').every(x => near(x.b[2], -(1.47 - inset), 1e-3)) && steppedParts.members.filter(x => x.role === 'ballast' && x.kind === 'anchor' && x.at[0] < 3 && x.side === 'R').every(x => near(x.at[2] + x.dims[2] / 2, 2.5, 1e-9)), JSON.stringify(steppedAnchors.map(x => x.b)));
-    check('build: an anchor off the ski line or without a wall is warned about', steppedParts.warnings.some(w => /the right anchor at x = \d\.\d m is 1\.0\d m out from the ski's line \(the wall steps out there\); its stays leave the wall plane/.test(w)) && steppedParts.warnings.some(w => /no wall at the left anchor at x = \d\.\d m; its sandbag stands in the open/.test(w)) && !parts.warnings.some(w => /anchor/.test(w)), JSON.stringify(steppedParts.warnings));
-    check('build: the inward stay goes to the ski under the farthest post', stays.filter(x => x.kind === 'ski').every(x => { const ski = parts.skis.find(s => s.side === x.side); const far = ski.posts.reduce((b, q) => Math.abs(q - x.a[0]) > Math.abs(b - x.a[0]) ? q : b, ski.posts[0]); return near(x.b[0], far, 1e-3) && near(x.b[1], ski.y, 1e-9); }));
-    check('build: no stay is steeper than 70 degrees', stays.every(x => x.slope <= 70) && !parts.warnings.some(w => /nearly vertical/.test(w)), stays.map(x => x.slope).join(','));
+    check('build: the skis run 1.5 m past the end posts and the outward stays end 0.05 m inside the near end', ['R', 'L'].every(side => { const ski = skiOf(side); return near(ski.from, Math.min(...ski.posts) - 1.5, 1e-3) && near(ski.to, Math.max(...ski.posts) + 1.5, 1e-3); }) && stays.filter(x => x.kind === 'end').length === 8 && stays.filter(x => x.kind === 'end').every(x => { const ski = skiOf(x.side); const end = Math.abs(x.a[0] - ski.from) <= Math.abs(x.a[0] - ski.to) ? ski.from + 0.05 : ski.to - 0.05; return near(x.b[0], end, 1e-3) && near(x.b[1], ski.y, 1e-3) && near(x.b[2], ski.z, 1e-3); }), JSON.stringify(parts.skis.map(s => [s.from, s.to, s.posts])));
+    check('build: the inward stays end on the ski at the far post\'s tee', stays.filter(x => x.kind === 'tee').length === 8 && stays.filter(x => x.kind === 'tee').every(x => { const ski = skiOf(x.side); const far = ski.posts.reduce((best, px) => Math.abs(px - x.a[0]) > Math.abs(best - x.a[0]) ? px : best, ski.posts[0]); return near(x.b[0], far, 1e-3) && near(x.b[1], ski.y, 1e-3) && near(x.b[2], ski.z, 1e-3); }));
+    check('build: no stay is steeper than 70 degrees in the brief pose', stays.every(x => x.slope <= 70 && x.slope > 15) && !parts.warnings.some(w => /steeper/.test(w)), stays.map(x => x.slope).join(','));
     const bags = parts.members.filter(x => x.role === 'ballast');
-    check('build: 8 sandbags, 4 at the anchors and 2 over each ski', bags.length === 8 && parts.bom.sandbags === 8 && bags.filter(x => x.kind === 'anchor').length === 4 && bags.filter(x => x.kind === 'ski').every(x => x.at[1] > d50.od) && bags.every(x => x.dims.length === 3));
-    check('build: cord in whole rolls, sandbags and sand in the parts list', parts.bom.stays.rolls >= 1 && parts.bom.stays.rolls === Math.ceil(parts.bom.stays.metres / 50) && parts.bom.cost.lines.some(x => /cord/.test(x.item) && x.qty === parts.bom.stays.rolls && near(x.cost, 15 * parts.bom.stays.rolls)) && parts.bom.cost.lines.some(x => /^sandbag/.test(x.item) && x.qty === 8) && parts.bom.cost.lines.some(x => /^sand,/.test(x.item) && x.qty === 8 && near(x.cost, 40)));
+    check('build: 12 sandbags on the skis, two at each end and one outside each end post\'s tee', bags.length === 12 && parts.bom.sandbags === 12 && bags.filter(x => x.kind === 'end').length === 8 && bags.filter(x => x.kind === 'tee').length === 4 && bags.every(x => { const ski = skiOf(x.side); return x.at[0] > ski.from + 0.2 && x.at[0] < ski.to - 0.2 && near(x.at[1], 0.05 + 0.06, 1e-3) && near(Math.abs(x.at[2]), Math.abs(ski.z) - (0.125 - inset), 1e-3) && (x.at[0] < Math.min(...ski.posts) - 0.2 || x.at[0] > Math.max(...ski.posts) + 0.2); }) && !parts.warnings.some(w => /sandbag|anchor/.test(w)), JSON.stringify(bags.map(x => [x.side, x.kind, x.at])));
+    check('build: cord in whole rolls, tensioners, sandbags and sand in the parts list', parts.bom.stays.rolls === Math.ceil(parts.bom.stays.metres / 50) && parts.bom.cost.lines.some(l => /cord/.test(l.item) && l.qty === parts.bom.stays.rolls) && parts.bom.cost.lines.some(l => l.item === 'rope tensioners, pack of 10 (one per cord)' && l.qty === 2 && l.cords === 16) && parts.bom.cost.lines.some(l => l.item === 'sandbag, empty' && l.qty === 12) && parts.bom.cost.lines.some(l => /sand, 25 kg/.test(l.item) && l.qty === 12), JSON.stringify(parts.bom.cost.lines.filter(l => l.group === 'fixings and stays')));
     // A steep stay: tall feet with the posts close together along the wall.
     const tight = { ...p, legs: p.legs.map(q => ({ ...q, footAlong: q.footAlong * 0.25, footHeight: 3.0 })) };
-    const tightParts = buildParts(buildSpider(tight, walls), tight, walls, { system: pvc, bracing: 'stays', maxPiece: 2.0 });
-    check('build: a nearly vertical stay is warned about', tightParts.members.some(x => x.role === 'stay' && x.slope > 70) && tightParts.warnings.some(w => /a stay on the (right|left) is nearly vertical and holds little/.test(w)), JSON.stringify(tightParts.warnings));
+    const tightParts = buildParts(buildSpider(tight, walls), tight, walls, { system: pvc, maxPiece: 2.0 });
+    check('build: a stay steeper than 70° is warned about', tightParts.members.some(x => x.role === 'stay' && x.slope > 70) && tightParts.warnings.some(w => /^a stay on the (right|left) is steeper than 70° and holds little$/.test(w)), tightParts.members.filter(x => x.role === 'stay').map(x => x.slope).join(','));
     // Bom: stock, totals.
     const allPieces = parts.cuts.flatMap(c => c.pieces);
     check('build: stock plan holds every piece', parts.bom.stock.count > 0 && parts.bom.stock.unplaced.length === 0 && parts.bom.stock.bySize.length === 2 && parts.bom.stock.bySize.every(r => r.lengths.every(q => q.waste >= 0)));
@@ -497,7 +494,7 @@ try {
     check('build: cost total is the sum of its lines', near(parts.bom.cost.total, parts.bom.cost.lines.reduce((s, r) => s + r.cost, 0), 1e-6) && parts.bom.cost.total > 100);
     check('build: the parts lines are grouped', ['pipe', 'fittings', 'covering and body', 'fixings and stays'].every(g => parts.bom.cost.lines.some(l => l.group === g)) && parts.bom.cost.lines.filter(l => l.group === 'pipe').every(l => /^pipe Ø (40|50), \d\.\d m$/.test(l.item)));
     check('build: weight total is the sum of its parts', near(parts.bom.weight.total, parts.bom.weight.members + parts.bom.weight.fittings + parts.bom.weight.covers + parts.bom.weight.body, 1e-6) && parts.bom.weight.total > 10);
-    check('build: covers over the leg tubes only, 5 hoops, screws, sandbags', parts.members.filter(x => x.role === 'cover').length === 16 && near(parts.bom.cover.metres, m.legs.reduce((s, l) => s + l.a + l.b, 0), 0.6) && parts.bom.hoops === 5 && parts.body.hoops.length === 5 && parts.bom.screws > 0 && parts.bom.sandbags === 8);
+    check('build: covers over the leg tubes only, 5 hoops, screws, sandbags', parts.members.filter(x => x.role === 'cover').length === 16 && near(parts.bom.cover.metres, m.legs.reduce((s, l) => s + l.a + l.b, 0), 0.6) && parts.bom.hoops === 5 && parts.body.hoops.length === 5 && parts.bom.screws > 0 && parts.bom.sandbags === 12);
     check('build: lengths to the millimetre', parts.cuts.every(c => near(c.length, Math.round(c.length * 1000) / 1000, 1e-9) && c.pieces.every(x => near(x, Math.round(x * 1000) / 1000, 1e-9))));
     // The other systems.
     const notRigging = x => x.role !== 'stay' && x.role !== 'ballast';
@@ -530,8 +527,8 @@ try {
     const stepWall = (x, side) => side > 0 ? (x < 5 ? 1.47 : 1.52) : (x > 12 ? null : (x < 6.5 ? -1.50 : -1.45));
     const straight = straightWalls(stepWall, p);
     const feetX = p.legs.map(q => p.along - q.footAlong); // facing -1: toward the head is -x
-    const lo = Math.min(...feetX) - 0.5, hi = Math.max(...feetX) + 0.5;
-    check('straight walls: the stretch is the feet plus 0.5 m each way', near(straight.stretch.from, lo, 1e-3) && near(straight.stretch.to, hi, 1e-3) && lo > 3 && hi < 9, JSON.stringify(straight.stretch));
+    const lo = Math.min(...feetX) - 1.6, hi = Math.max(...feetX) + 1.6;
+    check('straight walls: the stretch is the feet plus 1.6 m each way (the skis\' extensions)', near(straight.stretch.from, lo, 1e-3) && near(straight.stretch.to, hi, 1e-3) && lo > 2 && hi < 10, JSON.stringify(straight.stretch));
     check('straight walls: one z per side over the stretch, the innermost real wall', [lo, (lo + hi) / 2, 4.9, 5.1, hi].every(x => straight(x, 1, 0) === 1.47 && straight(x, -1, 0) === -1.45), [lo, (lo + hi) / 2, hi].map(x => `${straight(x, 1, 0)}/${straight(x, -1, 0)}`).join(','));
     check('straight walls: the same z out to 1.5 m past the stretch', straight(lo - 1.4, 1, 0) === 1.47 && straight(hi + 1.4, 1, 0) === 1.47 && straight(lo - 1.4, -1, 0) === -1.45 && straight(hi + 1.4, -1, 0) === -1.45);
     check('straight walls: the real wall further away', straight(lo - 1.6, 1, 0) === 1.47 && straight(hi + 1.6, 1, 0) === 1.52 && straight(lo - 1.6, -1, 0) === -1.50 && straight(hi + 1.6, -1, 0) === -1.45 && straight(0, 1, 0) === 1.47);
@@ -557,22 +554,22 @@ try {
       const rawParts = buildParts(buildSpider(p, narrow), p, narrow, { system: pvc, maxPiece: 2.0 });
       check('build: a ski into a 2 cm step of the wall is warned about', rawParts.warnings.some(w => /the right ski runs 0\.0\d m into the wall/.test(w)), JSON.stringify(rawParts.warnings));
     }
-    // An anchor past the ski's end where the real wall steps out more than
-    // 0.3 m: with the straightened walls it stays on the line and the
-    // warning says the bag stands away from the wall.
+    // The ski's front extension reaches the alley mouth, where the real
+    // wall steps out more than 0.3 m: with the straightened walls the ski
+    // keeps its line, the gap warning says how far off the wall its end
+    // stands, and no anchor stands in the open.
     {
       const mouth = (x, side) => side > 0 ? (x < 3 ? 1.9 : 1.47) : -1.47;
       const sm = straightWalls(mouth, p);
-      const mp = buildParts(buildSpider(p, sm), p, sm, { system: pvc, bracing: 'stays', maxPiece: 2.0, realWalls: mouth });
-      const anchor = mp.members.find(x => x.role === 'ballast' && x.kind === 'anchor' && x.side === 'R' && x.at[0] < 3);
-      check('straight walls: an anchor where the wall steps out stays on the line and warns about the bag', anchor && near(Math.abs(anchor.at[2]) + 0.125, 1.47, 1e-3) && mp.warnings.some(w => /^the right anchor at x = 2\.\d m stands 0\.43 m from the wall \(the wall steps out there\); its sandbag stands in the open$/.test(w)) && !mp.warnings.some(w => /leave the wall plane/.test(w)), JSON.stringify([anchor, mp.warnings]));
-      check('straight walls: no such warning where the wall is within 0.3 m', !stepParts.warnings.some(w => /sandbag stands in the open/.test(w)));
+      const mp = buildParts(buildSpider(p, sm), p, sm, { system: pvc, maxPiece: 2.0, realWalls: mouth });
+      const skiR = mp.skis.find(s => s.side === 'R');
+      check('straight walls: the ski\'s extension into the mouth keeps the line and the gap is reported', skiR.from < 3 && near(skiR.gap, 0.43 + inset - 0.025, 1e-3) && skiR.gapAt < 3 && mp.warnings.some(w => /^the right ski's end stands 0\.4\d m off the wall at x = 2\.\d m \(the wall turns away there\): it lies in the open$/.test(w)) && !mp.warnings.some(w => /anchor|sandbag/.test(w)) && mp.members.filter(x => x.role === 'stay').every(x => near(x.a[2], x.b[2])), JSON.stringify([skiR, mp.warnings]));
+      check('straight walls: no such gap where the wall is within 0.3 m', !stepParts.warnings.some(w => /0\.4\d m off the wall|lies in the open/.test(w)));
     }
     check('straight walls: without the real walls no gap is reported', buildParts(stepSpider, p, straight, { system: pvc, maxPiece: 2.0 }).warnings.every(w => !/off the wall/.test(w)) && buildParts(stepSpider, p, straight, { system: pvc, maxPiece: 2.0 }).skis.every(s => s.gap === 0));
 
-    // Bracing. 'stays' is the default and what the tests above checked.
-    check('bracing: three choices, the X-braces first', BRACINGS.map(b => b.value).join() === 'frame,stays,rigid' && BRACINGS[0].label === 'Cord X-braces between the posts, bags on the skis' && BRACINGS[1].label === 'Cord stays to sandbags past the skis' && BRACINGS[2].label === 'Rigid wood bases, no cords' && SYSTEMS.every(s => s.bracing && s.bracing.frame && s.bracing.rigid && !s.bracing.ties));
-    check('bracing: stays as the tests above built it, no note', parts.bracing === 'stays' && parts.bom.bracing === 'stays' && parts.bom.notes.length === 0);
+    // Bracing. The frame bracing (stays to the skis' ends) is the default and what the tests above checked.
+    check('bracing: two choices, the stays to the skis first', BRACINGS.map(b => b.value).join() === 'frame,rigid' && BRACINGS[0].label === "Cord stays to the skis' ends, bags on the skis" && BRACINGS[1].label === 'Rigid wood bases, no cords' && SYSTEMS.every(s => s.bracing && s.bracing.frame && s.bracing.rigid && !s.bracing.ties && !s.bracing.stays));
     // Rigid wood bases: shipped at 2.7 m so the 2.4 m stock sets the laps, and at 2.0 m.
     const rigid = buildParts(m, p, walls, { system: pvc, maxPiece: 2.7, bracing: 'rigid' });
     const rigid20 = buildParts(m, p, walls, { system: pvc, maxPiece: 2.0, bracing: 'rigid' });
@@ -615,21 +612,17 @@ try {
     check('rigid: the note for the Numbers panel', rigid.bom.notes.length === 1 && rigid.bom.notes[0] === 'A 45 × 45 pine post holds a 200 N push at 1.5 m with a safety factor of about 1.2 on the batten and depends on the gusset; keep the lowest feet at 2.0 m');
     check('rigid: the hips, knees and feet are the system\'s elbows, the hub its crosses', rf.hip === 8 && rf.knee === 8 && rf.foot === 8 && rf.cross === 4 && rigid.legsAssembly.every(a => a.foot.recipe && a.foot.recipe.angles) && rigid.hub.kind === 'crosses');
     check('rigid: deterministic and the other systems take it', JSON.stringify(rigid) === JSON.stringify(buildParts(m, p, walls, { system: pvc, maxPiece: 2.7, bracing: 'rigid' })) && ['pvc50', 'alu30', 'wood34'].every(id => { const r = buildParts(m, p, walls, { system: systemById(id), maxPiece: 2.0, bracing: 'rigid' }); return r.bom.fittingCounts.base === 8 && r.members.filter(x => x.role === 'post').every(x => x.shape === 'square' && near(x.size, 0.045)) && !r.members.some(x => x.role === 'stay'); }));
-    // The X-braces (the default): in every bay between two neighbouring
-    // posts a cord from each post top down to the ski at the other post,
-    // three sandbags over each ski, nothing else.
+    // The frame bracing is the default and what the stays tests above
+    // checked; the parts list carries its note; an unknown bracing falls
+    // back to it; the other systems take it; the rigid bases keep their
+    // short overhang and two bags.
     const frameParts = buildParts(m, p, walls, { system: pvc, maxPiece: 2.0 });
-    const braces = frameParts.members.filter(x => x.role === 'stay');
-    // The feet of a side along the alley: each post's top is its foot, moved the fittings' inset in from the wall; the ski's axis is 0.025 m up.
-    const feetOf = side => m.legs.filter(l => l.side === side).map(l => ({ leg: legIndex(l.pair, l.side), x: l.foot[0], y: l.foot[1], z: l.foot[2] - l.side * inset })).sort((a, b) => a.x - b.x);
-    check('frame: the default bracing, with its note; an unknown bracing falls back to it', frameParts.bracing === 'frame' && frameParts.bom.bracing === 'frame' && JSON.stringify(buildParts(m, p, walls, { system: pvc, maxPiece: 2.0, bracing: 'frame' })) === JSON.stringify(frameParts) && frameParts.bom.notes.length === 1 && /^X-braces: /.test(frameParts.bom.notes[0]) && JSON.stringify(buildParts(m, p, walls, { system: pvc, maxPiece: 2.0, bracing: 'rope' })) === JSON.stringify(frameParts));
-    check('frame: 12 X-braces, two per bay, from each post top to the ski at the next post', braces.length === 12 && frameParts.bom.stays.count === 12 && braces.every(x => x.kind === 'brace' && near(x.length, dist(x.a, x.b), 2e-3) && x.length > 1 && x.od === 0.004) && [1, -1].every(sideSign => { const ps = feetOf(sideSign); const bs = braces.filter(x => x.side === (sideSign > 0 ? 'R' : 'L')); return ps.length === 4 && bs.length === 6 && [0, 1, 2].every(i => { const pair = bs.filter(x => x.bay === i); const [q, r] = [ps[i], ps[i + 1]]; const from = (post, to) => pair.some(x => near(x.a[0], post.x, 1e-3) && near(x.a[1], post.y, 1e-3) && near(x.a[2], post.z, 1e-3) && near(x.b[0], to.x, 1e-3) && near(x.b[1], 0.025, 1e-3) && near(x.b[2], x.a[2]) && x.leg === post.leg); return pair.length === 2 && from(q, r) && from(r, q); }); }), JSON.stringify(braces.map(x => [x.side, x.bay, x.leg, x.a, x.b])));
-    const frameBags = frameParts.members.filter(x => x.role === 'ballast');
-    check('frame: 6 sandbags, three over each ski at the quarters, no anchors', frameBags.length === 6 && frameParts.bom.sandbags === 6 && frameBags.every(x => x.kind === 'ski') && ['R', 'L'].every(side => { const ski = frameParts.skis.find(s => s.side === side); const xs = frameBags.filter(x => x.side === side).map(x => x.at[0]).sort((a, b) => a - b); return xs.length === 3 && [1, 2, 3].every(k => near(xs[k - 1], ski.from + (ski.to - ski.from) * k / 4, 1e-3)); }) && !frameParts.warnings.some(w => /anchor/.test(w)) && !frameParts.members.some(x => x.kind === 'anchor'), JSON.stringify(frameBags.map(x => x.at)));
-    check('frame: tensioners and the cord in the parts list; no hooks, no ties anywhere', frameParts.bom.cost.lines.some(l => l.item === 'rope tensioners, pack of 10 (one per cord)' && l.qty === 2 && l.cords === 12) && frameParts.bom.cost.lines.some(l => /cord/.test(l.item) && l.qty === 1) && frameParts.bom.stays.rolls === 1 && parts.bom.cost.lines.some(l => /tensioners/.test(l.item) && l.qty === 2 && l.cords === 16) && !frameParts.members.some(x => x.role === 'tie') && !frameParts.fittings.some(f => f.role === 'hook') && frameParts.bom.hooks === undefined && !frameParts.warnings.some(w => /hook/.test(w)) && !BRACINGS.some(b => b.value === 'ties'));
-    check('frame: a cord steeper than 75° is warned about where the posts clump (the brief pose), not in the spread pose', frameParts.warnings.filter(w => /^an X-brace on the (right|left) is steeper than 75° and holds little: two posts there stand close together$/.test(w)).length === 2 && braces.some(x => x.slope > 75) && (() => { const sf = buildParts(buildSpider(DEFAULTS, walls), DEFAULTS, walls, { system: pvc, maxPiece: 2.0 }); return !sf.warnings.some(w => /X-brace/.test(w)) && sf.members.filter(x => x.role === 'stay').every(x => x.slope > 45 && x.slope <= 75); })(), braces.map(x => x.slope).join(','));
+    check('frame: the default bracing, with its note; an unknown bracing falls back to it', frameParts.bracing === 'frame' && frameParts.bom.bracing === 'frame' && JSON.stringify(frameParts) === JSON.stringify(parts) && JSON.stringify(buildParts(m, p, walls, { system: pvc, maxPiece: 2.0, bracing: 'frame' })) === JSON.stringify(frameParts) && frameParts.bom.notes.length === 1 && /^Stays: two cords per post/.test(frameParts.bom.notes[0]) && JSON.stringify(buildParts(m, p, walls, { system: pvc, maxPiece: 2.0, bracing: 'rope' })) === JSON.stringify(frameParts) && !BRACINGS.some(b => b.value === 'ties' || b.value === 'stays') && frameParts.bom.hooks === undefined && !frameParts.members.some(x => x.role === 'tie') && !frameParts.fittings.some(f => f.role === 'hook'));
+    check('frame: a 2 m leg-size liner inside each post of the two front pairs', (() => { const liners = frameParts.members.filter(x => x.role === 'liner'); const cuts = frameParts.cuts.filter(c => c.role === 'liner'); return liners.length === 4 && cuts.length === 4 && liners.every(x => [0, 1, 2, 3].includes(x.leg) && near(x.od, 0.04) && dist(x.a, x.b) <= 2.0 + 1e-3 && dist(x.a, x.b) >= 1.5 && (() => { const post = frameParts.members.find(q => q.role === 'post' && q.leg === x.leg); const top = post.a[1] > post.b[1] ? post.a : post.b, bot = post.a[1] > post.b[1] ? post.b : post.a; return near(x.a[0], top[0], 1e-6) && near(x.a[2], top[2], 1e-6) && Math.max(x.a[1], x.b[1]) < top[1] && Math.min(x.a[1], x.b[1]) > bot[1]; })()) && cuts.every(c => c.sizeKey === 'd40' && c.length <= 2.0 + 1e-3 && c.length >= 1.5) && cuts.filter(c => near(c.length, 2.0, 1e-3)).length === 2 && frameParts.bom.members.some(r => r.role === 'liner' && r.pieces === 4 && near(r.metres, cuts.reduce((s, c) => s + c.length, 0), 2e-3)) && rigid.members.filter(x => x.role === 'liner').length === 0 && !frameParts.members.some(x => x.role === 'cover' && x.leg > 7); })(), JSON.stringify(frameParts.members.filter(x => x.role === 'liner').map(x => [x.leg, x.a, x.b])));
+    check('frame: feet above 2.6 m are warned about (a child hanging on the stay), not with rigid bases, none in the spread pose', frameParts.warnings.includes('4 feet are above 2.6 m: a child hanging on the stay would buckle the post') && !buildParts(m, p, walls, { system: pvc, maxPiece: 2.0, bracing: 'rigid' }).warnings.some(w => /buckle/.test(w)) && !buildParts(buildSpider(DEFAULTS, walls), DEFAULTS, walls, { system: pvc, maxPiece: 2.0 }).warnings.some(w => /buckle/.test(w)) && buildSpider(DEFAULTS, walls).legs.every(l => l.foot[1] <= 2.6 + 0.01 && l.foot[1] >= 2.0 - 0.01), JSON.stringify(buildSpider(DEFAULTS, walls).legs.map(l => l.foot[1])));
     check('frame: the cords stay in the wall plane where the walls are straightened', buildParts(stepSpider, p, straight, { system: pvc, maxPiece: 2.0, realWalls: stepWall }).members.filter(x => x.role === 'stay').every(x => near(x.a[2], x.b[2])));
-    check('frame: the other systems take it', ['pvc50', 'alu30', 'wood34'].every(id => { const r = buildParts(m, p, walls, { system: systemById(id), maxPiece: 2.0 }); return r.bracing === 'frame' && r.bom.stays.count === 12 && r.bom.sandbags === 6; }));
+    check('frame: the other systems take it', ['pvc50', 'alu30', 'wood34'].every(id => { const r = buildParts(m, p, walls, { system: systemById(id), maxPiece: 2.0 }); return r.bracing === 'frame' && r.bom.stays.count === 16 && r.bom.sandbags === 12; }));
+    check('frame: the rigid bases keep their 0.15 m overhang and two bags', ['R', 'L'].every(side => { const s = rigid.skis.find(k => k.side === side); return near(s.from, Math.min(...s.posts) - 0.15, 1e-3) && near(s.to, Math.max(...s.posts) + 0.15, 1e-3); }) && rigid.bom.sandbags === 4 && rigid.members.filter(x => x.role === 'ballast').every(x => x.kind === 'ski') && rigid.bom.stays.count === 0);
     // The face in the parts list.
     const withEyes = eyes => buildParts(m, p, walls, { system: pvc, maxPiece: 2.0, eyes });
     check('eyes: the parts list carries the kit chosen, googly by default', frameParts.eyes === 'googly' && frameParts.bom.cost.lines.filter(l => l.eyes === 'googly').length === 2 && withEyes('lit').eyes === 'lit' && withEyes('lit').bom.cost.lines.filter(l => l.eyes === 'lit').length === 2 && withEyes('none').bom.cost.lines.every(l => !l.eyes) && withEyes('none').eyes === 'none' && withEyes('owl').eyes === 'none' && withEyes('lit').bom.cost.total > withEyes('none').bom.cost.total && frameParts.bom.cost.total > withEyes('none').bom.cost.total && frameParts.bom.cost.lines.every(l => l.group !== 'covering and body' || !l.eyes || /eyes/.test(l.item)));
@@ -673,13 +666,13 @@ try {
     check(`real-site plumb: the ${tag} feet share one z, no further out than any real foot`, zs.every(z => near(z, zs[0], 1e-9)) && Math.abs(zs[0]) <= Math.min(...realZs) + 1e-9 && Math.abs(zs[0]) > 1.3, JSON.stringify([zs, realZs]));
   }
   check('real-site plumb: every post is vertical', plumbParts.members.filter(x => x.role === 'post').every(x => Math.abs(x.a[0] - x.b[0]) < 1e-3 && Math.abs(x.a[2] - x.b[2]) < 1e-3) && plumbParts.skis.every(s => s.lean === 0) && plumbParts.legsAssembly.every(a => a.postLean.across === 0), JSON.stringify(plumbParts.skis));
-  check('real-site plumb: no lean warning, a gap warning with a number on each side', !plumbParts.warnings.some(w => /lean/.test(w)) && plumbParts.warnings.filter(w => /^the (right|left) ski stands up to 0\.\d\d m off the wall at x = \d\.\d m \(the wall steps along the alley\): pack the gap with offcuts$/.test(w)).length === 2 && plumbParts.skis.every(s => s.gap >= 0.01 && s.gap < 0.3 && s.gapAt >= s.from - 1e-9 && s.gapAt <= s.to + 1e-9), JSON.stringify(plumbParts.warnings));
+  check('real-site plumb: no lean warning, a gap warning with a number on each side (the right ski\'s front end lies in the open at the alley mouth)', !plumbParts.warnings.some(w => /lean/.test(w)) && plumbParts.warnings.filter(w => /^the (right|left) ski stands up to 0\.\d\d m off the wall at x = \d\.\d m \(the wall steps along the alley\): pack the gap with offcuts$/.test(w)).length === 1 && plumbParts.warnings.filter(w => /^the right ski's end stands 0\.\d\d m off the wall at x = \d\.\d m \(the wall turns away there\): it lies in the open$/.test(w)).length === 1 && plumbParts.skis.every(s => s.gap >= 0.01 && s.gap < 1.0 && s.gapAt >= s.from - 1e-9 && s.gapAt <= s.to + 1e-9), JSON.stringify(plumbParts.warnings));
   check('real-site plumb: the ski is not inside the real wall', !plumbParts.warnings.some(w => /into the wall/.test(w)));
   check('real-site plumb: the legs still reach', plumb.legs.every(l => l.status === 'ok') && plumb.legs.every((l, i) => Math.abs(l.a + l.b - real.legs[i].a - real.legs[i].b) < 0.1));
   check('real-site plumb: off, everything is as before', JSON.stringify(buildParts(real, DEFAULTS, sw, { system: systemById('pvc40'), maxPiece: 2.0, realWalls: null })) === JSON.stringify(realParts));
-  check('real-site plumb: the spread pose takes the X-braces without a steep cord, 12 cords and 6 bags', plumbParts.bracing === 'frame' && plumbParts.bom.stays.count === 12 && plumbParts.bom.sandbags === 6 && !plumbParts.warnings.some(w => /X-brace/.test(w)) && plumbParts.members.filter(x => x.role === 'stay').every(x => x.slope > 50 && x.slope < 75), plumbParts.members.filter(x => x.role === 'stay').map(x => x.slope).join(','));
+  check('real-site plumb: the spread pose takes the stays without a steep cord, 16 cords and 12 bags, no foot above 2.6 m', plumbParts.bracing === 'frame' && plumbParts.bom.stays.count === 16 && plumbParts.bom.sandbags === 12 && !plumbParts.warnings.some(w => /buckle/.test(w)) && plumb.legs.every(l => l.foot[1] <= 2.6 + 0.01) && !plumbParts.warnings.some(w => /steeper|sandbag|anchor/.test(w)) && plumbParts.members.filter(x => x.role === 'stay').every(x => x.slope > 20 && x.slope <= 70), plumbParts.members.filter(x => x.role === 'stay').map(x => x.slope).join(','));
   out.push('real-site plumb warnings: ' + plumbParts.warnings.join(' | '));
-  for (const br of ['frame', 'stays', 'rigid']) {
+  for (const br of ['frame', 'rigid']) {
     const bp = buildParts(plumb, DEFAULTS, straightSite, { system: systemById('pvc40'), maxPiece: 2.0, bracing: br, realWalls: sw });
     out.push(`real-site plumb ${br}: ${bp.bom.cost.total.toFixed(0)} €, ${bp.bom.weight.total.toFixed(1)} kg, ${bp.bom.sandbags} sandbags, ${bp.bom.stays.count} cords`);
   }

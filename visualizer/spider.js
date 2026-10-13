@@ -322,7 +322,7 @@ export function spreadLegsAt(p, { azimuths = SPREAD_AZIMUTHS, footHeights, backB
 // out in plan and the feet at 3.0, 2.6, 2.3 and 2.0 m from the front pair
 // to the back, out of a child's reach (Daniel, 2026-10-13).
 export function spreadPreset(L, options = {}) {
-  const o = { pitch: 45, azimuths: SPREAD_AZIMUTHS, footHeights: [3.0, 2.6, 2.3, 2.0], backBend: 60, bodyHeight: 2.5, along: 6.5, wallDistance: 1.47, walls: null, ...options };
+  const o = { pitch: 45, azimuths: SPREAD_AZIMUTHS, footHeights: [2.6, 2.4, 2.2, 2.0], backBend: 60, bodyHeight: 2.5, along: 6.5, wallDistance: 1.47, walls: null, ...options }; // feet 2.6 m at most: a child hanging on a front stay would buckle a taller post (structural check, 2026-10-13); 2.0 m at least: out of reach
   const p = briefPreset(L, { backBend: o.backBend, bodyHeight: o.bodyHeight, along: o.along, wallDistance: o.wallDistance });
   p.pitch = o.pitch;
   p.legs = spreadLegsAt(p, { azimuths: o.azimuths, footHeights: o.footHeights, backBend: o.backBend, wallDistance: o.wallDistance, walls: o.walls }).legs;

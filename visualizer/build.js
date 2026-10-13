@@ -5,11 +5,12 @@
 // four posts of one side are joined by a horizontal beam along the base of
 // that wall (a "ski"), so nothing stands in the alley itself. The legs are
 // tubes with a fitting at the hip, the knee and the foot; a spine inside
-// the body carries the eight hips. Each side's posts and ski are braced
-// in the plane of their wall by cord X-braces, one from each post top
-// down to the ski at the next post, both ways in every bay, so the side
-// frame stands on its own, and sandbags on the skis weigh it down (the
-// 'frame' bracing; see BRACING for the others). buildParts turns a
+// the body carries the eight hips. Each post is guyed both ways in the
+// plane of its wall by a cord from its top to the ski's near end and to
+// the ski at the far post's tee; the skis run 1.5 m past the end posts
+// for that and carry the sandbags, so each side frame holds itself with
+// nothing beyond the skis and nothing in the walls (the 'frame'
+// bracing; see BRACING for the other). buildParts turns a
 // spider model (buildSpider output, alley frame, metres) into the members
 // and fittings of one part system, the cut list, the fitting recipes, the
 // bill of materials and the warnings.
@@ -23,10 +24,9 @@
 // packed with offcuts (where a wall turns away at the alley mouth the
 // ski's end can stand further off, 0.17 m on the right in the default
 // pose, so that overhang is trimmed or packed with a block). Bracing:
-// buildParts takes a `bracing` choice, 'frame' (the X-braces above),
-// 'stays' (two cords per post to sandbags past the skis) or 'rigid'
-// (wood bases, no cords); see BRACING. Hooks in the walls were an
-// option until Daniel ruled them out (2026-10-13).
+// buildParts takes a `bracing` choice, 'frame' (the stays above) or
+// 'rigid' (wood bases, no cords); see BRACING. Hooks in the walls were
+// an option until Daniel ruled them out (2026-10-13).
 //
 // SYSTEMS is a table: a new part system is a new entry, nothing else. A
 // system names its pipe sizes, which size each member role uses, and a
@@ -96,7 +96,7 @@ const CAP_50 = { kind: 'cap', name: 'cap Ø 50', size: 'd50', z: 0.006, socket: 
 const REDUCER_50_40 = { kind: 'reducer', name: 'reducer 50/40', size: 'd50', sizeTo: 'd40', z: 0.018, socket: SOCKET, od: 0.057, odTo: 0.046, kg: 0.08, price: 4.87, out: 'spigot', ...PVC_WHITE };
 const PVC_BODY = { kind: 'fabricOverHoops', hoopOd: 0.065, color: '#141416', finish: 'sheen', hoop: { name: 'pool noodle (hoop)', kg: 0.25, price: 6.00 }, fabric: { name: 'stretch fabric, 2 m', kg: 1.2, price: 35.50 } };
 const PLANK_HUB = { kind: 'plank', name: 'plank 0.60 × 0.10 × 0.027', length: 0.60, width: 0.10, thickness: 0.027, spacing: 0.05, kg: 1.0, price: 6, color: '#101012', finish: 'paint' }; // spacing: the hip fittings are 0.05 wide, so the pairs sit at least that far apart along the plank
-const STAYS = { name: 'black polyester cord 4 mm, 50 m roll', roll: 50, price: 15.00, od: 0.004, color: '#141414', anchorBeyond: 1.5, maxSlope: 70, tensioner: { name: 'rope tensioners, pack of 10', pack: 10, price: 6.99 } }; // anchorBeyond: the ground anchor sits this far past the ski's end; maxSlope: a cord steeper than this (degrees from horizontal) holds little; tensioner: one per cord
+const STAYS = { name: 'reflective polyester guyline 4 mm, 50 m roll', roll: 50, price: 15.00, od: 0.004, color: '#d6d6cc', maxSlope: 70, allowance: 0.5, tensioner: { name: 'rope tensioners, pack of 10', pack: 10, price: 6.99 } }; // reflective, not black: a child running along the wall at night must see the cords (structural check, 2026-10-13); maxSlope: a cord steeper than this (degrees from horizontal) holds little; allowance: extra metres per cord for the knots and the tensioner; tensioner: one per cord; price estimated
 const BALLAST = { sandbag: { name: 'sandbag, empty', price: 2.30 }, sand: { name: 'sand, 25 kg bag (bought locally)', price: 5.00 }, dims: [0.40, 0.12, 0.25], color: '#4a4845', finish: 'matte' }; // dims: along, up, across
 const COMMON_EXTRAS = { zipTies: { name: 'zip ties, pack of 100', price: 8.45 }, tape: { name: 'gaffer tape, roll', price: 14.90 } };
 const PVC_EXTRAS = { ...COMMON_EXTRAS, screws: { name: 'self-drilling screws 4.2 × 16, pack of 100', pack: 100, price: 9.29 }, cement: { name: 'PVC cement, 125 ml', price: 5.00 } };
@@ -120,37 +120,43 @@ export const EYE_OPTIONS = [{ value: 'googly', label: 'Googly eyes (2 × 18 cm, 
 export const DEFAULT_EYES = 'googly';
 
 // Bracing: how the posts are held along the walls (the buildParts option
-// `bracing`). 'frame': cord X-braces in the plane of each wall, in every
-// bay between two neighbouring posts a cord from each post top down to
-// the ski at the other post, both tensioned, so each bay is two triangles
-// and the side frame is rigid along the wall on its own; three sandbags
-// on each ski for friction and against overturning; nothing beyond the
-// skis and nothing in the walls. 'stays': two cords per post, one
-// outward to a sandbag on the ground past the ski's end and one inward
-// to the ski under the post farthest from it, and two sandbags over each
-// ski. 'rigid': the posts and skis are treated pine 45 × 45
+// `bracing`). 'frame': every post guyed both ways in the plane of its
+// wall by one cord through a hole at its top, down to the near end of
+// the ski and down to the ski at the tee of the post farthest from it;
+// the skis run anchorBeyond past the end posts so the outward stays
+// anchor on them, and the sandbags sit on the skis where the cords pull
+// up (two at each end, one outside each end post's tee), so the side
+// frame holds itself with nothing beyond the skis and nothing in the
+// walls (the structural check of 2026-10-13: X-cords between the posts
+// leave the end posts free to swing one way, and loose sandbags on the
+// ground slide under the cords' pretension). 'rigid': the posts and skis
+// are treated pine 45 × 45
 // battens; each post stands on top of the ski, fixed by a pair of angle
 // brackets and a plywood gusset screwed to the alley-side faces of post
 // and ski, which makes the base a moment connection; the foot elbows sit
 // on a short stub of leg pipe clipped to the post top with two pipe
 // clips; a post or ski longer than the stock is two battens lapped
-// 0.40 m with four screws; no cords, no anchors. Every system takes these
-// definitions (`bracing: BRACING`); a system may give its own entry.
-// bags: sandbags on each ski, spread evenly between its ends.
+// 0.40 m with four screws; no cords, no anchors, two sandbags per ski.
+// Every system takes these definitions (`bracing: BRACING`); a system
+// may give its own entry.
 // Prices seen on 2026-10-13 at Castorama, Leroy Merlin and Amazon.fr.
 const BATTEN_45 = { label: '45 × 45', shape: 'square', size: 0.045, kgPerM: 0.97, stock: [2.4], stockPrice: [13.20], stockSource: ['Castorama treated pine 45 × 45, 2.4 m'], stockName: 'batten', splitBy: 'lap' }; // splitBy: a piece longer than the stock or the shipping length is lapped, not coupled
 const WOOD_WHITE = { color: '#f1f0ea', finish: 'paint' };
 const METAL = { color: '#8a8a8a', finish: 'metal' };
 export const BRACING = {
   frame: {
-    kind: 'frame', label: 'Cord X-braces between the posts, bags on the skis',
-    bags: 3,
-    maxSlope: 75, // an X-brace steeper than this (degrees from horizontal) holds little along the wall
-    note: 'X-braces: in every bay a cord from each post top down to the ski at the next post, both ways, through a hole under the post\'s top coupler and round the ski at the tee, each with a tensioner; nothing beyond the skis, nothing in the walls',
+    kind: 'frame', label: 'Cord stays to the skis\' ends, bags on the skis',
+    anchorBeyond: 1.5, // the ski runs this far past the end posts; the stay's hole is holeIn from the ski's end
+    holeIn: 0.05,
+    bagsAtEnd: 2, bagsAtTee: 1, // sandbags on each ski end, and outside each end post's tee
+    hole: 0.008, // the hole through the post's top, for both cords; its edge rounded
+    pretension: [80, 'the steep cord until the post is plumb'], // N on the shallow cord, then the other
+    liner: { pairs: [0, 1], length: 2.0 }, // a leg-size pipe centred inside each post of these pairs, against a child hanging on a stay
+    maxStayedFoot: 2.6, // a foot higher than this stands on a post a child hanging on its stay would buckle
+    note: 'Stays: two cords per post through one 8 mm hole just under its top coupler (edge rounded), one down to a hole near the ski\'s end and one down round the ski at the far post\'s tee, each with a tensioner backed by a knot (the shallow cord at 80 N, the steep one until the post is plumb; no pretension before the legs are on); the skis run 1.5 m past the end posts; two sandbags on each ski end and one outside each end post\'s tee; a leg-size liner inside each front post; reflective cord; nothing beyond the skis, nothing in the walls',
   },
-  stays: { kind: 'stays', label: 'Cord stays to sandbags past the skis', bags: 2 },
   rigid: {
-    kind: 'rigid', label: 'Rigid wood bases, no cords', bags: 2,
+    kind: 'rigid', label: 'Rigid wood bases, no cords',
     sizeKey: 'p45', size: BATTEN_45,
     members: { post: { size: 'p45', ...WOOD_WHITE }, ski: { size: 'p45', ...WOOD_WHITE } },
     // z is the drawn reach of each fixing (none is a pipe end): the
@@ -278,12 +284,15 @@ export const MAX_PIECES = [
 export const DEFAULT_MAX_PIECE = 2.0;
 export const CHILD_REACH = 2.0; // a foot below this is within reach of children, metres
 export const MAX_POST = 3.0; // a post taller than this is warned about, metres
+export const MAX_STAYED_FOOT = 2.6; // with cord stays a foot higher than this stands on a post that a child hanging on its stay would buckle (structural check, 2026-10-13)
 export const PRICES_SEEN = '2026-10-13';
 
 export function systemById(id) { return SYSTEMS.find(s => s.id === id) || null; }
 
 const DEG = Math.PI / 180;
-const SKI_OVERHANG = 0.15; // the ski runs this far past the first and last post
+const SKI_OVERHANG = 0.15; // the ski runs this far past the first and last post with rigid bases (the frame bracing extends it anchorBeyond)
+const BAG_CLEAR = 0.08; // from a tee's or a cap's centre to where a sandbag can sit on the ski
+const BAG_GAP = 0.02; // between two sandbags on a ski
 const SPINE_OVERHANG = 0.05; // the spine runs at least this far past the first and last cross (more when the cross and the cap reach further)
 const HUB_INSET = 0.03; // the hub's ends stay this far inside the body's ends
 const WALL_CLEARANCE = 0.005; // between the fittings at the wall and the wall
@@ -303,7 +312,7 @@ function angleBetween(a, b) { return Math.acos(Math.max(-1, Math.min(1, dot(unit
 // Thickness of a size (round: od; square: size).
 function thickness(size) { return size.od !== undefined ? size.od : size.size; }
 function sizeOf(system, memberRole) { return system.sizes[system.members[memberRole].size]; }
-const MEMBER_ROLE = { upper: 'leg', lower: 'leg', spine: 'leg', stub: 'leg', link: 'leg', post: 'post', ski: 'ski' }; // link: the short pipe a female-female elbow needs into a fitting's socket, or between two of them
+const MEMBER_ROLE = { upper: 'leg', lower: 'leg', spine: 'leg', stub: 'leg', link: 'leg', liner: 'leg', post: 'post', ski: 'ski' }; // link: the short pipe a female-female elbow needs into a fitting's socket, or between two of them
 
 // ---------------------------------------------------------------- elbow recipes
 
@@ -442,7 +451,10 @@ function splitLap(length, maxLen, overlap) {
 // and a foot dragged a little further see the same line; elsewhere the
 // real wall is returned. Null wherever the real wall is null.
 const WALL_STEP = 0.01; // how finely a wall function is sampled along the alley
-export function straightWalls(walls, params, { margin = 0.5, reach = 1.5 } = {}) {
+// margin: the stretch runs this far past the end feet, so the whole ski
+// lies on the line, extensions included (the frame bracing's anchorBeyond
+// and a little).
+export function straightWalls(walls, params, { margin = BRACING.frame.anchorBeyond + 0.1, reach = 1.5 } = {}) {
   const p = { ...DEFAULTS, ...params };
   const legs = params.legs || (params.pairs ? params.pairs.flatMap(q => [q, q]) : DEFAULTS.legs);
   const f = p.facing >= 0 ? 1 : -1;
@@ -737,7 +749,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   };
   const legsAssembly = [];
   const legPosts = [];
-  let lowFeet = 0, tallPosts = 0;
+  let lowFeet = 0, tallPosts = 0, highFeet = 0;
   for (const l of model.legs) {
     const j = legIdx(l);
     const root = roots[j];
@@ -808,6 +820,16 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
         topSpec = reducer;
       }
       post = pipe('post', postTop, standing ? bottom : postTop, [toPipe(topSpec, postTop, postDir, footExtra), [skiTee, 'branch']], { leg: j });
+      if (standing && base.liner && base.liner.pairs.includes(l.pair)) {
+        // A leg-size liner centred inside the post, against a child
+        // hanging on a stay (the structural check of 2026-10-13): two
+        // tubes one inside the other add their stiffness. It is a cut
+        // piece of leg pipe with no fittings, drawn inside the post.
+        const down = unit(sub(bottom, postTop));
+        const mid = scale(add(postTop, bottom), 0.5);
+        const half = Math.min(base.liner.length, Math.max(0, norm(sub(bottom, postTop)) - 0.1)) / 2;
+        if (half > 0.05) pipe('liner', add(mid, scale(down, -half)), add(mid, scale(down, half)), [NONE, NONE], { leg: j });
+      }
     }
     const lean = Math.abs(foot[2] - bottom[2]);
     legPosts.push({ leg: j, side: l.side, x: postX, top: foot, z: bottom[2], lean });
@@ -817,6 +839,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     fittings.push(fitting(footSpec, foot, [unit(sub(l.knee, foot)), postDir], { leg: j, joint: 'foot', glued: glued('foot') }));
     if (foot[1] < CHILD_REACH) lowFeet++;
     if (postHeight > MAX_POST) tallPosts++;
+    if (base.kind === 'frame' && foot[1] > (base.maxStayedFoot || MAX_STAYED_FOOT) + 0.01) highFeet++; // 0.01: a foot placed at the limit lands within a few millimetres of it
     legsAssembly.push({
       leg: j, pair: l.pair, side: l.side > 0 ? 'R' : 'L',
       hip, knee, foot: footFit,
@@ -831,6 +854,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   if (tooShort.length) warnings.push(`${tooShort.length} pipe${tooShort.length > 1 ? 's are' : ' is'} shorter than the two sockets at its ends (${[...new Set(tooShort)].join(', ')}); the fittings there collide`);
   if (lowFeet) warnings.push(`${lowFeet} ${lowFeet > 1 ? 'feet are' : 'foot is'} within reach of children (below ${CHILD_REACH.toFixed(1)} m)`);
   if (tallPosts) warnings.push(`a post is taller than ${MAX_POST.toFixed(1)} m`);
+  if (highFeet) warnings.push(`${highFeet} ${highFeet > 1 ? 'feet are' : 'foot is'} above ${(base.maxStayedFoot || MAX_STAYED_FOOT).toFixed(1)} m: a child hanging on the stay would buckle the post`);
 
   // ---- skis
   const skis = [];
@@ -841,7 +865,11 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     const posts = legPosts.filter(q => q.side === side).sort((a, b) => a.x - b.x);
     const z = skiZ[side];
     const y = ground + skiTop / 2;
-    const x0 = posts[0].x - SKI_OVERHANG, x1 = posts[posts.length - 1].x + SKI_OVERHANG;
+    // The ski runs past the end posts: a little with rigid bases, and
+    // anchorBeyond with the frame bracing so the end posts' outward stays
+    // anchor on it.
+    const beyond = base.kind === 'frame' ? base.anchorBeyond : SKI_OVERHANG;
+    const x0 = posts[0].x - beyond, x1 = posts[posts.length - 1].x + beyond;
     const at = x => [x, y, z];
     if (rigid) {
       // One batten; each post stands on it on a pair of brackets, with
@@ -887,7 +915,8 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
       }
       ski.gap = mm(ski.gap);
       if (ski.gapAt !== null) ski.gapAt = mm(ski.gapAt);
-      if (ski.gap > 0.005) warnings.push(`the ${sideName} ski stands up to ${ski.gap.toFixed(2)} m off the wall at x = ${ski.gapAt.toFixed(1)} m (the wall steps along the alley): pack the gap with offcuts`);
+      if (ski.gap > 0.3) warnings.push(`the ${sideName} ski's end stands ${ski.gap.toFixed(2)} m off the wall at x = ${ski.gapAt.toFixed(1)} m (the wall turns away there): it lies in the open`);
+      else if (ski.gap > 0.005) warnings.push(`the ${sideName} ski stands up to ${ski.gap.toFixed(2)} m off the wall at x = ${ski.gapAt.toFixed(1)} m (the wall steps along the alley): pack the gap with offcuts`);
     }
     // The ski must lie against its wall, not inside it, along its whole
     // run: a wall that steps in along the alley can put the straight ski
@@ -902,89 +931,59 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
         if (w === null || w === undefined) continue;
         deepest = Math.max(deepest, Math.abs(z - p.across) + skiTop / 2 - Math.abs(w - p.across));
       }
-      if (deepest > 0.001) warnings.push(`the ${sideName} ski runs ${deepest.toFixed(2)} m into the wall`);
+      if (deepest > 0.005) warnings.push(`the ${sideName} ski runs ${deepest.toFixed(2)} m into the wall`);
     }
     // ---- bracing and ballast for this side
     const st = system.stays;
-    if (base.kind === 'stays' && st) {
-      // Each anchor sits against the wall found at its x, which may step
-      // out past the ski's end (the alley mouth); where there is no wall
-      // it sits on the ski's line and its sandbag stands in the open.
-      // With plumb posts the walls are the straight line, so the anchor
-      // stays on it and the stays stay in the wall plane; when the real
-      // wall is further out there, the sandbag stands away from it and
-      // the warning says so.
-      const anchors = [x0 - st.anchorBeyond, x1 + st.anchorBeyond].map(x => {
-        const w = walls ? walls(x, side, p.across) : null;
-        if (w === null || w === undefined) { warnings.push(`no wall at the ${sideName} anchor at x = ${x.toFixed(1)} m; its sandbag stands in the open`); return [x, ground, z]; }
-        const az = w - side * inset;
-        if (Math.abs(az - z) > 0.3) warnings.push(`the ${sideName} anchor at x = ${x.toFixed(1)} m is ${Math.abs(az - z).toFixed(2)} m out from the ski's line (the wall steps out there); its stays leave the wall plane`);
-        const rw = realWalls ? realWalls(x, side, p.across) : null;
-        if (rw !== null && rw !== undefined && Math.abs(rw - w) > 0.3) warnings.push(`the ${sideName} anchor at x = ${x.toFixed(1)} m stands ${Math.abs(rw - w).toFixed(2)} m from the wall (the wall steps out there); its sandbag stands in the open`);
-        return [x, ground, az];
-      });
-      const bagIn = system.ballast ? side * (system.ballast.dims[2] / 2 - inset) : 0; // the bag's outer face at the wall, like the ski's
+    const dims = system.ballast ? system.ballast.dims : null;
+    const bagIn = dims ? side * (dims[2] / 2 - inset) : 0; // the bag's outer face at the wall, like the ski's
+    const bag = (x, kind) => members.push({ role: 'ballast', kind, at: [x, ground + skiTop + dims[1] / 2, z - bagIn], dims, color: system.ballast.color, finish: system.ballast.finish, side: tag });
+    if (base.kind === 'frame' && st) {
+      // Every post is guyed both ways in the plane of its wall by one
+      // continuous cord through a hole at its top: one end runs down to
+      // the near end of the ski, which extends anchorBeyond past the end
+      // posts for that, through a hole holeIn from the end; the other to
+      // the ski at the tee of the post farthest from it. The sandbags sit
+      // on the ski where the cords pull up: two at each end and one just
+      // outside each end post's tee, all on the extensions. Nothing
+      // beyond the skis, nothing in the walls, no loose anchor on the
+      // ground. A cord steeper than maxSlope holds little along the wall.
+      const ends = [at(x0 + base.holeIn), at(x1 - base.holeIn)];
       let steep = false;
       for (const q of posts) {
-        const anchor = anchors[Math.abs(q.x - anchors[0][0]) <= Math.abs(q.x - anchors[1][0]) ? 0 : 1];
+        const end = ends[Math.abs(q.x - x0) <= Math.abs(q.x - x1) ? 0 : 1];
         const far = posts.reduce((best, r) => Math.abs(r.x - q.x) > Math.abs(best.x - q.x) ? r : best, posts[0]);
-        for (const [to, kind] of [[anchor, 'anchor'], [at(far.x), 'ski']]) {
-          const run = Math.hypot(to[0] - q.top[0], to[2] - q.top[2]);
-          const slope = Math.atan2(q.top[1] - to[1], run) / DEG;
+        for (const [to, kind] of [[end, 'end'], [at(far.x), 'tee']]) {
+          const slope = Math.atan2(q.top[1] - to[1], Math.abs(to[0] - q.top[0])) / DEG;
           if (slope > st.maxSlope) steep = true;
           members.push({ role: 'stay', kind, a: q.top, b: to, shape: 'round', od: st.od, color: st.color, finish: 'matte', leg: q.leg, side: tag, length: mm(norm(sub(to, q.top))), slope: deg1(slope) });
         }
       }
-      if (steep) warnings.push(`a stay on the ${sideName} is nearly vertical and holds little`);
-      if (system.ballast) {
-        const dims = system.ballast.dims;
-        for (const a of anchors) members.push({ role: 'ballast', kind: 'anchor', at: [a[0], ground + dims[1] / 2, a[2] - bagIn], dims, color: system.ballast.color, finish: system.ballast.finish, side: tag });
+      if (steep) warnings.push(`a stay on the ${sideName} is steeper than ${st.maxSlope}° and holds little`);
+      if (dims) {
+        for (let k = 0; k < base.bagsAtEnd; k++) { bag(x0 + BAG_CLEAR + dims[0] * (k + 0.5) + BAG_GAP * k, 'end'); bag(x1 - BAG_CLEAR - dims[0] * (k + 0.5) - BAG_GAP * k, 'end'); }
+        for (let k = 0; k < base.bagsAtTee; k++) { bag(posts[0].x - BAG_CLEAR - dims[0] * (k + 0.5) - BAG_GAP * k, 'tee'); bag(posts[posts.length - 1].x + BAG_CLEAR + dims[0] * (k + 0.5) + BAG_GAP * k, 'tee'); }
+        if (beyond < 2 * BAG_CLEAR + (base.bagsAtEnd + base.bagsAtTee) * (dims[0] + BAG_GAP)) warnings.push(`the ${sideName} ski's extensions are too short for their sandbags`);
       }
-    } else if (base.kind === 'frame' && st) {
-      // X-braces: in every bay between two neighbouring posts, a cord
-      // from each post's top down to the ski at the other post (its
-      // tee), so the bay is two triangles and the side frame is rigid in
-      // the plane of its wall on its own: nothing beyond the skis and
-      // nothing in the walls. The cords are in the wall plane, so they
-      // stay out of the way of anyone walking. A cord steeper than
-      // base.maxSlope holds little along the wall and is warned about.
-      let steep = false;
-      for (let i = 0; i + 1 < posts.length; i++) {
-        for (const [q, r] of [[posts[i], posts[i + 1]], [posts[i + 1], posts[i]]]) {
-          const to = at(r.x);
-          const slope = Math.atan2(q.top[1] - to[1], Math.abs(to[0] - q.top[0])) / DEG;
-          if (slope > base.maxSlope) steep = true;
-          members.push({ role: 'stay', kind: 'brace', a: q.top, b: to, shape: 'round', od: st.od, color: st.color, finish: 'matte', leg: q.leg, side: tag, bay: i, length: mm(norm(sub(to, q.top))), slope: deg1(slope) });
-        }
+    } else if (dims) {
+      // Rigid bases: two sandbags over every ski. A bag cannot lie over a
+      // post's brackets or gusset, so each goes on the first free length
+      // of ski inside the end posts' bases (just past the end post's
+      // gusset); a ski with no free length that long gets the bags at its
+      // ends and a warning.
+      const taken = [];
+      for (const q of posts) {
+        const dirX = Math.sign((x0 + x1) / 2 - q.x) || 1;
+        taken.push([q.x - skiTop / 2 - base.base.z, q.x + skiTop / 2 + base.base.z]);
+        taken.push([Math.min(q.x, q.x + dirX * (skiTop / 2 + base.gusset.z)), Math.max(q.x, q.x + dirX * (skiTop / 2 + base.gusset.z))]);
       }
-      if (steep) warnings.push(`an X-brace on the ${sideName} is steeper than ${base.maxSlope}° and holds little: two posts there stand close together`);
-    }
-    if (system.ballast) {
-      // The bracing's number of sandbags over every ski, spread evenly
-      // between its ends (two at the thirds with stays, three at the
-      // quarters with the X-braces). With rigid bases a bag cannot lie
-      // over a post's brackets or gusset, so each of the two bags goes on
-      // the first free length of ski inside the end posts' bases (just
-      // past the end post's gusset); a ski with no free length that long
-      // gets the bags at its ends and a warning.
-      const dims = system.ballast.dims;
-      const bags = base.bags || 2;
-      const bagIn = side * (dims[2] / 2 - inset); // the bag's outer face at the wall, like the ski's
+      const free = x => taken.every(([a, b]) => x + dims[0] <= a + 1e-9 || x >= b - 1e-9); // a bag from x to x + its length clears every base
+      const edges = [x0, ...taken.map(([a, b]) => b), ...taken.map(([a, b]) => a - dims[0])].filter(x => x >= x0 - 1e-9 && x + dims[0] <= x1 + 1e-9).sort((a, b) => a - b);
+      const first = edges.find(free), last = [...edges].reverse().find(free);
       let spots;
-      if (rigid) {
-        const taken = [];
-        for (const q of posts) {
-          const dirX = Math.sign((x0 + x1) / 2 - q.x) || 1;
-          taken.push([q.x - skiTop / 2 - base.base.z, q.x + skiTop / 2 + base.base.z]);
-          taken.push([Math.min(q.x, q.x + dirX * (skiTop / 2 + base.gusset.z)), Math.max(q.x, q.x + dirX * (skiTop / 2 + base.gusset.z))]);
-        }
-        const free = x => taken.every(([a, b]) => x + dims[0] <= a + 1e-9 || x >= b - 1e-9); // a bag from x to x + its length clears every base
-        const edges = [x0, ...taken.map(([a, b]) => b), ...taken.map(([a, b]) => a - dims[0])].filter(x => x >= x0 - 1e-9 && x + dims[0] <= x1 + 1e-9).sort((a, b) => a - b);
-        const first = edges.find(free), last = [...edges].reverse().find(free);
-        if (first !== undefined && last !== undefined && last > first + dims[0] - 1e-9) spots = [first + dims[0] / 2, last + dims[0] / 2];
-        else { spots = [x0 + dims[0] / 2, x1 - dims[0] / 2]; warnings.push(`the ${sideName} ski has no free length for its two sandbags: they lie over the end posts' bases`); }
-      } else spots = Array.from({ length: bags }, (_, i) => x0 + (x1 - x0) * (i + 1) / (bags + 1));
-      for (const x of spots) members.push({ role: 'ballast', kind: 'ski', at: [x, ground + skiTop + dims[1] / 2, z - bagIn], dims, color: system.ballast.color, finish: system.ballast.finish, side: tag });
+      if (first !== undefined && last !== undefined && last > first + dims[0] - 1e-9) spots = [first + dims[0] / 2, last + dims[0] / 2];
+      else { spots = [x0 + dims[0] / 2, x1 - dims[0] / 2]; warnings.push(`the ${sideName} ski has no free length for its two sandbags: they lie over the end posts' bases`); }
+      for (const x of spots) bag(x, 'ski');
     }
   }
 
@@ -1020,7 +1019,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   // Pipe: the pieces as cut, by size and role; the stock plan per size
   // buys them and what is left over is the offcuts.
   const sizeKeys = Object.keys(system.sizes);
-  const roles = ['upper', 'lower', 'stub', 'link', 'spine', 'post', 'ski'];
+  const roles = ['upper', 'lower', 'stub', 'link', 'spine', 'liner', 'post', 'ski'];
   const memberLines = [];
   for (const role of roles) {
     const rows = cuts.filter(c => c.role === role);
@@ -1063,8 +1062,9 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     ? (splitBySize[0].byStock ? `at ${splitBySize[0].at.toFixed(2)} m${stockClause(splitBySize[0])}` : `to ship at ${splitBySize[0].at.toFixed(2)} m`)
     : `to ship: ${splitBySize.map(r => `${r.label} at ${r.at.toFixed(2)} m${stockClause(r)}`).join('; ')}`;
   const unsplitOver = cuts.filter(c => c.length > maxLenOf(system.sizes[c.sizeKey]) + 1e-9).map(c => ({ role: c.role, leg: c.leg, side: c.side, length: c.length, pieces: c.pieces }));
-  const stays = members.filter(m => m.role === 'stay'); // every cord: the X-braces or the stays
-  const stayMetres = mm(stays.reduce((s, m) => s + m.length, 0));
+  const stays = members.filter(m => m.role === 'stay'); // every cord run: with the frame bracing, two per post from one continuous cord
+  const cords = stays.length; // two per post with the frame bracing
+  const stayMetres = mm(stays.reduce((s, m) => s + m.length, 0) + (system.stays ? (system.stays.allowance || 0) * cords : 0));
   const woodScrews = fittings.reduce((s, f) => s + (f.woodScrews || 0), 0);
   const sandbags = members.filter(m => m.role === 'ballast').length;
   // The weight is the spider's: the pieces, not the stock bought; the
@@ -1098,7 +1098,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   if (system.stays && stays.length) {
     cordRolls = Math.ceil(stayMetres / system.stays.roll);
     line('fixings and stays', `${system.stays.name} (${stayMetres.toFixed(1)} m of cord)`, cordRolls, system.stays.price, cordRolls * system.stays.price, { metres: stayMetres });
-    if (system.stays.tensioner) { const n = Math.ceil(stays.length / system.stays.tensioner.pack); line('fixings and stays', `${system.stays.tensioner.name} (one per cord)`, n, system.stays.tensioner.price, n * system.stays.tensioner.price, { cords: stays.length }); }
+    if (system.stays.tensioner) { const n = Math.ceil(cords / system.stays.tensioner.pack); line('fixings and stays', `${system.stays.tensioner.name} (one per cord)`, n, system.stays.tensioner.price, n * system.stays.tensioner.price, { cords }); }
   }
   if (system.ballast && sandbags) {
     line('fixings and stays', system.ballast.sandbag.name, sandbags, system.ballast.sandbag.price, sandbags * system.ballast.sandbag.price);
@@ -1116,7 +1116,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     hoops: hoopCount,
     screws,
     glued: (system.glueJoints || []).slice(),
-    stays: { count: stays.length, metres: stayMetres, rolls: cordRolls },
+    stays: { count: cords, metres: stayMetres, rolls: cordRolls },
     woodScrews,
     sandbags,
     bracing: base.kind,

@@ -51,7 +51,7 @@ const state = {
   maxPiece: DEFAULT_MAX_PIECE, // the longest piece that can be shipped, metres (build.js MAX_PIECES; any positive number from an old link); longer pipes are split with couplers
   frameOnly: false,   // hide the covers and the shell so the frame shows
   plumbPosts: true,   // the feet of a side sit on one straight line (build.js straightWalls), so every post stands vertical
-  bracing: DEFAULT_BRACING, // how the posts are held along the walls: 'frame', 'stays' or 'rigid' (build.js BRACING)
+  bracing: DEFAULT_BRACING, // how the posts are held along the walls: 'frame' or 'rigid' (build.js BRACING)
   eyes: DEFAULT_EYES,  // the face: 'googly', 'lit' or 'none' (build.js EYE_OPTIONS, spider.js faceOf)
 };
 const SAVED_KEYS = Object.keys(state);
@@ -898,12 +898,11 @@ function partsTables(parts) {
   if (spine.length) h += `<tr><td>Spine</td><td class="wrap">${spine.map(run).join(', ')}</td></tr>`;
   for (const side of ['R', 'L']) {
     const stays = parts.members.filter(x => x.role === 'stay' && x.side === side);
-    if (stays.length) h += `<tr><td>${parts.bracing === 'frame' ? 'X-braces' : 'Stays'} ${side === 'R' ? 'right' : 'left'}</td><td class="wrap">${stays.map(x => fmt(x.length, 2)).join(', ')}</td></tr>`;
+    if (stays.length) h += `<tr><td>Stays ${side === 'R' ? 'right' : 'left'}</td><td class="wrap">${stays.map(x => fmt(x.length, 2)).join(', ')}</td></tr>`;
   }
   h += '</table>';
   const rolls = `${fmt(b.stays.metres, 1)} m of cord in ${b.stays.rolls} roll${b.stays.rolls > 1 ? 's' : ''}`;
-  if (b.bracing === 'stays' && b.stays.count) h += `<div class="muted" style="margin-top:4px">Stays: from each post top one cord to the sandbag on the ground past the ski's end and one to the ski under the post farthest from it; ${rolls}; ${b.sandbags} sandbags, two at the anchors and two over each ski.</div>`;
-  if (b.bracing === 'frame' && b.stays.count) h += `<div class="muted" style="margin-top:4px">X-braces: in every bay between two posts a cord from each post top down to the ski at the other post, ${b.stays.count} cords with a tensioner each, through a hole under each post's top coupler and round the ski at the tee; ${rolls}; ${b.sandbags} sandbags, three over each ski. Nothing beyond the skis, nothing in the walls.</div>`;
+  if (b.bracing === 'frame' && b.stays.count) h += `<div class="muted" style="margin-top:4px">Stays: two cords per post through one hole at its top, one down to the near end of the ski (the skis run 1.5 m past the end posts) and one down to the ski at the far post's tee, ${b.stays.count} cords with a tensioner each (the shallow one at 80 N, the steep one until the post is plumb); ${rolls}; ${b.sandbags} sandbags on the skis, two at each end and one outside each end post's tee; a leg-size liner inside each front post. Nothing beyond the skis, nothing in the walls.</div>`;
   if (b.bracing === 'rigid') h += `<div class="muted" style="margin-top:4px">Rigid bases: each post stands on the ski on a pair of angle brackets with a plywood gusset; posts and skis longer than the stock are lapped 0.40 m; ${b.sandbags} sandbags, two over each ski. No cords.</div>`;
   return h;
 }
