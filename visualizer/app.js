@@ -6,7 +6,7 @@ import { wallsFromSite, insideBuilding } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildBuildMeshes, rebuildExtras, setRoofsVisible,
          setPlantsVisible, showGuide, hideGuide } from './scene.js';
 import { buildPath, cameraAt } from './walk.js';
-import { SYSTEMS, MAX_PIECES, systemById, buildParts } from './build.js';
+import { SYSTEMS, MAX_PIECES, DEFAULT_MAX_PIECE, systemById, buildParts, recipeText } from './build.js';
 
 // Hosted on claude.ai the page cannot use the URL hash or start downloads;
 // the design is then remembered in the browser instead.
@@ -48,7 +48,7 @@ const state = {
   showJoints: true,
   plants: true,
   system: 'pvc40',    // the part system shown (build.js SYSTEMS id), '' for the design alone
-  maxPiece: 1.2,      // the longest piece that can be shipped, metres; longer pipes are split with couplers
+  maxPiece: DEFAULT_MAX_PIECE, // the longest piece that can be shipped, metres (build.js MAX_PIECES; any positive number from an old link); longer pipes are split with couplers
   frameOnly: false,   // hide the covers and the shell so the frame shows
 };
 const SAVED_KEYS = Object.keys(state);
@@ -71,7 +71,7 @@ function applySaved(s) {
   state.params = normalizeParams(s.params);
   // The construction keys from a hash or an old save may be the wrong type.
   state.system = typeof state.system === 'string' ? state.system : 'pvc40';
-  state.maxPiece = Number.isFinite(+state.maxPiece) && +state.maxPiece > 0 ? +state.maxPiece : 1.2;
+  state.maxPiece = Number.isFinite(+state.maxPiece) && +state.maxPiece > 0 ? +state.maxPiece : DEFAULT_MAX_PIECE;
   state.frameOnly = !!state.frameOnly;
   return true;
 }
@@ -139,7 +139,7 @@ function loadDesign(name) {
     state.hip = d.hip ?? state.hip;
     state.plans = d.plans ?? null;
     if (typeof d.system === 'string') state.system = d.system;
-    if (Number.isFinite(d.maxPiece)) state.maxPiece = d.maxPiece;
+    if (Number.isFinite(d.maxPiece) && d.maxPiece > 0) state.maxPiece = d.maxPiece; // as applySaved: buildParts needs a positive length
     if (typeof d.frameOnly === 'boolean') state.frameOnly = d.frameOnly;
     state.design = name;
     refreshControls();
@@ -754,50 +754,78 @@ function updateStats() {
   document.getElementById('stats').innerHTML = h;
 }
 
-// The Parts and Cut list tables for the Numbers panel.
+// The Parts and Cut list tables for the Numbers panel. Parts: the lines
+// in their groups (pipe by size and stock length, fittings by name,
+// covering and body, fixings and stays). Cut list: per leg the upper,
+// lower and post lengths and the three fitting recipes; the ski and spine
+// pieces; the stays' lengths per side.
 function partsTables(parts) {
   const b = parts.bom, sys = systemById(parts.system);
   const esc = t => String(t).replace(/</g, '&lt;');
-  const stockName = sys.member.shape === 'square' ? 'Batten' : 'Tube';
+  const qty = l => Number.isInteger(l.qty) ? String(l.qty) : `${fmt(l.qty, 1)} m`;
   let h = `<h2>Parts</h2><div class="muted">${esc(sys.name)}; pieces up to ${fmt(parts.maxPiece, 2)} m.</div><table class="parts"><tr><th>Item</th><th>Count / m</th><th>kg</th><th>€</th></tr>`;
-  // The stock to buy, then the pipe in the spider by role (the pieces as
-  // cut, between fittings), then the offcuts.
-  for (const r of b.stock.lengths) if (r.count) h += `<tr><td>${stockName} ${fmt(r.length, 1)} m, to buy</td><td>${r.count}</td><td>${fmt(r.count * r.length * sys.member.kgPerM, 1)}</td><td>${fmt(r.count * r.length * sys.prices.memberPerM, 0)}</td></tr>`;
-  for (const m of b.members) h += `<tr><td class="muted">&nbsp;&nbsp;${m.role}, ${m.pieces} piece${m.pieces > 1 ? 's' : ''} cut</td><td class="muted">${fmt(m.metres, 2)} m</td><td class="muted">${fmt(m.metres * sys.member.kgPerM, 1)}</td><td></td></tr>`;
-  h += `<tr><td class="muted">&nbsp;&nbsp;offcuts, not in the total</td><td class="muted">${fmt(b.stock.waste, 2)} m</td><td class="muted">${fmt(b.weight.offcuts, 1)}</td><td></td></tr>`;
-  for (const f of b.fittings) h += `<tr><td>${esc(f.name)}</td><td>${f.count}</td><td>${fmt(f.kg, 1)}</td><td>${fmt(f.cost, 0)}</td></tr>`;
-  if (b.cover) h += `<tr><td>Cover</td><td>${fmt(b.cover.metres, 1)} m</td><td>${fmt(b.cover.kg, 1)}</td><td>${fmt(b.cover.cost, 0)}</td></tr>`;
-  if (b.hoops) h += `<tr><td>Hoops</td><td>${b.hoops}</td><td>${fmt(b.hoops * (sys.body.hoopKg || 0), 1)}</td><td>${fmt(b.hoops * sys.prices.hoop, 0)}</td></tr>`;
-  h += `<tr><td>Fabric</td><td>1</td><td>${fmt(sys.body.fabricKg || 0, 1)}</td><td>${fmt(sys.prices.fabric, 0)}</td></tr>`;
-  if (parts.hub.plank) h += `<tr><td>Plank ${fmt(parts.hub.plank.length, 2)} m</td><td>1</td><td>${fmt(sys.hub.kg || 0, 1)}</td><td>${fmt(sys.hub.price || 0, 0)}</td></tr>`;
-  h += `<tr><td>Screws</td><td>${b.screws}</td><td></td><td></td></tr>`;
-  h += `<tr><td>Sandbags</td><td>${b.sandbags}</td><td></td><td></td></tr>`;
+  for (const group of ['pipe', 'fittings', 'covering and body', 'fixings and stays']) {
+    const lines = b.cost.lines.filter(l => l.group === group);
+    if (!lines.length) continue;
+    h += `<tr><td colspan="4"><b>${group[0].toUpperCase() + group.slice(1)}</b></td></tr>`;
+    for (const l of lines) h += `<tr><td>${esc(l.item)}</td><td>${qty(l)}</td><td>${l.kg !== undefined ? fmt(l.kg, 1) : ''}</td><td>${fmt(l.cost, 0)}</td></tr>`;
+    if (group === 'pipe') {
+      // The pipe in the spider by role (the pieces as cut, between fittings), then the offcuts.
+      for (const m of b.members) h += `<tr><td class="muted">&nbsp;&nbsp;${m.role} ${esc(m.label)}, ${m.pieces} piece${m.pieces > 1 ? 's' : ''} cut</td><td class="muted">${fmt(m.metres, 2)} m</td><td class="muted">${fmt(m.metres * sys.sizes[m.sizeKey].kgPerM, 1)}</td><td></td></tr>`;
+      h += `<tr><td class="muted">&nbsp;&nbsp;offcuts, not in the total</td><td class="muted">${fmt(b.stock.waste, 2)} m</td><td class="muted">${fmt(b.weight.offcuts, 1)}</td><td></td></tr>`;
+    }
+  }
   h += `<tr><td><b>Total</b></td><td></td><td><b>${fmt(b.weight.total, 1)}</b></td><td><b>${fmt(b.cost.total, 0)}</b></td></tr>`;
-  h += '</table><div class="muted" style="margin-top:4px">The total weight is the spider\'s (the pieces, not the stock); the cost is the stock bought.</div>';
-  const splitNote = b.unsplitOver.length ? `; ${b.unsplitOver.length} member${b.unsplitOver.length > 1 ? 's' : ''} split at ${fmt(b.splitAt, 2)} m${b.splitByStock ? ', the longest stock length' : ' to ship'}` : '';
-  h += `<div class="muted" style="margin-top:4px">Stock: ${b.stock.lengths.filter(r => r.count).map(r => `${r.count} × ${fmt(r.length, 1)} m`).join(', ')}, ${fmt(b.stock.waste, 2)} m offcuts. Longest piece ${fmt(b.longestPiece, 3)} m${splitNote}. Prices are placeholders.</div>`;
+  h += '</table><div class="muted" style="margin-top:4px">The total weight is the spider\'s (the pieces, not the stock; the sandbags are not in it); the cost is everything bought.</div>';
+  const splitNote = b.unsplitOver.length ? `; ${b.unsplitOver.length} member${b.unsplitOver.length > 1 ? 's' : ''} split ${esc(b.splitNote)}` : '';
+  const stockNote = b.stock.bySize.map(r => `${esc(r.label)}: ${r.lengths.filter(q => q.count).map(q => `${q.count} × ${fmt(q.length, 1)} m`).join(', ') || 'none'}`).join('; ');
+  // The pipe price note names where the price of each stock length
+  // actually bought was seen (build.js sizes: the store's 2 m lengths, the
+  // 1 m lots from Amazon).
+  const priceNotes = b.stock.bySize.flatMap(r => r.lengths.filter(q => q.count && q.source).map(q => `${esc(r.stockName)} ${esc(r.label)} ${fmt(q.length, 1)} m: ${esc(q.source)}`));
+  h += `<div class="muted" style="margin-top:4px">Stock: ${stockNote}; ${fmt(b.stock.waste, 2)} m offcuts. Longest piece ${fmt(b.longestPiece, 3)} m${splitNote}. Prices seen on ${b.pricesSeen}${priceNotes.length ? '; ' + priceNotes.join('; ') : ''}.</div>`;
 
-  // Cut list: lengths in one table, the fitting angles in another, so each
+  // Cut list: lengths in one table, the fitting recipes in another, so each
   // fits the panel's width; a split cut shows its pieces under the length.
   const cutOf = (role, leg) => parts.cuts.find(c => c.role === role && c.leg === leg);
   const cell = c => c.pieces.length > 1 ? `${fmt(c.length, 3)}<br><span class="muted">${c.pieces.length} × ${fmt(c.pieces[0], 3)}</span>` : fmt(c.length, 3);
+  const sizeNote = role => esc(sys.sizes[sys.members[role].size].label);
   h += '<h2>Cut list</h2><table class="cuts"><tr><th>Leg</th><th>Upper</th><th>Lower</th><th>Post</th></tr>';
   for (const a of parts.legsAssembly) h += `<tr><td>${a.pair + 1}${a.side}</td><td>${cell(cutOf('upper', a.leg))}</td><td>${cell(cutOf('lower', a.leg))}</td><td>${cell(cutOf('post', a.leg))}</td></tr>`;
-  h += '</table><div class="muted" style="margin-top:4px">Lengths are the pipe between fittings, in m; a split cut gives its pieces.</div>';
+  const socket = sys.fittings.knee.socket || 0;
+  const insertNote = socket > 0 ? `Pipe lengths assume full ${Math.round(socket * 1000)} mm insertion; dry-fit each elbow pair and check before cutting.` : 'The members butt at each joint; check each joint before cutting.';
+  h += `</table><div class="muted" style="margin-top:4px">Lengths are the pipe between fittings, in m (legs ${sizeNote('leg')}, posts ${sizeNote('post')}); a split cut gives its pieces. ${insertNote}</div>`;
   h += '<table class="cuts"><tr><th>Leg</th><th>Hip</th><th>Knee</th><th>Foot</th></tr>';
-  for (const a of parts.legsAssembly) h += `<tr><td>${a.pair + 1}${a.side}</td><td>${fmt(a.hip.angle, 0)}° / ${fmt(a.hip.roll, 0)}°</td><td>${fmt(a.knee.bend, 0)}°</td><td>${fmt(a.foot.bend, 0)}° / ${fmt(a.foot.plan, 0)}°</td></tr>`;
-  h += '</table><div class="muted" style="margin-top:4px">Hip: the elbow\'s angle from straight across, and its turn about the stub (0 toward the head, 90 straight up). Knee: the bend off straight. Foot: the elbow\'s bend from the post, and the plan angle the post is turned to (from straight across, + toward the head).</div>';
+  const recipe = r => esc(recipeText(r)).replace(' @ ', '<br>@ '); // the twist on its own line, so three recipes fit the panel's width
+  for (const a of parts.legsAssembly) {
+    h += `<tr><td>${a.pair + 1}${a.side}</td><td>${recipe(a.hip.recipe)}<br><span class="muted">${fmt(a.hip.angle, 0)}°, turn ${fmt(a.hip.roll, 0)}°</span></td>`;
+    h += `<td>${recipe(a.knee.recipe)}<br><span class="muted">${fmt(a.knee.bend, 0)}°</span></td>`;
+    h += `<td>${recipe(a.foot.recipe)}<br><span class="muted">${fmt(a.foot.bend, 0)}°, plan ${fmt(a.foot.plan, 0)}°</span></td></tr>`;
+  }
+  const joints = parts.legsAssembly.length ? Object.entries(parts.legsAssembly[0].joints).map(([j, how]) => `${j}: ${how}`).join(', ') : '';
+  const recipeNote = sys.fittings.knee.angles ? 'Each cell names the elbows ("45 + 20 @ 112°": a 45 and a 20 in series, the second twisted 112° about the first; "45°": one elbow) and under them the angle they make. ' : 'Each cell gives the angle to set at the joint. ';
+  h += `</table><div class="muted" style="margin-top:4px">${recipeNote}Hip: the angle from straight across, and the turn of the joint about the stub (0 toward the head, 90 straight up). Knee: the bend off straight. Foot: the bend from the post, and the plan angle the post is turned to (from straight across, + toward the head). Joints: ${joints}.</div>`;
   const stubs = parts.cuts.filter(c => c.role === 'stub');
   if (stubs.length) h += `<div class="muted">Hub stubs: ${stubs.length} × ${fmt(stubs[0].length, 3)} m.</div>`;
+  const links = parts.cuts.filter(c => c.role === 'link');
+  if (links.length) {
+    const legOf = c => { const a = parts.legsAssembly.find(x => x.leg === c.leg); return a ? `${a.pair + 1}${a.side} ${c.joint}` : c.joint; };
+    h += `<div class="muted">Links (pipe a socket deep at each end, where a female-female elbow meets a fitting's socket or another female-female elbow): ${links.map(c => `${fmt(c.length, 3)} m at the ${legOf(c)}`).join(', ')}.</div>`;
+  }
   const run = c => c.pieces.length > 1 ? `${fmt(c.length, 3)} (${c.pieces.length} × ${fmt(c.pieces[0], 3)})` : fmt(c.length, 3);
-  h += '<table class="cuts"><tr><th>Ski / spine</th><th>Pieces</th></tr>';
+  h += '<table class="cuts"><tr><th>Ski / spine / stays</th><th>Pieces</th></tr>';
   for (const side of ['R', 'L']) {
     const rows = parts.cuts.filter(c => c.role === 'ski' && c.side === side);
     h += `<tr><td>Ski ${side === 'R' ? 'right' : 'left'}</td><td class="wrap">${rows.map(run).join(', ')}</td></tr>`;
   }
   const spine = parts.cuts.filter(c => c.role === 'spine');
   if (spine.length) h += `<tr><td>Spine</td><td class="wrap">${spine.map(run).join(', ')}</td></tr>`;
+  for (const side of ['R', 'L']) {
+    const stays = parts.members.filter(x => x.role === 'stay' && x.side === side);
+    if (stays.length) h += `<tr><td>Stays ${side === 'R' ? 'right' : 'left'}</td><td class="wrap">${stays.map(x => fmt(x.length, 2)).join(', ')}</td></tr>`;
+  }
   h += '</table>';
+  if (b.stays.count) h += `<div class="muted" style="margin-top:4px">Stays: from each post top one cord to the sandbag on the ground past the ski's end and one to the ski under the post farthest from it; ${fmt(b.stays.metres, 1)} m of cord in ${b.stays.rolls} roll${b.stays.rolls > 1 ? 's' : ''}; ${b.sandbags} sandbags, two at the anchors and two over each ski.</div>`;
   return h;
 }
 
@@ -845,7 +873,17 @@ function refreshControls() {
   for (const key of ['showJoints', 'plants', 'keepSplit', 'frameOnly']) document.getElementById(key).checked = state[key];
   document.getElementById('system').value = systemById(state.system) ? state.system : '';
   if (document.getElementById('system').value !== state.system) state.system = document.getElementById('system').value;
-  document.getElementById('maxPiece').value = String(state.maxPiece);
+  setMaxPieceOptions();
+}
+// The shipping lengths from build.js, plus the state's own value when an
+// old link carries one that is not in the list.
+function setMaxPieceOptions() {
+  const el = document.getElementById('maxPiece');
+  const opts = MAX_PIECES.slice();
+  if (!opts.some(o => o.value === state.maxPiece)) opts.push({ value: state.maxPiece, label: `${state.maxPiece.toFixed(2)} m (from the link)` });
+  opts.sort((a, b) => a.value - b.value);
+  el.innerHTML = opts.map(o => `<option value="${o.value}">${o.label.replace(/</g, '&lt;')}</option>`).join('');
+  el.value = String(state.maxPiece);
 }
 function showHelp(on) {
   document.getElementById('help').hidden = !on;
@@ -1010,7 +1048,7 @@ function wireUI() {
   systemEl.innerHTML = '<option value="">Design only (no parts)</option>' + SYSTEMS.map(sy => `<option value="${sy.id}">${sy.name.replace(/</g, '&lt;')}</option>`).join('');
   systemEl.addEventListener('change', e => { state.system = e.target.value; onChange(); });
   const maxPieceEl = document.getElementById('maxPiece');
-  maxPieceEl.innerHTML = MAX_PIECES.map(v => `<option value="${v}">${v.toFixed(1)} m</option>`).join('');
+  setMaxPieceOptions();
   maxPieceEl.addEventListener('change', e => { state.maxPiece = parseFloat(e.target.value); onChange(); });
   document.getElementById('frameOnly').addEventListener('change', e => { state.frameOnly = e.target.checked; onChange(); });
   document.getElementById('savePng').addEventListener('click', () => {

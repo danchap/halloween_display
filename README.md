@@ -84,25 +84,55 @@ What it shows:
   real parts in the view instead of the design's smooth body and legs:
   tubes with a fitting at the hip, the knee and the foot, a spine in the
   body carrying the eight hips, a vertical post under each foot down to
-  the ground, and a ski (a horizontal beam along the base of each wall)
-  joining the four posts of a side, so nothing stands in the alley. The
-  systems are a table in `visualizer/build.js` (PVC Ø 40 mm with
-  adjustable elbows and a black foam cover, aluminium Ø 25 mm with
-  plastic connectors and pool noodles, pine 34 × 34 mm battens with
-  hinges and brackets; the prices are placeholders). "Longest piece to
-  ship" splits any pipe longer than it with a coupler, so every piece
-  fits the parcel; "Frame only" hides the covers and the shell and shows
-  the body's hoops. The Numbers panel then lists the parts (counts,
-  metres, weight, cost, the stock plan, the longest piece) and the cut
-  list (each leg's upper, lower and post lengths, the angle to set at
-  each fitting, the ski and spine pieces). The HUD adds the build's
-  warnings: roots moved to fit the hub's crosses, pieces split to ship,
-  posts that lean across to meet the ski where the wall steps, a fitting
-  asked to bend past its limit. The foot elbow, the post and the ski sit
-  one fitting radius inside the wall line the design puts the foot on, so
-  the fittings touch the wall and nothing is in it; the hub is kept inside
-  the body. The orange balls still drive the pose; the parts follow. The choice travels with the design, so the walk
-  video shows the same construction.
+  the ground, a ski (a horizontal beam along the base of each wall)
+  joining the four posts of a side, so nothing stands in the alley, two
+  stay cords from each post top (one out to a sandbag on the ground
+  1.5 m past the ski's end, one in to the ski under the post farthest
+  from it) and two sandbags over each ski so it cannot roll. The systems
+  are a table in `visualizer/build.js`: PVC Ø 40 legs with a black foam
+  sleeve on Ø 50 posts and skis (the recommended build), PVC Ø 50
+  throughout with the legs painted black, aluminium Ø 30 tube with bolted
+  hinges and pool noodles, and pine 34 × 34 battens with lap joints on
+  45 × 45 posts. No swivelling elbow exists in PVC, so each PVC joint is
+  made from the fixed evacuation elbows (20, 30, 45, 67.5, 87.5 degrees),
+  one when it is within 2.5 degrees of the need, else two in series with
+  a twist between them; the cut list names them ("45 + 20 @ 112°"), and
+  the pipe lengths take Nicoll's socket depth and Z values into account.
+  The 20, 30 and 45 degree elbows are sold male-female and the 67.5 and
+  87.5 female-female, so the parts table names the ends ("elbow 45° M/F
+  Ø 40"), a pair puts the male-female elbow first, a set that ends in a
+  spigot gets a coupler where a pipe follows (the hips and knees) and
+  plugs straight into the reducer at the foot, and a set that ends in a
+  socket gets a short link of pipe into the reducer (and between two
+  female-female elbows); the cut list lists the links.
+  Ø 40 pipe is fine for the legs but a Ø 40 post bends under a child's
+  pull, so the posts and skis are Ø 50 with a 50/40 reducer at the top of
+  each post, whose Ø 50 spigot plugs into a Ø 50 coupler on the post;
+  the knee elbows and the hub crosses are glued (their
+  self-weight moments exceed a screwed socket), the hip, foot and ski
+  joints are screwed so they come apart. "Longest piece to ship" (1.0 m
+  Colissimo, 1.4 m Chronopost, 2.0 m UPS through a packer or store
+  stock, 2.7 m UPS maximum; the default is 2.0 m since the pipe will be
+  bought near the island) splits any pipe longer than it with a coupler;
+  "Frame only" hides the covers and the shell and shows the body's
+  hoops. The Numbers panel then lists the parts in groups (pipe by size
+  and stock length, fittings by name, covering and body, fixings and
+  stays, with the prices seen on 2026-10-13) and the cut list (each
+  leg's upper, lower and post lengths, the elbows at each joint with the
+  hip's turn and the post's plan angle, which joints are glued, the ski
+  and spine pieces, the stays' lengths). The HUD adds the build's
+  warnings: roots moved to fit the hub's crosses (and how far the upper
+  segments then differ from the design's), pieces split to ship (per
+  pipe size when the sizes split at different lengths), an anchor
+  sandbag far off its ski's line or with no wall at all,
+  posts that lean across to meet the ski where the wall steps, a joint
+  no elbow pair reaches, feet within reach of children (below 2.0 m), a
+  post over 3.0 m, a stay too steep to hold. The foot fitting, the post
+  and the ski sit one fitting radius inside the wall line the design
+  puts the foot on, so the fittings touch the wall and nothing is in it;
+  the hub is kept inside the body. The orange balls still drive the
+  pose; the parts follow. The choice travels with the design, so the
+  walk video shows the same construction.
 - Sliders for the abdomen (length, width, height), the head (length in
   front of the abdomen, width, height), the body's position along and
   above the alley, the pitch of the whole spider (body and legs turn

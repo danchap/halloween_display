@@ -46,7 +46,7 @@ import * as THREE from 'three';
 import { DEFAULTS, buildSpider, flatWalls, upgradeParams } from './spider.js';
 import { wallsFromSite } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildBuildMeshes } from './scene.js';
-import { systemById, buildParts } from './build.js';
+import { systemById, buildParts, DEFAULT_MAX_PIECE } from './build.js';
 import { WALK_DEFAULTS, buildPath, cameraAt } from './walk.js';
 import { Muxer, ArrayBufferTarget } from './vendor/mp4-muxer.mjs';
 
@@ -60,14 +60,14 @@ if (q.has('bob')) walk.bob = q.get('bob') !== '0';
 // with the construction choices: the part system, the longest piece to
 // ship and whether the frame alone shows.
 let params = { ...DEFAULTS };
-const construction = { system: '', maxPiece: 1.2, frameOnly: false };
+const construction = { system: '', maxPiece: DEFAULT_MAX_PIECE, frameOnly: false };
 try {
   const h = location.hash.slice(1);
   if (h) {
     const s = JSON.parse(decodeURIComponent(h));
     params = upgradeParams(s.params || {});
     if (typeof s.system === 'string') construction.system = s.system;
-    if (Number.isFinite(s.maxPiece)) construction.maxPiece = s.maxPiece;
+    if (Number.isFinite(s.maxPiece) && s.maxPiece > 0) construction.maxPiece = s.maxPiece; // any positive number: old links carry 1.2
     if (typeof s.frameOnly === 'boolean') construction.frameOnly = s.frameOnly;
   }
 } catch (e) { console.warn('bad design in URL', e); }

@@ -231,23 +231,38 @@ function buildMat(color, finish) {
 
 // Draw the parts of a construction system (buildParts output): members as
 // cylinders or boxes between their endpoints, fittings as short thicker
-// cylinders along each socket direction from the joint centre (a hinge as
-// a small plate), couplers where a member is split, the hub, posts and
-// skis, and unless frameOnly the covers and the body shell; with frameOnly
-// the hoops show as rings instead of the shell.
+// cylinders along each socket direction from the joint centre (a hinge,
+// a lap joint, a clamp or a bracket as a small plate; a reducer as a
+// stepped cylinder), couplers where a member is split, the hub, posts and
+// skis, the stay cords and the sandbags, and unless frameOnly the covers
+// and the body shell; with frameOnly the hoops show as rings instead of
+// the shell. Every mesh carries its part's role in userData.
+const STAY_DRAWN_OD = 0.012; // a 4 mm cord is drawn this thick so it shows
+const PLATE_KINDS = new Set(['hinge', 'lap', 'clamp', 'bracket']);
+const CORNER_KINDS = new Set(['elbow', 'tee', 'cross']); // fittings with a corner body at the joint centre
 export function rebuildBuildMeshes(world, parts, system, { frameOnly = false } = {}) {
   clearGroup(world.buildGroup);
   if (!parts || !system) return;
   const g = world.buildGroup;
   const square = parts.members.some(m => m.shape === 'square');
+  const add = (mesh, role) => { mesh.userData.role = role; g.add(mesh); return mesh; };
   for (const m of parts.members) {
-    if (m.role === 'cover') { if (!frameOnly) g.add(segmentMesh(m.a, m.b, m.od, buildMat(m.color, m.finish))); continue; }
+    if (m.role === 'cover') { if (!frameOnly) add(segmentMesh(m.a, m.b, m.od, buildMat(m.color, m.finish)), m.role); continue; }
+    if (m.role === 'stay') { add(segmentMesh(m.a, m.b, Math.max(m.od, STAY_DRAWN_OD), buildMat(m.color, m.finish)), m.role); continue; }
+    if (m.role === 'ballast') {
+      const bag = new THREE.Mesh(new THREE.BoxGeometry(m.dims[0], m.dims[1], m.dims[2]), buildMat(m.color, m.finish));
+      bag.position.set(...m.at);
+      bag.castShadow = true;
+      add(bag, m.role);
+      continue;
+    }
     const box = m.shape === 'square';
-    g.add(segmentMesh(m.a, m.b, box ? m.size : m.od, buildMat(m.color, m.finish), box ? unitBox : unitCyl));
+    add(segmentMesh(m.a, m.b, box ? m.size : m.od, buildMat(m.color, m.finish), box ? unitBox : unitCyl), m.role);
   }
   for (const f of parts.fittings) {
     const mat = buildMat(f.color, f.finish);
-    if (f.kind === 'hinge') {
+    const along = (d, k) => [f.at[0] + d[0] * k, f.at[1] + d[1] * k, f.at[2] + d[2] * k];
+    if (PLATE_KINDS.has(f.kind)) {
       // A plate across the joint, its long side along the first member.
       const plate = new THREE.Mesh(unitBox, mat);
       plate.position.set(...f.at);
@@ -256,17 +271,22 @@ export function rebuildBuildMeshes(world, parts, system, { frameOnly = false } =
       plate.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
       plate.position.sub(dir.clone().multiplyScalar(f.centreToEnd)); // centred on the joint along the first member
       plate.castShadow = true;
-      g.add(plate);
+      add(plate, f.role);
       continue;
     }
-    if (f.role !== 'cap' && f.role !== 'coupler') g.add(sphereMesh(f.at, f.od, mat)); // the corner body of an elbow, tee or cross; a cap or a coupler is its socket cylinder alone
+    if (f.kind === 'reducer') {
+      // The small socket toward the foot fitting (dirs[0]), the big one toward the post (dirs[1]).
+      add(segmentMesh(f.at, along(f.dirs[0], f.centreToEnd), f.odTo, mat), f.role);
+      add(segmentMesh(f.at, along(f.dirs[1], f.centreToEnd), f.od, mat), f.role);
+      continue;
+    }
+    if (CORNER_KINDS.has(f.kind)) add(sphereMesh(f.at, f.od, mat), f.role); // the corner body of an elbow, tee or cross; a cap or a coupler is its socket cylinder alone
     for (const d of f.dirs) {
-      const end = [f.at[0] + d[0] * f.centreToEnd, f.at[1] + d[1] * f.centreToEnd, f.at[2] + d[2] * f.centreToEnd];
-      if (f.role === 'coupler') {
-        const from = [f.at[0] - d[0] * f.centreToEnd, f.at[1] - d[1] * f.centreToEnd, f.at[2] - d[2] * f.centreToEnd];
-        g.add(segmentMesh(from, end, f.od, mat, square ? unitBox : unitCyl));
+      const end = along(d, f.centreToEnd);
+      if (f.kind === 'coupler') {
+        add(segmentMesh(along(d, -f.centreToEnd), end, f.od, mat, square ? unitBox : unitCyl), f.role);
       } else {
-        g.add(segmentMesh(f.at, end, f.od, mat, square ? unitBox : unitCyl));
+        add(segmentMesh(f.at, end, f.od, mat, square ? unitBox : unitCyl), f.role);
       }
     }
   }
@@ -276,7 +296,7 @@ export function rebuildBuildMeshes(world, parts, system, { frameOnly = false } =
     box.position.set(...pl.centre);
     box.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), new THREE.Vector3(...pl.axis).normalize());
     box.castShadow = true;
-    g.add(box);
+    add(box, 'plank');
   }
   const bodyMat = buildMat(parts.body.color, parts.body.finish);
   if (frameOnly) {
@@ -288,10 +308,10 @@ export function rebuildBuildMeshes(world, parts, system, { frameOnly = false } =
       ring.position.set(...h.centre);
       ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(...h.axis).normalize());
       ring.castShadow = true;
-      g.add(ring);
+      add(ring, 'hoop');
     }
   } else {
-    for (const seg of parts.body.shell) g.add(bodyMesh(seg, 'capsule', bodyMat));
+    for (const seg of parts.body.shell) add(bodyMesh(seg, 'capsule', bodyMat), 'shell');
   }
 }
 
