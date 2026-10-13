@@ -52,10 +52,13 @@ What it shows:
   locked proportions at body length L = 0.8 m, a capsule body 2.5 m up on
   the alley's centreline, 6.5 m into the alley with the head toward the
   street, the whole spider pitched up 45° so it climbs up and out toward
-  the street, the legs fanned out in plan like a resting spider's (55°
-  and 22° forward, 22° and 55° back) and the feet on the walls at 3.0,
-  2.6, 2.3 and 2.0 m from the front pair to the back, out of a child's
-  reach; legs 4.8 cm and 3.6 cm thick. "Apply brief ratios at L" sets the
+  the street, the legs fanned out in plan like a climbing spider's (55°
+  and 22° forward, 22° and 55° back) with the front pairs bent most
+  (64 / 56 / 48 / 40° front to back, the climbing series on the knee
+  slider's 60°), so the front knees rise above the head and the back
+  legs trail, and the feet on the walls at 2.6, 2.4, 2.2 and 2.0 m from
+  the front pair to the back, out of a child's reach and no higher than
+  the stays allow; legs 4.8 cm and 3.6 cm thick. "Apply brief ratios at L" sets the
   brief's own pose at a chosen L (every leg the brief's full length with
   the knee bends 30/40/50/60°, the feet keeping the heights they have).
   Two angle sliders, the hip (the upper segment's angle above the alley's
