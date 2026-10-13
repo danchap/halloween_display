@@ -45,7 +45,8 @@
 import * as THREE from 'three';
 import { DEFAULTS, buildSpider, flatWalls, upgradeParams } from './spider.js';
 import { wallsFromSite } from './site.js';
-import { createWorld, loadWorldSite, rebuildSpiderMeshes } from './scene.js';
+import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildBuildMeshes } from './scene.js';
+import { systemById, buildParts } from './build.js';
 import { WALK_DEFAULTS, buildPath, cameraAt } from './walk.js';
 import { Muxer, ArrayBufferTarget } from './vendor/mp4-muxer.mjs';
 
@@ -55,11 +56,20 @@ for (const k of ['vfov', 'eyeHeight', 'speed', 'startOffset', 'stopAfter']) if (
 walk.speed = Math.max(0.1, walk.speed || WALK_DEFAULTS.speed);
 if (q.has('bob')) walk.bob = q.get('bob') !== '0';
 
-// The spider design travels in the URL hash, as the design page writes it.
+// The spider design travels in the URL hash, as the design page writes it,
+// with the construction choices: the part system, the longest piece to
+// ship and whether the frame alone shows.
 let params = { ...DEFAULTS };
+const construction = { system: '', maxPiece: 1.2, frameOnly: false };
 try {
   const h = location.hash.slice(1);
-  if (h) { const s = JSON.parse(decodeURIComponent(h)); params = upgradeParams(s.params || {}); }
+  if (h) {
+    const s = JSON.parse(decodeURIComponent(h));
+    params = upgradeParams(s.params || {});
+    if (typeof s.system === 'string') construction.system = s.system;
+    if (Number.isFinite(s.maxPiece)) construction.maxPiece = s.maxPiece;
+    if (typeof s.frameOnly === 'boolean') construction.frameOnly = s.frameOnly;
+  }
 } catch (e) { console.warn('bad design in URL', e); }
 document.getElementById('back').href = './' + location.hash;
 
@@ -81,7 +91,11 @@ let path = null;
 const site = await loadWorldSite(world, {});
 if (!site) { document.getElementById('status').textContent = 'Site data missing: run site/fetch_site.py'; }
 const walls = site ? wallsFromSite(site) : flatWalls(3);
-rebuildSpiderMeshes(world, buildSpider(params, walls), params, { showJoints: false });
+const model = buildSpider(params, walls);
+const system = systemById(construction.system);
+const parts = system ? buildParts(model, params, walls, { system, maxPiece: construction.maxPiece }) : null;
+rebuildSpiderMeshes(world, model, params, { showJoints: false, showSpider: !parts });
+rebuildBuildMeshes(world, parts, system, { frameOnly: construction.frameOnly });
 
 function rebuildPath() {
   path = buildPath(site, params, walk);
@@ -214,7 +228,7 @@ document.getElementById('record').addEventListener('click', () => record());
 
 await world.ready; // orthophoto and plant sprites
 renderAt(parseFloat(q.get('t') || '0'));
-window.walk = { walk, path, params, renderAt, record, camera, cameraAt };
+window.walk = { walk, path, params, parts, construction, renderAt, record, camera, cameraAt, world };
 document.title = 'The Path (ready)';
 if (q.get('record') === '1') {
   record({ upload: q.get('upload') || null, maxSeconds: q.has('seconds') ? parseFloat(q.get('seconds')) : Infinity });

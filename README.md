@@ -80,6 +80,29 @@ What it shows:
   as its angles need.
 - The HUD names what is wrong with a pose: a foot with no wall, a knee
   inside a wall, a foot below the lane.
+- Construction: a section under Legs picks a part system and shows the
+  real parts in the view instead of the design's smooth body and legs:
+  tubes with a fitting at the hip, the knee and the foot, a spine in the
+  body carrying the eight hips, a vertical post under each foot down to
+  the ground, and a ski (a horizontal beam along the base of each wall)
+  joining the four posts of a side, so nothing stands in the alley. The
+  systems are a table in `visualizer/build.js` (PVC Ø 40 mm with
+  adjustable elbows and a black foam cover, aluminium Ø 25 mm with
+  plastic connectors and pool noodles, pine 34 × 34 mm battens with
+  hinges and brackets; the prices are placeholders). "Longest piece to
+  ship" splits any pipe longer than it with a coupler, so every piece
+  fits the parcel; "Frame only" hides the covers and the shell and shows
+  the body's hoops. The Numbers panel then lists the parts (counts,
+  metres, weight, cost, the stock plan, the longest piece) and the cut
+  list (each leg's upper, lower and post lengths, the angle to set at
+  each fitting, the ski and spine pieces). The HUD adds the build's
+  warnings: roots moved to fit the hub's crosses, pieces split to ship,
+  posts that lean across to meet the ski where the wall steps, a fitting
+  asked to bend past its limit. The foot elbow, the post and the ski sit
+  one fitting radius inside the wall line the design puts the foot on, so
+  the fittings touch the wall and nothing is in it; the hub is kept inside
+  the body. The orange balls still drive the pose; the parts follow. The choice travels with the design, so the walk
+  video shows the same construction.
 - Sliders for the abdomen (length, width, height), the head (length in
   front of the abdomen, width, height), the body's position along and
   above the alley, the pitch of the whole spider (body and legs turn

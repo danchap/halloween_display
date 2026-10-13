@@ -3,9 +3,10 @@ import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, bendFactor,
          flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams, legIndex, legOf, legsFromAngles,
          SPREAD_AZIMUTHS, planAngles, legAngles, solveLegFromKnee, solveLegFromFoot } from './spider.js';
 import { wallsFromSite, insideBuilding } from './site.js';
-import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildExtras, setRoofsVisible,
+import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildBuildMeshes, rebuildExtras, setRoofsVisible,
          setPlantsVisible, showGuide, hideGuide } from './scene.js';
 import { buildPath, cameraAt } from './walk.js';
+import { SYSTEMS, MAX_PIECES, systemById, buildParts } from './build.js';
 
 // Hosted on claude.ai the page cannot use the URL hash or start downloads;
 // the design is then remembered in the browser instead.
@@ -46,6 +47,9 @@ const state = {
   plans: null,        // the plan angle wanted for each leg (degrees, + toward the head), kept across capped poses; null: as posed
   showJoints: true,
   plants: true,
+  system: 'pvc40',    // the part system shown (build.js SYSTEMS id), '' for the design alone
+  maxPiece: 1.2,      // the longest piece that can be shipped, metres; longer pipes are split with couplers
+  frameOnly: false,   // hide the covers and the shell so the frame shows
 };
 const SAVED_KEYS = Object.keys(state);
 // Which panels show. Not remembered: the numbers start hidden every visit.
@@ -65,6 +69,10 @@ function applySaved(s) {
   if (!s || typeof s !== 'object' || !s.params) return false;
   for (const k of SAVED_KEYS) if (k in s) state[k] = s[k];
   state.params = normalizeParams(s.params);
+  // The construction keys from a hash or an old save may be the wrong type.
+  state.system = typeof state.system === 'string' ? state.system : 'pvc40';
+  state.maxPiece = Number.isFinite(+state.maxPiece) && +state.maxPiece > 0 ? +state.maxPiece : 1.2;
+  state.frameOnly = !!state.frameOnly;
   return true;
 }
 function readState() {
@@ -98,7 +106,8 @@ function writeDesigns(d) {
   try { localStorage.setItem(DESIGNS_KEY, JSON.stringify(d)); return true; } catch (e) { alert('This browser would not store the design.'); return false; }
 }
 function designSnapshot() {
-  return { params: clone(state.params), briefL: state.briefL, backBend: state.backBend, hip: state.hip, plans: state.plans };
+  return { params: clone(state.params), briefL: state.briefL, backBend: state.backBend, hip: state.hip, plans: state.plans,
+    system: state.system, maxPiece: state.maxPiece, frameOnly: state.frameOnly };
 }
 // What was last loaded or saved, to warn before it is replaced unsaved.
 let loadedSnapshot = '';
@@ -129,6 +138,9 @@ function loadDesign(name) {
     state.backBend = d.backBend ?? state.backBend;
     state.hip = d.hip ?? state.hip;
     state.plans = d.plans ?? null;
+    if (typeof d.system === 'string') state.system = d.system;
+    if (Number.isFinite(d.maxPiece)) state.maxPiece = d.maxPiece;
+    if (typeof d.frameOnly === 'boolean') state.frameOnly = d.frameOnly;
     state.design = name;
     refreshControls();
     onChange();
@@ -176,6 +188,7 @@ const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 500);
 let site = null;
 let walls = flatWalls(3.0); // the real buildings once the site is loaded; flat 3 m walls only if it is not
 let model = null;
+let parts = null; // the real parts of the chosen system (buildParts output), null for the design alone
 
 // ---------------------------------------------------------------- camera: orbit
 
@@ -347,7 +360,8 @@ function updateHud() {
   const hud = document.getElementById('hud');
   if (!model) return;
   const s = model.stats;
-  let text = `L ${fmt(s.bodyLength)} m · legs ${s.pairs.map(q => fmt(q.total, 2)).join(' / ')} m · bends ${s.pairs.map(q => fmt(q.bend, 0)).join(' / ')}°` + s.warnings.map(w => ' · ' + w).join('') + poseNote;
+  const warnings = [...s.warnings, ...(parts ? parts.warnings : [])];
+  let text = `L ${fmt(s.bodyLength)} m · legs ${s.pairs.map(q => fmt(q.total, 2)).join(' / ')} m · bends ${s.pairs.map(q => fmt(q.bend, 0)).join(' / ')}°` + warnings.map(w => ' · ' + w).join('') + poseNote;
   const locked = document.pointerLockElement === renderer.domElement;
   if (mode === 'walk') text = (walker.fly ? 'Flying (Space up, X down): ' : 'Walking: ') + 'W A S D or arrows, Shift to hurry, ' + (locked ? 'move the mouse to look, Esc frees it' : 'drag the view to look (a click captures the mouse where the browser allows it)') + ', F to fly · ' + text;
   if (mode === 'path') text = `The path: ${pathT.toFixed(1)} s of ${path.duration.toFixed(0)} s · any move key takes over on foot · ` + text;
@@ -668,7 +682,12 @@ function rebuildSpider() {
     }
     model = buildSpider(p, walls);
   }
-  rebuildSpiderMeshes(world, model, p, { showJoints: state.showJoints });
+  // The construction: the real parts replace the design's body and legs in
+  // the view; the orange balls still drive the pose.
+  const system = systemById(state.system);
+  parts = system ? buildParts(model, p, walls, { system, maxPiece: state.maxPiece }) : null;
+  rebuildSpiderMeshes(world, model, p, { showJoints: state.showJoints, showSpider: !parts });
+  rebuildBuildMeshes(world, parts, system, { frameOnly: state.frameOnly });
   rebuildExtras(world, p, { showPerson: false, wallMode: site ? 'site' : 'flat', flatWidth: 3.0 });
   updateStats();
   updateHud();
@@ -730,7 +749,56 @@ function updateStats() {
     h += row('Alley length', fmt(site.alley.length, 1) + ' m, runs south from the street');
     h += '</table><div class="muted" style="margin-top:4px">The site is measured, not adjustable here.</div>';
   }
+
+  if (parts) h += partsTables(parts);
   document.getElementById('stats').innerHTML = h;
+}
+
+// The Parts and Cut list tables for the Numbers panel.
+function partsTables(parts) {
+  const b = parts.bom, sys = systemById(parts.system);
+  const esc = t => String(t).replace(/</g, '&lt;');
+  const stockName = sys.member.shape === 'square' ? 'Batten' : 'Tube';
+  let h = `<h2>Parts</h2><div class="muted">${esc(sys.name)}; pieces up to ${fmt(parts.maxPiece, 2)} m.</div><table class="parts"><tr><th>Item</th><th>Count / m</th><th>kg</th><th>€</th></tr>`;
+  // The stock to buy, then the pipe in the spider by role (the pieces as
+  // cut, between fittings), then the offcuts.
+  for (const r of b.stock.lengths) if (r.count) h += `<tr><td>${stockName} ${fmt(r.length, 1)} m, to buy</td><td>${r.count}</td><td>${fmt(r.count * r.length * sys.member.kgPerM, 1)}</td><td>${fmt(r.count * r.length * sys.prices.memberPerM, 0)}</td></tr>`;
+  for (const m of b.members) h += `<tr><td class="muted">&nbsp;&nbsp;${m.role}, ${m.pieces} piece${m.pieces > 1 ? 's' : ''} cut</td><td class="muted">${fmt(m.metres, 2)} m</td><td class="muted">${fmt(m.metres * sys.member.kgPerM, 1)}</td><td></td></tr>`;
+  h += `<tr><td class="muted">&nbsp;&nbsp;offcuts, not in the total</td><td class="muted">${fmt(b.stock.waste, 2)} m</td><td class="muted">${fmt(b.weight.offcuts, 1)}</td><td></td></tr>`;
+  for (const f of b.fittings) h += `<tr><td>${esc(f.name)}</td><td>${f.count}</td><td>${fmt(f.kg, 1)}</td><td>${fmt(f.cost, 0)}</td></tr>`;
+  if (b.cover) h += `<tr><td>Cover</td><td>${fmt(b.cover.metres, 1)} m</td><td>${fmt(b.cover.kg, 1)}</td><td>${fmt(b.cover.cost, 0)}</td></tr>`;
+  if (b.hoops) h += `<tr><td>Hoops</td><td>${b.hoops}</td><td>${fmt(b.hoops * (sys.body.hoopKg || 0), 1)}</td><td>${fmt(b.hoops * sys.prices.hoop, 0)}</td></tr>`;
+  h += `<tr><td>Fabric</td><td>1</td><td>${fmt(sys.body.fabricKg || 0, 1)}</td><td>${fmt(sys.prices.fabric, 0)}</td></tr>`;
+  if (parts.hub.plank) h += `<tr><td>Plank ${fmt(parts.hub.plank.length, 2)} m</td><td>1</td><td>${fmt(sys.hub.kg || 0, 1)}</td><td>${fmt(sys.hub.price || 0, 0)}</td></tr>`;
+  h += `<tr><td>Screws</td><td>${b.screws}</td><td></td><td></td></tr>`;
+  h += `<tr><td>Sandbags</td><td>${b.sandbags}</td><td></td><td></td></tr>`;
+  h += `<tr><td><b>Total</b></td><td></td><td><b>${fmt(b.weight.total, 1)}</b></td><td><b>${fmt(b.cost.total, 0)}</b></td></tr>`;
+  h += '</table><div class="muted" style="margin-top:4px">The total weight is the spider\'s (the pieces, not the stock); the cost is the stock bought.</div>';
+  const splitNote = b.unsplitOver.length ? `; ${b.unsplitOver.length} member${b.unsplitOver.length > 1 ? 's' : ''} split at ${fmt(b.splitAt, 2)} m${b.splitByStock ? ', the longest stock length' : ' to ship'}` : '';
+  h += `<div class="muted" style="margin-top:4px">Stock: ${b.stock.lengths.filter(r => r.count).map(r => `${r.count} × ${fmt(r.length, 1)} m`).join(', ')}, ${fmt(b.stock.waste, 2)} m offcuts. Longest piece ${fmt(b.longestPiece, 3)} m${splitNote}. Prices are placeholders.</div>`;
+
+  // Cut list: lengths in one table, the fitting angles in another, so each
+  // fits the panel's width; a split cut shows its pieces under the length.
+  const cutOf = (role, leg) => parts.cuts.find(c => c.role === role && c.leg === leg);
+  const cell = c => c.pieces.length > 1 ? `${fmt(c.length, 3)}<br><span class="muted">${c.pieces.length} × ${fmt(c.pieces[0], 3)}</span>` : fmt(c.length, 3);
+  h += '<h2>Cut list</h2><table class="cuts"><tr><th>Leg</th><th>Upper</th><th>Lower</th><th>Post</th></tr>';
+  for (const a of parts.legsAssembly) h += `<tr><td>${a.pair + 1}${a.side}</td><td>${cell(cutOf('upper', a.leg))}</td><td>${cell(cutOf('lower', a.leg))}</td><td>${cell(cutOf('post', a.leg))}</td></tr>`;
+  h += '</table><div class="muted" style="margin-top:4px">Lengths are the pipe between fittings, in m; a split cut gives its pieces.</div>';
+  h += '<table class="cuts"><tr><th>Leg</th><th>Hip</th><th>Knee</th><th>Foot</th></tr>';
+  for (const a of parts.legsAssembly) h += `<tr><td>${a.pair + 1}${a.side}</td><td>${fmt(a.hip.angle, 0)}° / ${fmt(a.hip.roll, 0)}°</td><td>${fmt(a.knee.bend, 0)}°</td><td>${fmt(a.foot.bend, 0)}° / ${fmt(a.foot.plan, 0)}°</td></tr>`;
+  h += '</table><div class="muted" style="margin-top:4px">Hip: the elbow\'s angle from straight across, and its turn about the stub (0 toward the head, 90 straight up). Knee: the bend off straight. Foot: the elbow\'s bend from the post, and the plan angle the post is turned to (from straight across, + toward the head).</div>';
+  const stubs = parts.cuts.filter(c => c.role === 'stub');
+  if (stubs.length) h += `<div class="muted">Hub stubs: ${stubs.length} × ${fmt(stubs[0].length, 3)} m.</div>`;
+  const run = c => c.pieces.length > 1 ? `${fmt(c.length, 3)} (${c.pieces.length} × ${fmt(c.pieces[0], 3)})` : fmt(c.length, 3);
+  h += '<table class="cuts"><tr><th>Ski / spine</th><th>Pieces</th></tr>';
+  for (const side of ['R', 'L']) {
+    const rows = parts.cuts.filter(c => c.role === 'ski' && c.side === side);
+    h += `<tr><td>Ski ${side === 'R' ? 'right' : 'left'}</td><td class="wrap">${rows.map(run).join(', ')}</td></tr>`;
+  }
+  const spine = parts.cuts.filter(c => c.role === 'spine');
+  if (spine.length) h += `<tr><td>Spine</td><td class="wrap">${spine.map(run).join(', ')}</td></tr>`;
+  h += '</table>';
+  return h;
 }
 
 // ---------------------------------------------------------------- UI
@@ -774,7 +842,10 @@ function refreshControls() {
   bend.max = bendN.max = bendLimit();
   bend.disabled = bendN.disabled = hip.disabled = hipN.disabled = state.bendLocked;
   document.getElementById('bendLock').checked = state.bendLocked;
-  for (const key of ['showJoints', 'plants', 'keepSplit']) document.getElementById(key).checked = state[key];
+  for (const key of ['showJoints', 'plants', 'keepSplit', 'frameOnly']) document.getElementById(key).checked = state[key];
+  document.getElementById('system').value = systemById(state.system) ? state.system : '';
+  if (document.getElementById('system').value !== state.system) state.system = document.getElementById('system').value;
+  document.getElementById('maxPiece').value = String(state.maxPiece);
 }
 function showHelp(on) {
   document.getElementById('help').hidden = !on;
@@ -934,6 +1005,14 @@ function wireUI() {
     state.keepSplit = e.target.checked;
     if (state.keepSplit) keepSplitAll(); else writeState();
   });
+  // Construction: the part system, the longest piece to ship, the frame alone.
+  const systemEl = document.getElementById('system');
+  systemEl.innerHTML = '<option value="">Design only (no parts)</option>' + SYSTEMS.map(sy => `<option value="${sy.id}">${sy.name.replace(/</g, '&lt;')}</option>`).join('');
+  systemEl.addEventListener('change', e => { state.system = e.target.value; onChange(); });
+  const maxPieceEl = document.getElementById('maxPiece');
+  maxPieceEl.innerHTML = MAX_PIECES.map(v => `<option value="${v}">${v.toFixed(1)} m</option>`).join('');
+  maxPieceEl.addEventListener('change', e => { state.maxPiece = parseFloat(e.target.value); onChange(); });
+  document.getElementById('frameOnly').addEventListener('change', e => { state.frameOnly = e.target.checked; onChange(); });
   document.getElementById('savePng').addEventListener('click', () => {
     render();
     const a = document.createElement('a');
@@ -1016,7 +1095,7 @@ async function main() {
   const view = new URLSearchParams(location.search).get('view');
   if (view === 'walk') { orbit.update(); setMode('walk'); }
   else (VIEWS[view] || VIEWS.Street)();
-  window.spider = { state, panes, get model() { return model; }, VIEWS, rebuildSpider, render, walker, setMode, startPath, stepWalker, get mode() { return mode; },
+  window.spider = { state, panes, get model() { return model; }, get parts() { return parts; }, VIEWS, rebuildSpider, render, walker, setMode, startPath, stepWalker, get mode() { return mode; },
     pickJoint, startJointDrag, moveJoint, endJointDrag, get jointDrag() { return jointDrag; }, loadDesign, saveDesignAs, applyAngles, spreadLegs, showHelp, camera, world };
 }
 main();

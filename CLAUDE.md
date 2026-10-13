@@ -27,6 +27,16 @@ test run before the night.
   walk URL as its first tab (`?record=1&upload=<name>`); a tab opened
   through the debugging port is throttled and never finishes. The page
   posts progress to the server's stdout via /log. feta has no ffmpeg.
+- `build.js` is the construction: a table of part systems (SYSTEMS; add a
+  system by adding an entry) and buildParts, which turns a spider model
+  into members, fittings, posts and skis with the cut list, the fitting
+  angles, the bill of materials and warnings (the foot fittings, posts and
+  skis sit one fitting radius inside the wall line; each ski runs straight
+  at its side's innermost foot and the other posts lean to it; the hub is
+  slid back to stay inside the body). scene.js draws them
+  (rebuildBuildMeshes); the Construction section of the design page (part
+  system, longest piece to ship, frame only) is state carried in the hash,
+  so walk.html shows the same build.
 - `sun.js` puts the sun at noon CET on 2026-10-31 over the alley (Daniel's
   choice, 2026-10-05); change HALLOWEEN_NOON there for another moment.
 - `textures.js` draws the village materials on canvases from colours in

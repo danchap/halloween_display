@@ -35,8 +35,10 @@ export function createWorld() {
   alleyGroup.add(extrasGroup);
   const guideGroup = new THREE.Group(); // drag guides: the gravity line, the level plane, the wall square
   alleyGroup.add(guideGroup);
+  const buildGroup = new THREE.Group(); // the real parts of a construction system (build.js)
+  alleyGroup.add(buildGroup);
 
-  return { scene, sun, hemi, alleyGroup, spiderGroup, extrasGroup, guideGroup, joints: [], jointMarkers: [], site: null, siteGroup: null };
+  return { scene, sun, hemi, alleyGroup, spiderGroup, extrasGroup, guideGroup, buildGroup, joints: [], jointMarkers: [], site: null, siteGroup: null };
 }
 
 // Load the site into the world. Resolves with the site, or null when the
@@ -108,22 +110,50 @@ const guideLine = new THREE.LineBasicMaterial({ color: 0xe8822a });
 
 const unitCyl = new THREE.CylinderGeometry(1, 1, 1, 24, 1);
 unitCyl.translate(0, 0.5, 0); // spans y in [0, 1]
+const unitBox = new THREE.BoxGeometry(1, 1, 1);
+unitBox.translate(0, 0.5, 0); // spans y in [0, 1]
 const unitSphere = new THREE.SphereGeometry(1, 20, 14);
 const bodyGeos = {
   cylinder: (() => { const g = new THREE.CylinderGeometry(1, 1, 1, 40, 1); g.rotateZ(-Math.PI / 2); return g; })(),
   ellipsoid: new THREE.SphereGeometry(1, 40, 24),
 };
-const shared = new Set([unitCyl, unitSphere, ...Object.values(bodyGeos)]);
+const shared = new Set([unitCyl, unitBox, unitSphere, ...Object.values(bodyGeos)]);
 
-function segmentMesh(a, b, diameter, mat) {
+function segmentMesh(a, b, diameter, mat, geometry = unitCyl) {
   const from = new THREE.Vector3(...a), to = new THREE.Vector3(...b);
   const dir = to.clone().sub(from);
   const len = dir.length();
   if (len < 1e-4) return new THREE.Group(); // a folded leg can have a zero-length segment
-  const m = new THREE.Mesh(unitCyl, mat);
+  const m = new THREE.Mesh(geometry, mat);
   m.position.copy(from);
-  m.scale.set(diameter / 2, len, diameter / 2);
+  // A box is scaled by its full width, a cylinder by its radius.
+  const k = geometry === unitBox ? diameter : diameter / 2;
+  m.scale.set(k, len, k);
   m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+  m.castShadow = true;
+  return m;
+}
+// The body segment as a capsule, ellipsoid or cylinder, as the design page draws it.
+function bodyMesh(seg, bodyShape, mat) {
+  const len = seg.length;
+  let m;
+  if (bodyShape === 'capsule') {
+    // Round caps: the straight part is stretched in the geometry, the
+    // cross-section by the mesh scale.
+    const r = Math.max(seg.width, seg.height) / 2;
+    const straight = Math.max(0.01, len - 2 * r);
+    const g = new THREE.CapsuleGeometry(1, straight / r, 8, 32); g.rotateZ(-Math.PI / 2);
+    m = new THREE.Mesh(g, mat);
+    m.scale.set(r, seg.height / 2, seg.width / 2);
+  } else if (bodyShape === 'ellipsoid') {
+    m = new THREE.Mesh(bodyGeos.ellipsoid, mat);
+    m.scale.set(len / 2, seg.height / 2, seg.width / 2);
+  } else {
+    m = new THREE.Mesh(bodyGeos.cylinder, mat);
+    m.scale.set(len, seg.height / 2, seg.width / 2);
+  }
+  m.position.set(...seg.center);
+  m.rotation.z = seg.rotZ;
   m.castShadow = true;
   return m;
 }
@@ -142,34 +172,14 @@ function clearGroup(group) {
 }
 
 // Rebuild the spider meshes from a geometry model (buildSpider output).
-export function rebuildSpiderMeshes(world, model, params, { silhouette = false, showJoints = true } = {}) {
+// With showSpider false only the joint markers are drawn: the build meshes
+// (rebuildBuildMeshes) then show the body and legs as real parts.
+export function rebuildSpiderMeshes(world, model, params, { silhouette = false, showJoints = true, showSpider = true } = {}) {
   const p = params;
   clearGroup(world.spiderGroup);
   const mat = silhouette ? spiderFlat : spiderLit;
 
-  for (const seg of [model.abdomen, model.head]) {
-    const len = seg.length;
-    let m;
-    if (p.bodyShape === 'capsule') {
-      // Round caps: the straight part is stretched in the geometry, the
-      // cross-section by the mesh scale.
-      const r = Math.max(seg.width, seg.height) / 2;
-      const straight = Math.max(0.01, len - 2 * r);
-      const g = new THREE.CapsuleGeometry(1, straight / r, 8, 32); g.rotateZ(-Math.PI / 2);
-      m = new THREE.Mesh(g, mat);
-      m.scale.set(r, seg.height / 2, seg.width / 2);
-    } else if (p.bodyShape === 'ellipsoid') {
-      m = new THREE.Mesh(bodyGeos.ellipsoid, mat);
-      m.scale.set(len / 2, seg.height / 2, seg.width / 2);
-    } else {
-      m = new THREE.Mesh(bodyGeos.cylinder, mat);
-      m.scale.set(len, seg.height / 2, seg.width / 2);
-    }
-    m.position.set(...seg.center);
-    m.rotation.z = seg.rotZ;
-    m.castShadow = true;
-    world.spiderGroup.add(m);
-  }
+  if (showSpider) for (const seg of [model.abdomen, model.head]) world.spiderGroup.add(bodyMesh(seg, p.bodyShape, mat));
 
   // Joint markers double as drag handles. The visible ball is picked
   // first, so a click on a ball always takes that joint; around each ball
@@ -191,13 +201,97 @@ export function rebuildSpiderMeshes(world, model, params, { silhouette = false, 
     const legMat = bad && !silhouette ? badMat : mat;
     // Start the upper segment a little inside the head so the joint is hidden.
     const inset = [leg.root[0], leg.root[1], leg.root[2] - Math.sign(leg.root[2] - model.head.center[2]) * Math.min(0.05, model.head.width / 4)];
-    world.spiderGroup.add(segmentMesh(inset, leg.knee, p.upperDiameter, legMat));
-    world.spiderGroup.add(segmentMesh(leg.knee, leg.foot, p.lowerDiameter, legMat));
-    world.spiderGroup.add(sphereMesh(leg.knee, Math.max(p.upperDiameter, p.lowerDiameter), legMat));
+    if (showSpider) {
+      world.spiderGroup.add(segmentMesh(inset, leg.knee, p.upperDiameter, legMat));
+      world.spiderGroup.add(segmentMesh(leg.knee, leg.foot, p.lowerDiameter, legMat));
+      world.spiderGroup.add(sphereMesh(leg.knee, Math.max(p.upperDiameter, p.lowerDiameter), legMat));
+    }
     if (showJoints && !silhouette) {
       handle(leg.knee, Math.max(0.08, p.upperDiameter * 1.6), bad ? badMat : jointMat, 'knee', leg);
       handle(leg.foot, Math.max(0.08, p.lowerDiameter * 1.6), bad ? badMat : jointMat, 'foot', leg);
     }
+  }
+}
+
+// ---------------------------------------------------------------- build meshes
+
+// Materials for the real parts, by colour and finish: matte for PVC and
+// paint, metal for aluminium, and the spider's own charcoal sheen for the
+// covers and the shell.
+const buildMats = new Map();
+function buildMat(color, finish) {
+  const key = `${color}|${finish}`;
+  if (!buildMats.has(key)) {
+    const look = { matte: { roughness: 0.7, metalness: 0.0 }, paint: { roughness: 0.75, metalness: 0.0 },
+      metal: { roughness: 0.3, metalness: 0.85 }, sheen: { roughness: 0.45, metalness: 0.12 } }[finish] || { roughness: 0.7, metalness: 0 };
+    buildMats.set(key, new THREE.MeshStandardMaterial({ color: new THREE.Color(color), ...look }));
+  }
+  return buildMats.get(key);
+}
+
+// Draw the parts of a construction system (buildParts output): members as
+// cylinders or boxes between their endpoints, fittings as short thicker
+// cylinders along each socket direction from the joint centre (a hinge as
+// a small plate), couplers where a member is split, the hub, posts and
+// skis, and unless frameOnly the covers and the body shell; with frameOnly
+// the hoops show as rings instead of the shell.
+export function rebuildBuildMeshes(world, parts, system, { frameOnly = false } = {}) {
+  clearGroup(world.buildGroup);
+  if (!parts || !system) return;
+  const g = world.buildGroup;
+  const square = parts.members.some(m => m.shape === 'square');
+  for (const m of parts.members) {
+    if (m.role === 'cover') { if (!frameOnly) g.add(segmentMesh(m.a, m.b, m.od, buildMat(m.color, m.finish))); continue; }
+    const box = m.shape === 'square';
+    g.add(segmentMesh(m.a, m.b, box ? m.size : m.od, buildMat(m.color, m.finish), box ? unitBox : unitCyl));
+  }
+  for (const f of parts.fittings) {
+    const mat = buildMat(f.color, f.finish);
+    if (f.kind === 'hinge') {
+      // A plate across the joint, its long side along the first member.
+      const plate = new THREE.Mesh(unitBox, mat);
+      plate.position.set(...f.at);
+      plate.scale.set(f.od, f.centreToEnd * 2, 0.004);
+      const dir = new THREE.Vector3(...f.dirs[0]).normalize();
+      plate.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      plate.position.sub(dir.clone().multiplyScalar(f.centreToEnd)); // centred on the joint along the first member
+      plate.castShadow = true;
+      g.add(plate);
+      continue;
+    }
+    if (f.role !== 'cap' && f.role !== 'coupler') g.add(sphereMesh(f.at, f.od, mat)); // the corner body of an elbow, tee or cross; a cap or a coupler is its socket cylinder alone
+    for (const d of f.dirs) {
+      const end = [f.at[0] + d[0] * f.centreToEnd, f.at[1] + d[1] * f.centreToEnd, f.at[2] + d[2] * f.centreToEnd];
+      if (f.role === 'coupler') {
+        const from = [f.at[0] - d[0] * f.centreToEnd, f.at[1] - d[1] * f.centreToEnd, f.at[2] - d[2] * f.centreToEnd];
+        g.add(segmentMesh(from, end, f.od, mat, square ? unitBox : unitCyl));
+      } else {
+        g.add(segmentMesh(f.at, end, f.od, mat, square ? unitBox : unitCyl));
+      }
+    }
+  }
+  if (parts.hub.plank) {
+    const pl = parts.hub.plank;
+    const box = new THREE.Mesh(new THREE.BoxGeometry(pl.length, pl.thickness, pl.width), buildMat(pl.color, pl.finish));
+    box.position.set(...pl.centre);
+    box.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), new THREE.Vector3(...pl.axis).normalize());
+    box.castShadow = true;
+    g.add(box);
+  }
+  const bodyMat = buildMat(parts.body.color, parts.body.finish);
+  if (frameOnly) {
+    for (const h of parts.body.hoops) {
+      // A ring of the hoop's width, squashed to its height; the tube is
+      // the hoop pipe's radius.
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(h.width / 2, parts.body.hoopOd / 2, 10, 40), bodyMat);
+      ring.scale.set(1, h.height / Math.max(1e-6, h.width), 1);
+      ring.position.set(...h.centre);
+      ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(...h.axis).normalize());
+      ring.castShadow = true;
+      g.add(ring);
+    }
+  } else {
+    for (const seg of parts.body.shell) g.add(bodyMesh(seg, 'capsule', bodyMat));
   }
 }
 
