@@ -24,9 +24,9 @@ the first cut.
 
 ## What the 13 October answers changed
 
-- Nothing travels in the car: every part is delivered to Les Portes-en-
-  Ré, where the neighbours receive parcels. So the pipe comes to the
-  door as 2 m bars from Amazon.fr or as 4 m bars from a plumbing
+- Nothing travels in the car: every part is delivered to Les
+  Portes-en-Ré, where the neighbours receive parcels. So the pipe comes
+  to the door as 2 m bars from Amazon.fr or as 4 m bars from a plumbing
   merchant (part B), the fittings and the body kit come from Amazon.fr
   to the same address (part A), and nothing is built in Paris that
   would then have to be shipped. The page's "Longest piece delivered"
