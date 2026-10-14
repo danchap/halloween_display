@@ -219,8 +219,19 @@ Daniel's choices of 14 October (evening): the legs, the posts and the
 skis in aluminium Ø 40 × 1.5 mm tube, every piece ordered cut to its
 length from Comment Fer, in the same Ø 40 PVC fittings; the hub (four
 crosses, the spine and the stubs) stays PVC and glued, cut from one
-1 m pipe with the ratchet cutter; nothing else is cut. Everything is
-delivered to the neighbours' address at Les Portes-en-Ré. The page's
+1 m pipe with the ratchet cutter; nothing else is cut. Two addresses
+(Daniel, 14 October, late): the legs and the body are built in Paris,
+so the leg tubes, every elbow and coupler, the hub parts, the foam
+sleeves, the fixings and the tools go to the flat; the posts, the skis,
+their tees and end caps, and the body dressing (noodles, fabric, bin
+bags, eyes) go straight to the neighbours' address at Les Portes-en-Ré.
+Built in Paris: the hub glued; each upper tube with its hip set and
+coupler; each lower tube with its foot set and coupler, and its knee
+set bolted on; the sleeves slid on first. The longest built piece is
+about 1.4 m, so three Chronopost boxes carry the lot (see "Shipping
+from Paris"); the upper tube meets its knee set on site, with two bolts.
+Comment Fer is then two orders, each over the 180 € for free delivery,
+and Amazon two baskets. The page's
 "Aluminium Ø 40 × 1.5 tube cut to length" system (Construction section)
 gives the list for any pose; the quantities below are for the default
 design (his v1) with 4.0 m as the longest piece, so each post is one
@@ -279,7 +290,8 @@ quantities is in the session's notes; the plan keeps the list.
 | Pipe cutter to 42 mm, Rothenberger (trimming aluminium, if ever) | 1 | https://www.amazon.fr/dp/B003S5PIII | 14.49 |
 | Eye kits, googly or lit (part A of the 13 October list, unchanged) | optional | see the 13 October tables in the repo history | about 95 for both |
 
-About 380 € without the eyes.
+About 380 € without the eyes: 260 € to Paris (fittings, fixings,
+cutters) and 120 € to the island (noodles, fabric, bin bags).
 
 ### C. Castorama online, home delivery
 
@@ -292,13 +304,15 @@ About 380 € without the eyes.
 | M5 × 50 bolts with nuts and washers (62 needed: the knees and the hub) | 2 boxes of 50, or 64 loose | about 20 |
 | Drill bits HSS 3 mm and 5.5 mm | 1 each | about 8 |
 
-About 65 € with the 4.90 delivery.
+About 65 € with the 4.90 delivery; the tees go to the island, the rest
+to Paris.
 
 ### D. plomberie.fr
 
 Black foam sleeve for 42 mm pipe, 13 mm wall, 2 m, NMC: 9 (16 m of
 legs). https://plomberie.fr/products/manchon-isolant-mousse-simple-ep-13mm-nmc-pour-tube-o42mm-l-2m
-4.48 each, 15.90 bulky-parcel delivery, 2 to 3 days: about 56 €.
+4.48 each, 15.90 bulky-parcel delivery, 2 to 3 days: about 56 €, to
+Paris.
 
 ### E. Tools from the house
 
