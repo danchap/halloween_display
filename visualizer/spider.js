@@ -120,6 +120,9 @@ export function rootAlongOffset(p, pairIndex) {
 // is the body's own up, `across` is toward +z. Pitch tilts the whole spider
 // about the body centre, head end up for a positive angle, whichever way
 // it faces; the across coordinate is untouched, so a foot stays on its wall.
+// The body's up in the alley frame: the pitch tilts it toward the head.
+export function bodyUp(frame) { const o = frame.toAlley(0, 0, 0), u = frame.toAlley(0, 1, 0); return [u[0] - o[0], u[1] - o[1], u[2] - o[2]]; }
+
 export function bodyFrame(p) {
   const f = p.facing >= 0 ? 1 : -1;
   const t = (p.pitch || 0) * DEG;
@@ -140,13 +143,17 @@ export function bodyFrame(p) {
 // root and foot: in the vertical plane through both, lifted upward. When
 // the foot is too close for that upper segment, the leg folds flat on the
 // root-foot line so the problem is visible.
-export function placeKnee(root, foot, a, bendDeg, f = 1) {
+// `up` is the direction the knee is lifted in (the body's own up, so that
+// a pitched spider's knees stand square to its slope and sit halfway
+// between root and foot when seen along that slope; Daniel, 2026-10-14);
+// the world's up by default.
+export function placeKnee(root, foot, a, bendDeg, f = 1, up = [0, 1, 0]) {
   const rf = sub(foot, root);
   const d = norm(rf);
   const u = unit(rf);
   const b = lowerSegmentFor(a, d, bendDeg);
   if (b === null) return { knee: add(root, scale(u, a)), b: Math.abs(a - d), folded: true };
-  let n = sub([0, 1, 0], scale(u, u[1]));
+  let n = sub(up, scale(u, dot(up, u)));
   n = norm(n) > 1e-9 ? unit(n) : [f, 0, 0];
   const cosBeta = (a * a + d * d - b * b) / (2 * a * d);
   const beta = Math.acos(Math.max(-1, Math.min(1, cosBeta)));
@@ -232,7 +239,7 @@ export function briefPreset(L, options = {}) {
     const dx = dx2 > 0 ? Math.sqrt(dx2) : 0;
     const footAlong = rootAlong + forward * dx;
     const foot = [p.along + frame.f * footAlong, height, o.wallDistance];
-    const { knee } = placeKnee(root, foot, a, bend, frame.f);
+    const { knee } = placeKnee(root, foot, a, bend, frame.f, bodyUp(frame));
     const leg = { footAlong: round(footAlong), footHeight: round(height), ...kneeParamsAt(p, 1, knee) };
     p.legs.push(leg, { ...leg });
   }
@@ -316,7 +323,7 @@ export function spreadLegsAt(p, { azimuths = SPREAD_AZIMUTHS, footHeights, backB
       const foot = [footX, height, wallZ];
       const d = Math.sqrt(h * h + dy * dy);
       const total = Math.min(cap, d / unitD);
-      const { knee } = placeKnee(root, foot, total * kf, bend, frame.f);
+      const { knee } = placeKnee(root, foot, total * kf, bend, frame.f, bodyUp(frame));
       legs[j] = { ...footParamsAt(p, foot), ...kneeParamsAt(p, side, knee) };
     }
   }
@@ -327,15 +334,43 @@ export function spreadLegsAt(p, { azimuths = SPREAD_AZIMUTHS, footHeights, backB
 // 45 degrees (head toward the street, climbing up and out), the legs fanned
 // out in plan and the feet at 3.0, 2.6, 2.3 and 2.0 m from the front pair
 // to the back, out of a child's reach (Daniel, 2026-10-13).
+// Feet on a plane pitched like the body (Daniel, 2026-10-14: the spider
+// climbs at 45°, so the front feet stand much higher than the back ones).
+// The plane is parallel to the body's axis, `offset` metres below it; the
+// four pairs are spread evenly over `stance` metres along the slope, front
+// pair highest. Returns the plan azimuth (degrees, + toward the head) and
+// the foot height of each pair, for spreadLegsAt.
+export function planeFeet(p, { stance = 2.6, offset = 0.4, wallDistance = 1.47 } = {}) {
+  const frame = bodyFrame(p);
+  const t = (p.pitch || 0) * DEG;
+  const f = frame.f;
+  const reach = wallDistance - p.headWidth / 2;
+  const azimuths = [], footHeights = [];
+  for (let i = 0; i < 4; i++) {
+    const s = stance * (0.5 - i / 3); // + toward the head
+    const x = p.along + f * (s * Math.cos(t) + offset * Math.sin(t));
+    const y = p.bodyHeight + s * Math.sin(t) - offset * Math.cos(t);
+    const root = frame.toAlley(rootAlongOffset(p, i), 0, 0);
+    azimuths.push(Math.atan2(f * (x - root[0]), reach) / DEG);
+    footHeights.push(y);
+  }
+  return { azimuths, footHeights };
+}
+
 export function spreadPreset(L, options = {}) {
-  const o = { pitch: 45, azimuths: SPREAD_AZIMUTHS, footHeights: [2.6, 2.4, 2.2, 2.0], backBend: 60, bodyHeight: 2.5, along: 6.5, wallDistance: 1.47, walls: null, ...options }; // feet 2.6 m at most: a child hanging on a front stay would buckle a taller post (structural check, 2026-10-13); 2.0 m at least: out of reach
+  const o = { pitch: 45, azimuths: SPREAD_AZIMUTHS, footHeights: [2.6, 2.4, 2.2, 2.0], backBend: 60, bodyHeight: 2.5, along: 6.5, wallDistance: 1.47, walls: null, plane: null, ...options };
   const p = briefPreset(L, { backBend: o.backBend, bodyHeight: o.bodyHeight, along: o.along, wallDistance: o.wallDistance });
   p.pitch = o.pitch;
+  if (o.plane) Object.assign(o, planeFeet(p, { ...o.plane, wallDistance: o.wallDistance })); // feet on the 45° plane: azimuths and heights from it
   p.legs = spreadLegsAt(p, { azimuths: o.azimuths, footHeights: o.footHeights, backBend: o.backBend, bends: o.bends || CLIMB_BEND_FACTORS.map(f => o.backBend * f), wallDistance: o.wallDistance, walls: o.walls }).legs;
   return p;
 }
 
-export const DEFAULTS = Object.freeze(spreadPreset(0.8));
+// The pose the page starts from (Daniel, 2026-10-14): pitched 45°, the feet
+// on a plane pitched 45° with the body, 0.4 m below its axis, spread over
+// 3.0 m along the slope (the legs splayed); the body 2.6 m up, so the
+// back feet are near 1.3 m and the front ones near 3.4 m.
+export const DEFAULTS = Object.freeze(spreadPreset(0.8, { bodyHeight: 2.6, plane: { stance: 3.0, offset: 0.4 } }));
 export const BRIEF_DEFAULTS = Object.freeze(briefPreset(0.8)); // the brief's own pose: staggered feet, level
 
 // Parameters saved by earlier versions of the pages, brought up to date:
@@ -414,7 +449,7 @@ export function buildSpider(params, walls = flatWalls(3.0)) {
       const q = legOf(p, pair, side);
       const { root, foot, status } = legEnds(p, walls, frame, pair, side);
       const knee = q.kneeAlong === undefined
-        ? placeKnee(root, foot, q.upper, q.bend, f).knee // designs saved before knees were points: from bend and upper length
+        ? placeKnee(root, foot, q.upper, q.bend, f, bodyUp(frame)).knee // designs saved before knees were points: from bend and upper length
         : frame.toAlley(q.kneeAlong, q.kneeHeight - p.bodyHeight, side * q.kneeOut);
       const a = norm(sub(knee, root));
       const b = norm(sub(foot, knee));
@@ -501,7 +536,7 @@ export function kneeFromBend(p, walls, pair, upper, bendDeg, side = 1) {
   const full = { ...DEFAULTS, ...p, legs: legsFrom(p) }; // as the spider stands (pitched); the result is stored as the level pose
   const frame = bodyFrame(full);
   const { root, foot } = legEnds(full, walls, frame, pair, side);
-  const { knee } = placeKnee(root, foot, upper, bendDeg, frame.f);
+  const { knee } = placeKnee(root, foot, upper, bendDeg, frame.f, bodyUp(frame));
   return { ...legOf(full, pair, side), ...kneeParamsAt(full, side, knee) };
 }
 
@@ -746,7 +781,7 @@ export function solveLegFromFoot(p, walls, pair, side, { bend: bendDeg = null, m
     if (c > 1) return null; // beyond even a straight leg's reach
     bend = Math.acos(Math.max(-1, c)) / DEG;
   }
-  const { knee } = placeKnee(root, foot, total * kf, bend, frame.f);
+  const { knee } = placeKnee(root, foot, total * kf, bend, frame.f, bodyUp(frame));
   return { ...q, ...kneeParamsAt(level, side, knee) };
 }
 

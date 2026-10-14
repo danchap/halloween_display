@@ -133,6 +133,20 @@ test run before the night.
   The bench on the east wall can be moved. Both eye options are on the
   page (googly, lit); the pose is not final.
 
+- 2026-10-14: the posts are always plumb (no checkbox), there is no
+  bracing at all (BRACING 'none' is the default and the only thing the
+  page builds: the posts and the skis; the stays and the rigid bases
+  stay in build.js for the record, unreachable from the page), the Body
+  slider group starts collapsed, and the default pose is the spider
+  climbing a 45° slope: the feet on a plane pitched with the body
+  (spider.js planeFeet: 0.4 m below the axis, the pairs spread over 3 m
+  along it, body 2.6 m up, so the front feet are near 3.4 m and the back
+  ones near 1.3 m), the legs splayed, and every knee lifted along the
+  body's own up (placeKnee's `up`, bodyUp(frame)), so the knees stand
+  square to the slope and sit halfway between hip and foot when seen
+  along it. The HUD still warns about feet below 2.0 m and posts over
+  3 m; Daniel chose the steepness knowing that.
+
 ## Still open (ask Daniel)
 
 - Absolute size (L), knee bend and leg thickness: the visualizer exists to
@@ -140,9 +154,9 @@ test run before the night.
   (Construction section) and not yet by Daniel (docs/construction.md,
   "Open questions for Daniel").
 - Power, weather, how the spider is hung and how the feet fix to the walls.
-- Whether the cord stays to the skis' ends (the default) or the rigid
-  wood bases hold the posts (docs/construction.md, "The bracing"), and
-  which eyes (googly or lit).
+- Which eyes (googly or lit). Bracing is closed: none, by Daniel's
+  choice of 2026-10-14; the structural numbers in docs/construction.md
+  record what the cords would have added.
 
 ## This machine (feta)
 

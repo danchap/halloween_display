@@ -145,6 +145,9 @@ const BATTEN_45 = { label: '45 × 45', shape: 'square', size: 0.045, kgPerM: 0.9
 const WOOD_WHITE = { color: '#f1f0ea', finish: 'paint' };
 const METAL = { color: '#8a8a8a', finish: 'metal' };
 export const BRACING = {
+  // No bracing (Daniel, 2026-10-14): the posts and the skis only, no cords,
+  // no sandbags, no liners. The default.
+  none: { kind: 'none', label: 'None: posts and skis only' },
   frame: {
     kind: 'frame', label: 'Cord stays to the skis\' ends, bags on the skis',
     anchorBeyond: 1.5, // the ski runs this far past the end posts; the stay's hole is holeIn from the ski's end
@@ -267,7 +270,7 @@ export const SYSTEMS = [
   },
 ];
 export const BRACINGS = Object.values(BRACING).map(b => ({ value: b.kind, label: b.label }));
-export const DEFAULT_BRACING = 'frame';
+export const DEFAULT_BRACING = 'none';
 
 // The longest piece that can be shipped: the parcel services seen on
 // 2026-10-13. The default is 2.0 m, since the plan is to buy the pipe near
@@ -966,7 +969,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
         for (let k = 0; k < base.bagsAtTee; k++) { bag(posts[0].x - BAG_CLEAR - dims[0] * (k + 0.5) - BAG_GAP * k, 'tee'); bag(posts[posts.length - 1].x + BAG_CLEAR + dims[0] * (k + 0.5) + BAG_GAP * k, 'tee'); }
         if (beyond < 2 * BAG_CLEAR + (base.bagsAtEnd + base.bagsAtTee) * (dims[0] + BAG_GAP)) warnings.push(`the ${sideName} ski's extensions are too short for their sandbags`);
       }
-    } else if (dims) {
+    } else if (dims && rigid) {
       // Rigid bases: two sandbags over every ski. A bag cannot lie over a
       // post's brackets or gusset, so each goes on the first free length
       // of ski inside the end posts' bases (just past the end post's

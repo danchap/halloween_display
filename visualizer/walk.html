@@ -61,7 +61,7 @@ if (q.has('bob')) walk.bob = q.get('bob') !== '0';
 // ship, whether the frame alone shows, whether the posts are plumb, the
 // bracing and the eyes.
 let params = { ...DEFAULTS };
-const construction = { system: '', maxPiece: DEFAULT_MAX_PIECE, frameOnly: false, plumbPosts: true, bracing: DEFAULT_BRACING, eyes: DEFAULT_EYES };
+const construction = { system: '', maxPiece: DEFAULT_MAX_PIECE, frameOnly: false, plumbPosts: true, bracing: 'none', eyes: DEFAULT_EYES };
 try {
   const h = location.hash.slice(1);
   if (h) {
@@ -70,8 +70,6 @@ try {
     if (typeof s.system === 'string') construction.system = s.system;
     if (Number.isFinite(s.maxPiece) && s.maxPiece > 0) construction.maxPiece = s.maxPiece; // any positive number: old links carry 1.2
     if (typeof s.frameOnly === 'boolean') construction.frameOnly = s.frameOnly;
-    if (typeof s.plumbPosts === 'boolean') construction.plumbPosts = s.plumbPosts;
-    if (BRACINGS.some(b => b.value === s.bracing)) construction.bracing = s.bracing;
     if (EYE_OPTIONS.some(o => o.value === s.eyes)) construction.eyes = s.eyes;
   }
 } catch (e) { console.warn('bad design in URL', e); }

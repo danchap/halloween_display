@@ -17,7 +17,7 @@ const DESIGNS_KEY = 'alley-spider-designs-v1';  // the named designs saved with 
 // ---------------------------------------------------------------- parameters
 
 const SLIDERS = [
-  { group: 'Body', open: true, items: [
+  { group: 'Body', open: false, items: [
     ['abdomenLength', 'Abdomen length', 0.2, 2.0, 0.005],
     ['abdomenWidth', 'Abdomen width', 0.1, 1.5, 0.005],
     ['abdomenHeight', 'Abdomen height', 0.1, 1.5, 0.005],
@@ -50,8 +50,8 @@ const state = {
   system: 'pvc40',    // the part system shown (build.js SYSTEMS id), '' for the design alone
   maxPiece: DEFAULT_MAX_PIECE, // the longest piece that can be shipped, metres (build.js MAX_PIECES; any positive number from an old link); longer pipes are split with couplers
   frameOnly: false,   // hide the covers and the shell so the frame shows
-  plumbPosts: true,   // the feet of a side sit on one straight line (build.js straightWalls), so every post stands vertical
-  bracing: DEFAULT_BRACING, // how the posts are held along the walls: 'frame' or 'rigid' (build.js BRACING)
+  plumbPosts: true,   // always on (Daniel, 2026-10-14): the feet of a side sit on one straight line (build.js straightWalls), so every post stands vertical
+  bracing: 'none',    // no bracing (Daniel, 2026-10-14): the posts and the skis only
   eyes: DEFAULT_EYES,  // the face: 'googly', 'lit' or 'none' (build.js EYE_OPTIONS, spider.js faceOf)
 };
 const SAVED_KEYS = Object.keys(state);
@@ -76,8 +76,8 @@ function applySaved(s) {
   state.system = typeof state.system === 'string' ? state.system : 'pvc40';
   state.maxPiece = Number.isFinite(+state.maxPiece) && +state.maxPiece > 0 ? +state.maxPiece : DEFAULT_MAX_PIECE;
   state.frameOnly = !!state.frameOnly;
-  state.plumbPosts = !!state.plumbPosts; // absent in an old link: the default above stays
-  state.bracing = BRACINGS.some(b => b.value === state.bracing) ? state.bracing : DEFAULT_BRACING;
+  state.plumbPosts = true; // always (Daniel, 2026-10-14): the feet of a side sit on one straight line
+  state.bracing = 'none'; // no bracing (Daniel, 2026-10-14): posts and skis only
   state.eyes = EYE_OPTIONS.some(o => o.value === state.eyes) ? state.eyes : DEFAULT_EYES;
   return true;
 }
@@ -146,8 +146,6 @@ function loadDesign(name) {
     if (typeof d.system === 'string') state.system = d.system;
     if (Number.isFinite(d.maxPiece) && d.maxPiece > 0) state.maxPiece = d.maxPiece; // as applySaved: buildParts needs a positive length
     if (typeof d.frameOnly === 'boolean') state.frameOnly = d.frameOnly;
-    if (typeof d.plumbPosts === 'boolean') state.plumbPosts = d.plumbPosts; // a design saved before the setting existed keeps the current one
-    if (BRACINGS.some(b => b.value === d.bracing)) state.bracing = d.bracing;
     if (EYE_OPTIONS.some(o => o.value === d.eyes)) state.eyes = d.eyes;
     state.design = name;
     refreshControls();
@@ -948,8 +946,7 @@ function refreshControls() {
   bend.max = bendN.max = bendLimit();
   bend.disabled = bendN.disabled = hip.disabled = hipN.disabled = state.bendLocked;
   document.getElementById('bendLock').checked = state.bendLocked;
-  for (const key of ['showJoints', 'plants', 'keepSplit', 'frameOnly', 'plumbPosts']) document.getElementById(key).checked = state[key];
-  document.getElementById('bracing').value = state.bracing;
+  for (const key of ['showJoints', 'plants', 'keepSplit', 'frameOnly']) document.getElementById(key).checked = state[key];
   document.getElementById('eyes').value = state.eyes;
   document.getElementById('system').value = systemById(state.system) ? state.system : '';
   if (document.getElementById('system').value !== state.system) state.system = document.getElementById('system').value;
@@ -1149,10 +1146,6 @@ function wireUI() {
   setMaxPieceOptions();
   maxPieceEl.addEventListener('change', e => { state.maxPiece = parseFloat(e.target.value); onChange(); });
   document.getElementById('frameOnly').addEventListener('change', e => { state.frameOnly = e.target.checked; onChange(); });
-  document.getElementById('plumbPosts').addEventListener('change', e => { state.plumbPosts = e.target.checked; onChange(); });
-  const bracingEl = document.getElementById('bracing');
-  bracingEl.innerHTML = BRACINGS.map(b => `<option value="${b.value}">${b.label.replace(/</g, '&lt;')}</option>`).join('');
-  bracingEl.addEventListener('change', e => { state.bracing = e.target.value; onChange(); });
   const eyesEl = document.getElementById('eyes');
   eyesEl.innerHTML = EYE_OPTIONS.map(o => `<option value="${o.value}">${o.label.replace(/</g, '&lt;')}</option>`).join('');
   eyesEl.addEventListener('change', e => { state.eyes = e.target.value; onChange(); });
