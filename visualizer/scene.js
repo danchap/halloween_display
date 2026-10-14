@@ -450,9 +450,18 @@ export function rebuildExtras(world, params, { showPerson = true, wallMode = 'si
 // through it, 'wall' a square in the vertical plane along the alley (normal
 // across the alley), nudged `inward` toward the alley when it lies in a
 // wall so it does not fight the wall for the pixels.
-export function showGuide(world, kind, point, { inward = 0 } = {}) {
+export function showGuide(world, kind, point, { inward = 0, axes = null } = {}) {
   hideGuide(world);
   const g = world.guideGroup;
+  if (kind === 'plane' && axes) {
+    // A square of the leg's plane around the knee, spanned by the two axes.
+    const P = new THREE.Vector3(...point), E1 = new THREE.Vector3(...axes[0]).multiplyScalar(0.8), E2 = new THREE.Vector3(...axes[1]).multiplyScalar(0.8);
+    const c = [P.clone().sub(E1).sub(E2), P.clone().add(E1).sub(E2), P.clone().add(E1).add(E2), P.clone().sub(E1).add(E2)];
+    const fill = new THREE.Mesh(new THREE.BufferGeometry().setFromPoints([c[0], c[1], c[2], c[0], c[2], c[3]]), guideFill);
+    const edges = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([c[0], c[1], c[1], c[2], c[2], c[3], c[3], c[0]]), guideLine);
+    g.add(fill, edges);
+    return;
+  }
   if (kind === 'line' || kind === 'across') {
     const ends = kind === 'line'
       ? [new THREE.Vector3(point[0], 0, point[2]), new THREE.Vector3(point[0], Math.max(point[1] + 3, 6), point[2])]

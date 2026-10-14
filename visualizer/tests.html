@@ -7,7 +7,8 @@
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, flatWalls, rootToFootDistance,
          lowerSegmentFor, solveFeetForLength, bendFactor, placeKnee, kneeParamsAt, footParamsAt,
          kneeFromBend, upgradeParams, legIndex, legOf, legsFromAngles, SPREAD_AZIMUTHS, planAngles, legAngles,
-         solveLegFromKnee, solveLegFromFoot, rootAlongOffset, bodyFrame, faceOf, faceTilt, FACE, EYE_CHOICES, spreadLegsAt, CLIMB_BEND_FACTORS } from './spider.js';
+         solveLegFromKnee, solveLegFromFoot, rootAlongOffset, bodyFrame, bodyUp, faceOf, faceTilt, FACE, EYE_CHOICES, spreadLegsAt, CLIMB_BEND_FACTORS,
+         kneeRoll, kneeAtRoll, legLengths, legPlane, solveFootKeepLengths, solveKneeKeepLengths, poseLegsKeepLengths } from './spider.js';
 import { loadSite, wallsFromSite, insideBuilding } from './site.js';
 import { HALLOWEEN_NOON, solarPosition, sunVector } from './sun.js';
 import { SYSTEMS, BRACINGS, systemById, buildParts, stockPlan, recipeFor, recipeText, pairAngle, straightWalls } from './build.js';
@@ -20,6 +21,7 @@ function check(name, cond, detail = '') {
 }
 const near = (a, b, tol = 1e-6) => Math.abs(a - b) <= tol;
 const dist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+const add3 = (p, q) => [p[0] + q[0], p[1] + q[1], p[2] + q[2]];
 const leg = (m, pair, side) => m.legs.find(l => l.pair === pair && l.side === side);
 
 try {
@@ -106,6 +108,45 @@ try {
     check('default pose: the climbing series of bends, front first', bendsOf(dm).every((b, i) => near(b, 60 * [1.07, 0.93, 0.80, 0.67][i], 0.6)) && JSON.stringify(CLIMB_BEND_FACTORS) === '[1.07,0.93,0.8,0.67]', bendsOf(dm).map(b => b.toFixed(1)).join(','));
     check('default pose: the feet on a 45° plane, the front feet 1.5 m or more above the back ones, the front knees highest', (() => { const fr = dm.legs.find(l => l.pair === 0 && l.side > 0), bk = dm.legs.find(l => l.pair === 3 && l.side > 0); const run = Math.abs(fr.foot[0] - bk.foot[0]), rise = fr.foot[1] - bk.foot[1]; return rise > 1.5 && Math.abs(Math.atan2(rise, run) / (Math.PI / 180) - 45) < 3 && [0, 1, 2].every(i => dm.legs.find(l => l.pair === i && l.side > 0).foot[1] > dm.legs.find(l => l.pair === i + 1 && l.side > 0).foot[1]) && fr.knee[1] > bk.knee[1] + 0.3; })(), JSON.stringify(dm.legs.filter(l => l.side > 0).map(l => [l.foot[0], l.foot[1]])));
     check('spread: given bends replace the brief\'s series', (() => { const r = spreadLegsAt({ ...DEFAULTS }, { footHeights: [2.6, 2.4, 2.2, 2.0], bends: [50, 50, 50, 50], walls }); const mm = buildSpider({ ...DEFAULTS, legs: r.legs }, walls); return mm.legs.every(l => near(l.bend, 50, 0.6)); })());
+  }
+  // The keep-lengths rule (2026-10-14): segment lengths and the knee's roll
+  // round the chord are kept through a foot move; a knee move keeps the
+  // lengths and moves the foot along the wall in the leg's plane.
+  {
+    const dm = buildSpider(DEFAULTS, walls);
+    const fr = bodyFrame(DEFAULTS), up = bodyUp(fr);
+    const l0 = dm.legs.find(l => l.pair === 0 && l.side > 0);
+    const { a, b } = legLengths(l0);
+    const roll = kneeRoll(l0.root, l0.knee, l0.foot, up);
+    check('keep lengths: the knee at its own roll comes back where it is', dist(kneeAtRoll(l0.root, l0.foot, a, b, roll, up), l0.knee) < 1e-6, JSON.stringify([roll, kneeAtRoll(l0.root, l0.foot, a, b, roll, up), l0.knee]));
+    check('keep lengths: a foot beyond the straight leg, or too close for the fold, has no knee', kneeAtRoll(l0.root, add3(l0.root, [0, 0, a + b + 0.01]), a, b, roll, up) === null && kneeAtRoll(l0.root, add3(l0.root, [0, 0, Math.abs(a - b) - 0.01]), a, b, roll, up) === null && kneeAtRoll(l0.root, add3(l0.root, [0, 0, a + b - 0.01]), a, b, roll, up) !== null);
+    // The foot pulled 0.4 m toward the body along the wall: the knee folds, lengths and roll kept.
+    const q0 = legOf(DEFAULTS, 0, 1);
+    const pulled = withLeg(DEFAULTS, 0, 1, { footAlong: q0.footAlong - 0.4 });
+    const solved = solveFootKeepLengths(pulled, walls, 0, 1, { a, b, roll });
+    const pm = buildSpider(withLeg(pulled, 0, 1, solved), walls);
+    const lp = pm.legs.find(l => l.pair === 0 && l.side > 0);
+    check('keep lengths: a foot pulled in folds the knee, the lengths and the roll kept', solved && near(legLengths(lp).a, a, 1e-3) && near(legLengths(lp).b, b, 1e-3) && lp.bend > l0.bend + 5 && near(kneeRoll(lp.root, lp.knee, lp.foot, up), roll, 0.5), JSON.stringify([legLengths(lp), lp.bend, l0.bend, kneeRoll(lp.root, lp.knee, lp.foot, up), roll]));
+    const far = withLeg(DEFAULTS, 0, 1, { footAlong: q0.footAlong + 3.0 });
+    check('keep lengths: a foot beyond reach is refused', solveFootKeepLengths(far, walls, 0, 1, { a, b, roll }) === null);
+    // The knee dragged 0.2 m up the leg's plane: lengths kept, the foot slides along the wall in that plane.
+    const pl = legPlane(l0, up);
+    const kneeTarget = add3(l0.knee, [pl.e2[0] * 0.2, pl.e2[1] * 0.2, pl.e2[2] * 0.2]);
+    const moved = withLeg(DEFAULTS, 0, 1, kneeParamsAt(DEFAULTS, 1, kneeTarget));
+    const ks = solveKneeKeepLengths(moved, walls, 0, 1, { a, b, plane: pl.normal });
+    const km = buildSpider(withLeg(moved, 0, 1, ks), walls);
+    const lk = km.legs.find(l => l.pair === 0 && l.side > 0);
+    const inPlane = pt => Math.abs(pl.normal[0] * (pt[0] - l0.root[0]) + pl.normal[1] * (pt[1] - l0.root[1]) + pl.normal[2] * (pt[2] - l0.root[2]));
+    check('keep lengths: a knee moved in the leg\'s plane keeps the lengths, the foot following on the wall in that plane', ks && near(legLengths(lk).a, a, 1e-3) && near(legLengths(lk).b, b, 1e-3) && lk.status === 'ok' && inPlane(lk.knee) < 1e-3 && inPlane(lk.foot) < 1e-3 && near(lk.foot[2], l0.foot[2], 1e-6) && dist(lk.foot, l0.foot) > 0.01, JSON.stringify([legLengths(lk), lk.status, inPlane(lk.knee), inPlane(lk.foot), lk.foot, l0.foot]));
+    check('keep lengths: the plane of a leg holds its three joints', [l0.root, l0.knee, l0.foot].every(pt => inPlane(pt) < 1e-9) && near(Math.hypot(...pl.normal), 1, 1e-9));
+    // The sliders with lengths kept: the bend slides the feet, the hip rolls the knees.
+    const posed = poseLegsKeepLengths(DEFAULTS, walls, { hip: 15, backBend: 60 });
+    const pp = buildSpider({ ...DEFAULTS, legs: posed.legs }, walls);
+    check('keep lengths: posing from the sliders keeps every length and the feet on the walls', pp.legs.every((l, i) => near(legLengths(l).a, legLengths(dm.legs[i]).a, 1e-3) && near(legLengths(l).b, legLengths(dm.legs[i]).b, 1e-3) && l.status === 'ok'), JSON.stringify(pp.legs.map(l => [legLengths(l), l.status])));
+    check('keep lengths: the bends asked for are met (the front pair 30, the back 60) and the hips too where the length allows', pp.legs.every(l => posed.stretched.includes(legIndex(l.pair, l.side)) || near(l.bend, 60 * bendFactor(l.pair), 0.5)) && pp.legs.every(l => posed.heldHip.includes(legIndex(l.pair, l.side)) || near(Math.atan2(l.knee[1] - l.root[1], Math.hypot(l.knee[0] - l.root[0], l.knee[2] - l.root[2])) / (Math.PI / 180), 15, 0.5)), JSON.stringify([pp.legs.map(l => l.bend.toFixed(1)), posed]));
+    const bent = poseLegsKeepLengths(DEFAULTS, walls, { hip: 15, backBend: 100 });
+    const bm = buildSpider({ ...DEFAULTS, legs: bent.legs }, walls);
+    check('keep lengths: more bend brings the feet in along the walls', bm.legs.every((l, i) => Math.abs(l.foot[0] - l.root[0]) <= Math.abs(pp.legs[i].foot[0] - pp.legs[i].root[0]) + 1e-6) && bm.legs.some((l, i) => Math.abs(l.foot[0] - l.root[0]) < Math.abs(pp.legs[i].foot[0] - pp.legs[i].root[0]) - 0.05));
   }
   // The face: eight eyes on the head's front cap, facing out, two big,
   // in mirrored pairs; they turn with the body when pitched.

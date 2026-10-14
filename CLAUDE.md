@@ -147,6 +147,22 @@ test run before the night.
   along it. The HUD still warns about feet below 2.0 m and posts over
   3 m; Daniel chose the steepness knowing that.
 
+- 2026-10-14 (later): the brief's-leg rule is gone. The Legs checkbox is
+  now "Keep the leg's lengths" (state key keepLengths; keepSplit in old
+  saves maps to it): each leg keeps its two segment lengths and its knee
+  keeps its roll round the hip-to-foot line, measured from the body's own
+  up (spider.js kneeRoll, kneeAtRoll, solveFootKeepLengths), so a foot
+  pulled in folds the knee and one pushed out straightens it, up to the
+  leg's length. A knee is dragged in its leg's own plane (the plane of
+  the two segments; legPlane, the 'plane' guide) and its foot follows
+  along the wall in that plane (solveKneeKeepLengths); Shift still moves
+  a knee across. The sliders under the rule (poseLegsKeepLengths): the
+  bend slides each foot along its wall at its height, the hip rolls each
+  knee; a leg that cannot meet them is held, and the HUD says so. Off,
+  knees and feet move freely and the sliders give the legs the lengths
+  the angles need (legsFromAngles with no cap). The Spread button still
+  sets lengths up to the brief's 3.25 L.
+
 ## Still open (ask Daniel)
 
 - Absolute size (L), knee bend and leg thickness: the visualizer exists to

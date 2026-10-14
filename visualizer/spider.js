@@ -67,6 +67,7 @@ function scale(a, s) { return [a[0] * s, a[1] * s, a[2] * s]; }
 function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
 function norm(a) { return Math.sqrt(dot(a, a)); }
 function unit(a) { const n = norm(a); return n > 0 ? scale(a, 1 / n) : [0, 0, 0]; }
+function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
 function round(v) { return Math.round(v * 1000) / 1000; }
 
 export function legIndex(pair, side) { return 2 * pair + (side > 0 ? 0 : 1); }
@@ -785,6 +786,188 @@ export function solveLegFromFoot(p, walls, pair, side, { bend: bendDeg = null, m
   }
   const { knee } = placeKnee(root, foot, total * kf, bend, frame.f, bodyUp(frame));
   return { ...q, ...kneeParamsAt(level, side, knee) };
+}
+
+// ---------------------------------------------------------------- the keep-lengths rule
+//
+// Daniel, 2026-10-14: a leg keeps its two segment lengths, and its knee
+// keeps its roll, the angle of the knee round the hip-to-foot line
+// measured from the body's own up. So a foot pulled toward the body folds
+// the knee and one pushed out straightens it, up to the leg's full
+// length; a knee moves in the leg's own plane and its foot follows along
+// the wall in that plane. Everything is worked out as the spider stands
+// (pitched) and stored as the level pose.
+
+// The frame of a leg's chord: u from root to foot, n the lift reference
+// (the body's up, square to u; across the alley when they coincide), w
+// across both.
+function chordFrame(root, foot, up) {
+  const u = unit(sub(foot, root));
+  let n = sub(up, scale(u, dot(up, u)));
+  if (norm(n) < 1e-9) n = sub([0, 0, 1], scale(u, u[2]));
+  n = unit(n);
+  return { u, n, w: cross(u, n) };
+}
+// The knee's roll round the chord, degrees from the lift reference.
+export function kneeRoll(root, knee, foot, up) {
+  const { u, n, w } = chordFrame(root, foot, up);
+  const v = sub(knee, root);
+  const r = sub(v, scale(u, dot(v, u)));
+  return norm(r) < 1e-6 ? 0 : Math.atan2(dot(r, w), dot(r, n)) / DEG;
+}
+// The knee of a leg of segments a and b between root and foot at a roll;
+// null when the foot is beyond the straight leg or too close for the fold.
+export function kneeAtRoll(root, foot, a, b, rollDeg, up) {
+  const d = norm(sub(foot, root));
+  if (d < 1e-6 || d > a + b + 1e-9 || d < Math.abs(a - b) - 1e-9) return null;
+  const { u, n, w } = chordFrame(root, foot, up);
+  const cosB = Math.max(-1, Math.min(1, (a * a + d * d - b * b) / (2 * a * d)));
+  const r = a * Math.sqrt(Math.max(0, 1 - cosB * cosB)), t = rollDeg * DEG;
+  return add(root, add(scale(u, a * cosB), add(scale(n, r * Math.cos(t)), scale(w, r * Math.sin(t)))));
+}
+// A built leg's two segment lengths, and every leg's at once (one per
+// leg index) for a pose on the given walls.
+export function legLengths(leg) { return { a: norm(sub(leg.knee, leg.root)), b: norm(sub(leg.foot, leg.knee)) }; }
+export function legLengthsAll(p, walls) {
+  const m = buildSpider({ ...DEFAULTS, ...p, legs: legsFrom(p) }, walls);
+  const out = [];
+  for (const l of m.legs) out[legIndex(l.pair, l.side)] = legLengths(l);
+  return out;
+}
+// The plane of a built leg: e1 along the chord, e2 across it toward the
+// knee (the lift reference when the leg is straight), and the normal.
+export function legPlane(leg, up) {
+  const { u, n } = chordFrame(leg.root, leg.foot, up);
+  const v = sub(leg.knee, leg.root);
+  let e2 = sub(v, scale(u, dot(v, u)));
+  e2 = norm(e2) > 1e-6 ? unit(e2) : n;
+  return { e1: u, e2, normal: cross(u, e2) };
+}
+// The chord of a leg of segments a and b bent `bendDeg` off straight.
+function chordOf(a, b, bendDeg) { return Math.sqrt(Math.max(0, a * a + b * b + 2 * a * b * Math.cos(bendDeg * DEG))); }
+
+// From the foot, lengths kept: the knee at the kept roll. Null when the
+// foot is beyond the leg's reach or too close for the fold.
+export function solveFootKeepLengths(p, walls, pair, side, { a, b, roll }) {
+  const level = { ...DEFAULTS, ...p, legs: legsFrom(p) };
+  const frame = bodyFrame(level);
+  const q = legOf(level, pair, side);
+  const { root, foot } = legEnds(level, walls, frame, pair, side);
+  const knee = kneeAtRoll(root, foot, a, b, roll, bodyUp(frame));
+  return knee ? { ...q, ...kneeParamsAt(level, side, knee) } : null;
+}
+// From the knee, lengths kept: the knee goes to the upper segment's length
+// from the root in the direction it was dragged to, and the foot moves
+// along the wall, staying in the plane with normal `plane`, to the lower
+// segment's length from it (whichever of the two spots is nearer the foot
+// as it was). Null when the wall there is out of the lower segment's reach.
+export function solveKneeKeepLengths(p, walls, pair, side, { a, b, plane }) {
+  const level = { ...DEFAULTS, ...p, legs: legsFrom(p) };
+  const frame = bodyFrame(level);
+  const q = legOf(level, pair, side);
+  const { root, foot: oldFoot } = legEnds(level, walls, frame, pair, side);
+  const target = frame.toAlley(q.kneeAlong, q.kneeHeight - level.bodyHeight, side * q.kneeOut);
+  const v = sub(target, root);
+  if (norm(v) < 1e-6) return null;
+  const knee = add(root, scale(unit(v), a));
+  const N = unit(plane);
+  const nxy = Math.hypot(N[0], N[1]);
+  if (nxy < 1e-6) return null; // the plane lies level: it never meets the wall in a line
+  let footX = oldFoot[0], foot = null;
+  for (let pass = 0; pass < 4; pass++) {
+    const w = walls(footX, side, level.across);
+    const wz = (w === null || w === undefined) ? level.across + side * 1.5 : w;
+    // The plane meets the wall in the line N.x x + N.y y = c; the foot is
+    // on it at b from the knee, measured from the line's nearest point to
+    // the knee.
+    const c = N[0] * root[0] + N[1] * root[1] - N[2] * (wz - root[2]);
+    const k = (c - N[0] * knee[0] - N[1] * knee[1]) / (nxy * nxy);
+    const B = [knee[0] + k * N[0], knee[1] + k * N[1]];
+    const D = [-N[1] / nxy, N[0] / nxy];
+    const s2 = b * b - (k * nxy) ** 2 - (wz - knee[2]) ** 2;
+    if (s2 < 0) return null;
+    const s = Math.sqrt(s2);
+    const cands = [[B[0] + s * D[0], B[1] + s * D[1], wz], [B[0] - s * D[0], B[1] - s * D[1], wz]].filter(f => f[1] >= 0);
+    if (!cands.length) return null;
+    foot = cands.reduce((best, f) => norm(sub(f, oldFoot)) < norm(sub(best, oldFoot)) ? f : best, cands[0]);
+    footX = foot[0];
+  }
+  return { ...q, ...kneeParamsAt(level, side, knee), ...footParamsAt(level, foot) };
+}
+// Pose every leg from the two angle sliders with its lengths kept: the
+// knee bend sets the foot's distance from the root, so the foot slides
+// along its wall at its height, toward the body for more bend and away
+// for less (a foot the leg cannot reach at that height is held at the
+// nearest height it can, straight across; one it cannot reach even there
+// opens its knee until it does), and the hip angle sets the knee's roll
+// round the chord (held at the nearest roll when the upper segment cannot
+// be that steep). `lengths`, one { a, b } per leg, are the lengths to keep
+// (legLengthsAll); without them the legs' own, measured here, which drift
+// by millimetres when the wall line has moved since the pose was stored.
+// Returns { legs, capped, stretched, heldHip }: the legs as the level pose,
+// and the indexes of the legs whose foot height, wall reach or hip angle
+// could not be met.
+export function poseLegsKeepLengths(p, walls, { hip, backBend, hips = null, bends = null, lengths = null }) {
+  const level = { ...DEFAULTS, ...p, legs: legsFrom(p) };
+  const frame = bodyFrame(level), f = frame.f, up = bodyUp(frame);
+  const m = buildSpider(level, walls);
+  const legs = level.legs.map(q => ({ ...q }));
+  const capped = [], stretched = [], heldHip = [];
+  for (const l of m.legs) {
+    const j = legIndex(l.pair, l.side), side = l.side;
+    const { a, b } = lengths && lengths[j] ? lengths[j] : legLengths(l);
+    if (a < 1e-6 || b < 1e-6) continue;
+    const root = l.root;
+    const hipDeg = hips ? hips[j] : hip;
+    let bend = Math.max(0, Math.min(170, bends ? bends[j] : backBend * bendFactor(l.pair)));
+    const planDeg = Math.atan2(f * (l.foot[0] - root[0]), side * (l.foot[2] - root[2])) / DEG;
+    const sign = planDeg !== 0 ? Math.sign(planDeg) : (l.pair < 2 ? 1 : -1);
+    let rise = l.foot[1] - root[1]; // the foot keeps its height where the leg allows
+    let d = chordOf(a, b, bend), h = 0, run = 0, footX = l.foot[0], reach = 0;
+    for (let pass = 0; pass < 4; pass++) {
+      reach = Math.max(0.01, wallReach(level, walls, footX, side)); // the same reach places the foot below, so the lengths hold
+      // The chord's level part must reach the wall: if the height asks for
+      // more than the chord has, the foot comes down (or up) to the nearest
+      // height it can reach, straight across; if even level the chord is
+      // short of the wall, the knee opens until it is not.
+      let d2 = d * d - rise * rise;
+      if (d2 < reach * reach) {
+        if (d > reach) { rise = Math.sign(rise || 1) * Math.sqrt(d * d - reach * reach); d2 = reach * reach; if (!capped.includes(j)) capped.push(j); }
+        else {
+          const c = (reach * reach - a * a - b * b) / (2 * a * b);
+          bend = c >= 1 ? 0 : c <= -1 ? 170 : Math.acos(c) / DEG;
+          d = chordOf(a, b, bend); rise = 0; d2 = Math.min(d * d, reach * reach);
+          if (!stretched.includes(j)) stretched.push(j);
+        }
+      }
+      h = Math.sqrt(d2); // the chord's level part
+      run = Math.sqrt(Math.max(0, h * h - reach * reach)); // along the wall
+      footX = root[0] + f * sign * run;
+    }
+    const foot = [root[0] + f * sign * run, root[1] + rise, root[2] + side * reach];
+    // The roll that puts the upper segment at the hip angle, nearest the roll it has.
+    const { u, n, w } = chordFrame(root, foot, up);
+    const dd = norm(sub(foot, root));
+    const cosB = Math.max(-1, Math.min(1, (a * a + dd * dd - b * b) / (2 * a * dd)));
+    const r = a * Math.sqrt(Math.max(0, 1 - cosB * cosB));
+    const roll0 = kneeRoll(root, l.knee, l.foot, up) * DEG;
+    const A = n[1] * r, Bc = w[1] * r, R = a * Math.sin(hipDeg * DEG) - a * cosB * u[1];
+    const M = Math.hypot(A, Bc);
+    let roll = roll0;
+    if (M > 1e-9) {
+      const base = Math.atan2(Bc, A);
+      if (Math.abs(R) > M) { roll = R > 0 ? base : base + Math.PI; if (!heldHip.includes(j)) heldHip.push(j); }
+      else {
+        const off = Math.acos(R / M);
+        const cands = [base + off, base - off];
+        const wrap = x => Math.atan2(Math.sin(x), Math.cos(x));
+        roll = cands.reduce((best, c) => Math.abs(wrap(c - roll0)) < Math.abs(wrap(best - roll0)) ? c : best, cands[0]);
+      }
+    }
+    const knee = add(root, add(scale(u, a * cosB), add(scale(n, r * Math.cos(roll)), scale(w, r * Math.sin(roll)))));
+    legs[j] = { ...footParamsAt(level, foot), ...kneeParamsAt(level, side, knee) };
+  }
+  return { legs, capped, stretched, heldHip };
 }
 
 // Degrees off straight at the knee of the triangle root, knee, foot.
