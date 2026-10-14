@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, bendFactor,
          flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams, legIndex, legOf, legsFromAngles,
          SPREAD_AZIMUTHS, CLIMB_BEND_FACTORS, planAngles, legAngles, solveLegFromKnee, solveLegFromFoot, spreadLegsAt, spreadPreset, faceOf,
-         bodyFrame, bodyUp, kneeRoll, legLengths, legLengthsAll, legPlane, solveFootKeepLengths, solveKneeKeepLengths, poseLegsKeepLengths } from './spider.js';
+         bodyFrame, bodyUp, kneeRoll, legLengths, legLengthsAll, legPlane, solveFootKeepLengths, solveKneeKeepLengths, poseLegsKeepLengths, resetLegLengths, spiderLegLengths, spreadKeepLengths } from './spider.js';
 import { wallsFromSite, insideBuilding } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildBuildMeshes, rebuildFaceMeshes, rebuildExtras, setRoofsVisible,
          setPlantsVisible, showGuide, hideGuide } from './scene.js';
@@ -1051,7 +1051,7 @@ let poseNote = '';
 function notePose({ capped, stretched, heldHip = [] }) {
   const legsWord = n => `${n} leg${n > 1 ? 's' : ''}`;
   const notes = [];
-  if (capped.length) notes.push(state.keepLengths ? `${legsWord(capped.length)} held at the height its length reaches` : `${legsWord(capped.length)} held at the brief's length, foot moved in`);
+  if (capped.length) notes.push(state.keepLengths ? `${legsWord(capped.length)} held short of the angle asked: its length does not reach` : `${legsWord(capped.length)} held at the brief's length, foot moved in`);
   if (stretched.length) notes.push(`${legsWord(stretched.length)} ${state.keepLengths ? 'opened at the knee to reach the wall' : "stretched past the brief's length to reach the wall"}`);
   if (heldHip.length) notes.push(`${legsWord(heldHip.length)} cannot reach that hip angle at its length`);
   poseNote = notes.map(n => ' · ' + n).join('');
@@ -1063,11 +1063,18 @@ function spreadLegs() {
   const p = state.params;
   state.backBend = Math.min(state.backBend, bendLimit());
   // Worked out in the alley as the spider stands (pitched): the fan in plan
-  // as seen from above, each foot keeping its height, each leg bent by the
-  // knee slider and scaled to its wall, never past the brief's length.
+  // as seen from above, each foot keeping its height. Under the
+  // keep-lengths rule the legs keep their lengths: each knee bends to suit
+  // and a foot out of reach slides toward straight across. Off it, the
+  // legs are bent by the knee slider in the climbing series and scaled to
+  // their walls, never past their pair's length.
   const heights = model ? model.legs.map(l => l.foot[1]) : p.legs.map(q => q.footHeight);
+  updateWalls();
+  const lengths = state.keepLengths ? legLengthsAll(p, walls) : null;
   const posed = settle(() => {
-    const r = spreadLegsAt(p, { azimuths: SPREAD_AZIMUTHS, footHeights: heights, backBend: state.backBend, bends: CLIMB_BEND_FACTORS.map(f => state.backBend * f), walls }); // the climbing series: the front pairs bend most
+    const r = state.keepLengths
+      ? spreadKeepLengths(p, walls, { azimuths: SPREAD_AZIMUTHS, lengths })
+      : spreadLegsAt(p, { azimuths: SPREAD_AZIMUTHS, footHeights: heights, backBend: state.backBend, bends: CLIMB_BEND_FACTORS.map(f => state.backBend * f), walls });
     p.legs = r.legs;
     return { capped: r.held, stretched: [] };
   });
@@ -1075,6 +1082,21 @@ function spreadLegs() {
   refreshControls();
   onChange();
   notePose(posed);
+}
+// Reset every leg's segment lengths to a spider's at the body's length
+// (spider.js spiderLegLengths): the feet stay and the knees bend in their
+// planes where the new leg reaches; a foot it cannot reach slides along
+// its wall, and the HUD says how many did.
+function resetLegs() {
+  const p = state.params;
+  let moved = [];
+  settle(() => { const r = resetLegLengths(p, walls); p.legs = r.legs; moved = r.movedFeet; return r; });
+  state.plans = null;
+  refreshControls();
+  onChange();
+  const want = spiderLegLengths(bodyLength(p)).map(x => x.total.toFixed(2)).join(' / ');
+  poseNote = ` · legs reset to ${want} m front to back` + (moved.length ? `; ${moved.length} ${moved.length > 1 ? 'feet' : 'foot'} slid along the wall to be reached` : '');
+  updateHud();
 }
 // Make one side the mirror image of the other.
 function copySide(from) {
@@ -1136,6 +1158,7 @@ function wireUI() {
       onChange();
     });
   }
+  document.getElementById('resetLegs').addEventListener('click', resetLegs);
   document.getElementById('keepLengths').addEventListener('change', e => {
     state.keepLengths = e.target.checked;
     writeState(); updateHud();

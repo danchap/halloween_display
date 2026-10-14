@@ -22,6 +22,20 @@ export const LOCKED = Object.freeze({
 });
 
 export const BEND_SERIES = [15, 30, 45, 60, 75, 90, 105];
+// A spider's legs are not all the same length. House spiders (Tegenaria,
+// Eratigena: the ones in French houses) have the formula I > IV > II > III:
+// the front pair longest, the back pair nearly as long, the second
+// shorter and the third shortest, about four fifths of the front. These
+// ratios, front pair to back, scale the brief's 3.25 L, which stays the
+// front pair's length (Daniel, 2026-10-14). The American "common house
+// spider" (Parasteatoda) has the same order but a much longer front pair
+// (about 1 : 0.72 : 0.55 : 0.85).
+export const LEG_RATIOS = [1.0, 0.90, 0.80, 0.95];
+// The two segment lengths of each pair for a body length L: the brief's
+// knee fraction of a leg of the pair's ratio times 3.25 L.
+export function spiderLegLengths(L) {
+  return LEG_RATIOS.map(r => { const total = r * LOCKED.legLength * L; return { a: total * LOCKED.kneeFraction, b: total - total * LOCKED.kneeFraction, total }; });
+}
 
 // A resting spider's leg spread in plan: each pair's angle from straight
 // across, degrees, positive toward the head. Front pair first.
@@ -291,11 +305,11 @@ function levelFootHeight(target, { pitch, bodyHeight, rootAlong, forward, d, dz 
 export function spreadLegsAt(p, { azimuths = SPREAD_AZIMUTHS, footHeights, backBend = 60, bends = null, wallDistance = 1.47, walls = null } = {}) {
   const frame = bodyFrame(p);
   const L = bodyLength(p);
-  const cap = LOCKED.legLength * L;
   const kf = LOCKED.kneeFraction;
   const legs = [];
   const held = [];
   for (let i = 0; i < 4; i++) {
+    const cap = LOCKED.legLength * L * LEG_RATIOS[i]; // the pair's own length
     for (const side of [1, -1]) {
       const j = legIndex(i, side);
       const bend = bends ? (bends.length === 8 ? bends[j] : bends[i]) : backBend * bendFactor(i); // bends: a knee bend per pair (front first) or per leg, instead of the brief's series
@@ -668,10 +682,10 @@ export function legsFromAngles(p, walls, { hip, backBend, azimuths, hips = null,
   const frame = bodyFrame(level);
   const f = frame.f;
   const legs = level.legs.map(q => ({ ...q }));
-  const cap = maxLength === null ? LOCKED.legLength * bodyLength(level) : maxLength;
   const kf = LOCKED.kneeFraction;
   const capped = [], stretched = [];
   for (let pair = 0; pair < 4; pair++) {
+    const cap = maxLength === null ? LOCKED.legLength * bodyLength(level) * LEG_RATIOS[pair] : maxLength; // the pair's own length
     for (const side of [1, -1]) {
       const j = legIndex(pair, side);
       const hipDeg = hips ? hips[j] : hip;
@@ -968,6 +982,91 @@ export function poseLegsKeepLengths(p, walls, { hip, backBend, hips = null, bend
     legs[j] = { ...footParamsAt(level, foot), ...kneeParamsAt(level, side, knee) };
   }
   return { legs, capped, stretched, heldHip };
+}
+
+// Reset every leg's segment lengths to a spider's (spiderLegLengths at the
+// body's length), keeping what can be kept: the foot stays where it is and
+// the knee bends in the same plane (the kept roll); a foot the new leg
+// cannot reach slides on its wall toward the point straight across from
+// the root until the leg can just reach it, 0.02 m short of straight; a
+// foot too close for the fold slides away likewise. Returns { legs,
+// movedFeet }: the legs as the level pose and the indexes of the legs
+// whose foot had to move. `lengths`, one { a, b } per pair, stands in for
+// the spider's.
+export function resetLegLengths(p, walls, { lengths = null } = {}) {
+  const level = { ...DEFAULTS, ...p, legs: legsFrom(p) };
+  const frame = bodyFrame(level), up = bodyUp(frame);
+  const m = buildSpider(level, walls);
+  const want = lengths || spiderLegLengths(bodyLength(level));
+  const legs = level.legs.map(q => ({ ...q }));
+  const movedFeet = [];
+  for (const l of m.legs) {
+    const j = legIndex(l.pair, l.side), side = l.side;
+    const { a, b } = want[l.pair];
+    const roll = kneeRoll(l.root, l.knee, l.foot, up);
+    let foot = l.foot;
+    let knee = kneeAtRoll(l.root, foot, a, b, roll, up);
+    if (!knee) {
+      // Along the wall toward (or away from) the point straight across from
+      // the root, to the distance the new leg reaches.
+      const d = norm(sub(foot, l.root));
+      const target = d > a + b ? a + b - 0.02 : Math.abs(a - b) + 0.02;
+      const across = [l.root[0], l.root[1], foot[2]]; // straight across from the root, on the wall
+      const dir = sub(foot, across);
+      const run = norm(dir);
+      const u = run > 1e-9 ? unit(dir) : [frame.f * (l.pair < 2 ? 1 : -1), 0, 0];
+      const reach2 = (foot[2] - l.root[2]) ** 2;
+      const s = Math.sqrt(Math.max(0, target * target - reach2)); // distance from the across point along the wall
+      foot = add(across, scale(u, s));
+      if (foot[1] < 0) foot[1] = 0;
+      knee = kneeAtRoll(l.root, foot, a, b, roll, up);
+      movedFeet.push(j);
+    }
+    if (!knee) continue; // the wall itself is beyond the new leg: that leg is left as it is
+    legs[j] = { ...footParamsAt(level, foot), ...kneeParamsAt(level, side, knee) };
+  }
+  return { legs, movedFeet };
+}
+
+// The spread with the lengths kept: each foot goes to its fan azimuth on
+// its wall at its height, and the knee bends at the kept roll to suit; a
+// foot the leg cannot reach there slides toward straight across until it
+// can (held), and one it cannot reach at its height even there comes down
+// (or up) to the height it can. `lengths`, one { a, b } per leg, stand in
+// for the legs' own. Returns { legs, held }.
+export function spreadKeepLengths(p, walls, { azimuths = SPREAD_AZIMUTHS, lengths = null } = {}) {
+  const level = { ...DEFAULTS, ...p, legs: legsFrom(p) };
+  const frame = bodyFrame(level), f = frame.f, up = bodyUp(frame);
+  const m = buildSpider(level, walls);
+  const legs = level.legs.map(q => ({ ...q }));
+  const held = [];
+  for (const l of m.legs) {
+    const j = legIndex(l.pair, l.side), side = l.side;
+    const { a, b } = lengths && lengths[j] ? lengths[j] : legLengths(l);
+    if (a < 1e-6 || b < 1e-6) continue;
+    const root = l.root;
+    const roll = kneeRoll(root, l.knee, l.foot, up);
+    const most = a + b - 0.02; // the chord of the nearly straight leg
+    const phi0 = (azimuths.length === 8 ? azimuths[j] : azimuths[l.pair]) * DEG;
+    const sign = phi0 !== 0 ? Math.sign(phi0) : (l.pair < 2 ? 1 : -1);
+    let rise = l.foot[1] - root[1], run = 0, reach = 0, footX = l.foot[0];
+    for (let pass = 0; pass < 4; pass++) {
+      reach = Math.max(0.01, wallReach(level, walls, footX, side));
+      run = reach * Math.tan(Math.abs(phi0));
+      let room = most * most - reach * reach - rise * rise; // what is left of the chord for the run
+      if (room < run * run) {
+        if (!held.includes(j)) held.push(j);
+        if (room < 0) { rise = Math.sign(rise || 1) * Math.sqrt(Math.max(0, most * most - reach * reach)); room = 0; }
+        run = Math.sqrt(room);
+      }
+      footX = root[0] + f * sign * run;
+    }
+    const foot = [root[0] + f * sign * run, root[1] + rise, root[2] + side * reach];
+    const knee = kneeAtRoll(root, foot, a, b, roll, up);
+    if (!knee) continue; // too close for the fold: the leg is left as it is
+    legs[j] = { ...footParamsAt(level, foot), ...kneeParamsAt(level, side, knee) };
+  }
+  return { legs, held };
 }
 
 // Degrees off straight at the knee of the triangle root, knee, foot.

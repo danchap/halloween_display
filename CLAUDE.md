@@ -163,6 +163,19 @@ test run before the night.
   the angles need (legsFromAngles with no cap). The Spread button still
   sets lengths up to the brief's 3.25 L.
 
+- 2026-10-14 (later still): a spider's legs are not all one length.
+  spider.js LEG_RATIOS = [1, 0.90, 0.80, 0.95] (front pair to back, the
+  house spider's order I > IV > II > III) scale the brief's 3.25 L, which
+  stays the front pair's length; the Spread and the angle sliders cap
+  each pair at its own length. The Legs section's "Reset the leg lengths
+  to a spider's" button (resetLegLengths) sets every leg's two segments
+  to those lengths at the body's L, keeping the feet and bending the
+  knees in their planes; a foot the new leg cannot reach slides along
+  its wall to where it can. Under the keep-lengths rule the Spread
+  button keeps the lengths too (spreadKeepLengths): each foot goes to
+  its fan angle at its height and the knee bends to suit, a foot out of
+  reach held short of the angle.
+
 ## Still open (ask Daniel)
 
 - Absolute size (L), knee bend and leg thickness: the visualizer exists to

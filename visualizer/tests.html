@@ -8,7 +8,7 @@ import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, flatWalls, root
          lowerSegmentFor, solveFeetForLength, bendFactor, placeKnee, kneeParamsAt, footParamsAt,
          kneeFromBend, upgradeParams, legIndex, legOf, legsFromAngles, SPREAD_AZIMUTHS, planAngles, legAngles,
          solveLegFromKnee, solveLegFromFoot, rootAlongOffset, bodyFrame, bodyUp, faceOf, faceTilt, FACE, EYE_CHOICES, spreadLegsAt, CLIMB_BEND_FACTORS,
-         kneeRoll, kneeAtRoll, legLengths, legPlane, solveFootKeepLengths, solveKneeKeepLengths, poseLegsKeepLengths } from './spider.js';
+         kneeRoll, kneeAtRoll, legLengths, legPlane, solveFootKeepLengths, solveKneeKeepLengths, poseLegsKeepLengths, resetLegLengths, spiderLegLengths, LEG_RATIOS, spreadKeepLengths } from './spider.js';
 import { loadSite, wallsFromSite, insideBuilding } from './site.js';
 import { HALLOWEEN_NOON, solarPosition, sunVector } from './sun.js';
 import { SYSTEMS, BRACINGS, systemById, buildParts, stockPlan, recipeFor, recipeText, pairAngle, straightWalls } from './build.js';
@@ -147,6 +147,37 @@ try {
     const bent = poseLegsKeepLengths(DEFAULTS, walls, { hip: 15, backBend: 100 });
     const bm = buildSpider({ ...DEFAULTS, legs: bent.legs }, walls);
     check('keep lengths: more bend brings the feet in along the walls', bm.legs.every((l, i) => Math.abs(l.foot[0] - l.root[0]) <= Math.abs(pp.legs[i].foot[0] - pp.legs[i].root[0]) + 1e-6) && bm.legs.some((l, i) => Math.abs(l.foot[0] - l.root[0]) < Math.abs(pp.legs[i].foot[0] - pp.legs[i].root[0]) - 0.05));
+  }
+  // The spread with the lengths kept: the fan where the legs reach it,
+  // every length kept.
+  {
+    const dm = buildSpider(DEFAULTS, walls);
+    const r = spreadKeepLengths(DEFAULTS, walls, { azimuths: [40, 15, -15, -40] });
+    const sm = buildSpider({ ...DEFAULTS, legs: r.legs }, walls);
+    const azOf = l => Math.atan2(sm.facing * (l.foot[0] - l.root[0]), l.side * (l.foot[2] - l.root[2])) / (Math.PI / 180);
+    check('spread, lengths kept: every length kept, feet on the walls', sm.legs.every((l, i) => near(legLengths(l).a, legLengths(dm.legs[i]).a, 2e-3) && near(legLengths(l).b, legLengths(dm.legs[i]).b, 2e-3) && l.status === 'ok'), JSON.stringify(sm.legs.map((l, i) => [legLengths(l), legLengths(dm.legs[i])])));
+    check('spread, lengths kept: each leg at its fan angle, or held short of it with its height kept', sm.legs.every(l => { const want = [40, 15, -15, -40][l.pair]; return (Math.abs(azOf(l) - want) < 0.5 && !r.held.includes(legIndex(l.pair, l.side))) || (r.held.includes(legIndex(l.pair, l.side)) && Math.abs(azOf(l)) < Math.abs(want) && Math.sign(azOf(l) || want) === Math.sign(want)); }), JSON.stringify([r.held, sm.legs.map(l => azOf(l).toFixed(1))]));
+    check('spread, lengths kept: a wide fan holds the long reaches short, nothing stretches', (() => { const w = spreadKeepLengths(DEFAULTS, walls, { azimuths: [80, 22, -22, -80] }); const wm = buildSpider({ ...DEFAULTS, legs: w.legs }, walls); return w.held.length >= 2 && wm.legs.every((l, i) => near(legLengths(l).a + legLengths(l).b, legLengths(dm.legs[i]).a + legLengths(dm.legs[i]).b, 3e-3) && l.status === 'ok'); })());
+  }
+  // The leg lengths of a house spider, and the reset to them.
+  {
+    const want = spiderLegLengths(0.8);
+    check('spider leg lengths: the front pair the brief\'s 3.25 L, then 0.90, 0.80 and 0.95 of it, knee at 48 %', JSON.stringify(LEG_RATIOS) === '[1,0.9,0.8,0.95]' && near(want[0].total, 2.6, 1e-9) && near(want[1].total, 2.34, 1e-9) && near(want[2].total, 2.08, 1e-9) && near(want[3].total, 2.47, 1e-9) && want.every(x => near(x.a, 0.48 * x.total, 1e-9) && near(x.b, 0.52 * x.total, 1e-9)));
+    const dm = buildSpider(DEFAULTS, walls);
+    const fr = bodyFrame(DEFAULTS), up = bodyUp(fr);
+    const rolls0 = dm.legs.map(l => kneeRoll(l.root, l.knee, l.foot, up));
+    const r = resetLegLengths(DEFAULTS, walls);
+    const rm = buildSpider({ ...DEFAULTS, legs: r.legs }, walls);
+    check('reset: every leg gets its pair\'s lengths', rm.legs.every(l => near(legLengths(l).a, want[l.pair].a, 2e-3) && near(legLengths(l).b, want[l.pair].b, 2e-3)), JSON.stringify(rm.legs.map(l => legLengths(l))));
+    check('reset: the feet stay where the new leg reaches them, the knees keeping their roll', rm.legs.every((l, i) => r.movedFeet.includes(i) || (dist(l.foot, dm.legs[i].foot) < 1e-6 && near(kneeRoll(l.root, l.knee, l.foot, up), rolls0[i], 0.5))) && rm.legs.every(l => l.status === 'ok'), JSON.stringify([r.movedFeet, rm.legs.map((l, i) => [dist(l.foot, dm.legs[i].foot), kneeRoll(l.root, l.knee, l.foot, up), rolls0[i]])]));
+    // A foot beyond the new leg's reach slides along its wall to where the leg just reaches it.
+    const q0 = legOf(DEFAULTS, 0, 1);
+    const farP = withLeg(DEFAULTS, 0, 1, { footAlong: q0.footAlong + 2.5 });
+    const rf = resetLegLengths(farP, walls);
+    const fm = buildSpider({ ...farP, legs: rf.legs }, walls);
+    const lf = fm.legs.find(l => l.pair === 0 && l.side > 0);
+    check('reset: a foot out of reach slides along the wall to just within the leg', rf.movedFeet.includes(0) && near(dist(lf.foot, lf.root), want[0].total - 0.02, 2e-3) && near(lf.foot[2], 1.47, 1e-6) && near(legLengths(lf).a, want[0].a, 2e-3) && lf.status === 'ok', JSON.stringify([rf.movedFeet, dist(lf.foot, lf.root), lf.foot]));
+    check('reset: given lengths stand in for the spider\'s', (() => { const own = [0, 1, 2, 3].map(() => ({ a: 1.0, b: 1.2 })); const rr = resetLegLengths(DEFAULTS, walls, { lengths: own }); const mm = buildSpider({ ...DEFAULTS, legs: rr.legs }, walls); return mm.legs.every(l => near(legLengths(l).a, 1.0, 2e-3) && near(legLengths(l).b, 1.2, 2e-3)); })());
   }
   // The face: eight eyes on the head's front cap, facing out, two big,
   // in mirrored pairs; they turn with the body when pitched.
