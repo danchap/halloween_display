@@ -191,9 +191,11 @@ test run before the night.
   leg changes length or angle; the lowest foot stops 0.1 m up). The
   Designs menu's built-in entry is "default", design.js DEFAULT_DESIGN
   (params and construction choices; walk.html uses it without a hash);
-  Daniel's saved design "v1" is to be baked into it, after which
-  BAKED_FROM drops the saved copy from the menu so "default" is the only
-  entry on a reload.
+  Daniel's saved design "v1" is baked into it (fitted on 2026-10-14 to
+  the Numbers panel he photographed: every pipe length within 1 mm,
+  every joint angle within 0.5°, the same elbow recipes, 612 €, 34.2 kg;
+  his own link would make it exact), and BAKED_FROM drops the saved
+  copy from the menu so "default" is the only entry on a reload.
 
 ## Still open (ask Daniel)
 
