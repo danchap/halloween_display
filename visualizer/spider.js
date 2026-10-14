@@ -46,17 +46,19 @@ export const SPREAD_AZIMUTHS = [55, 22, -22, -55];
 // trail, which with the body pitched up reads as climbing (Daniel,
 // 2026-10-13). At 60° on the slider: 64 / 56 / 48 / 40° front to back.
 export const CLIMB_BEND_FACTORS = [1.07, 0.93, 0.80, 0.67];
-// A little asymmetry in the default pose (Daniel, 2026-10-14): the front
-// left leg (the left-hand wall, looking into the alley from the street)
-// reaches further, forward and up and straighter, as if taking the next
-// step; every other leg differs a little from its partner. One entry per
-// leg, right leg first in each pair, front pair first: degrees of plan
-// angle, metres of foot height, degrees of knee bend, added to the pair's.
+// A little asymmetry in the default pose (Daniel, 2026-10-14): the
+// spider's front left leg, which stands on the right-hand wall looking
+// into the alley from the street (the higher wall), reaches well further,
+// forward and up and nearly straight, as if taking the next hold; every
+// other leg differs a little from its partner. One entry per leg, right
+// leg first in each pair (the right-hand wall), front pair first: degrees
+// of plan angle, metres of foot height, degrees of knee bend, added to
+// the pair's.
 export const DEFAULT_VARIATION = [
-  [-3, -0.05, 4], [12, 0.30, -18],
-  [4, 0.04, 3], [-3, -0.06, 6],
-  [-3, 0.03, -4], [4, -0.04, 5],
-  [3, 0.05, -6], [-5, -0.03, 4],
+  [18, 0.45, -28], [-3, -0.05, 4],
+  [-3, -0.06, 6], [4, 0.04, 3],
+  [4, -0.04, 5], [-3, 0.03, -4],
+  [-5, -0.03, 4], [3, 0.05, -6],
 ];
 // A per-pair list (4) as a per-leg one (8); a per-leg list as it is.
 export function perLeg(k) { return k.length === 8 ? k : [0, 1, 2, 3].flatMap(i => [k[i], k[i]]); }

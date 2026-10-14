@@ -179,10 +179,12 @@ test run before the night.
 - 2026-10-14 (evening): the default pose is a little asymmetric
   (spider.js DEFAULT_VARIATION, one offset per leg of plan angle, foot
   height and bend, applied by spreadPreset and by the Spread button's
-  fan): the front left leg, on the left-hand wall looking in from the
-  street, reaches further forward (+12°), higher (+0.30 m) and straighter
-  (−18°), as if taking the next step; every other leg differs a little
-  from its partner. `vary: null` gives the symmetric pose.
+  fan): the spider's front left leg, which stands on the right-hand wall
+  looking in from the street (the higher wall; Daniel: "the higher leg on
+  the higher wall"), reaches well further forward (+18°), higher
+  (+0.45 m) and nearly straight (−28°), as if taking the next hold; every
+  other leg differs a little from its partner. `vary: null` gives the
+  symmetric pose.
 
 ## Still open (ask Daniel)
 
