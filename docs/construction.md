@@ -349,27 +349,92 @@ least 1.2 m standing height (the hub is at 2.5 m, the knees at 3.1 m),
 and three adults on day 3. Nothing of this travels: buy what the island
 house lacks with the Amazon order.
 
-## Shipping from Paris, only if something is built there after all
+## Shipping from Paris
 
-This plan builds everything on the island. If the hub or the legs are
-glued in Paris, every pre-built piece is under 1.4 m, so one box of
-145 × 25 × 25 cm takes four lower legs with their knee elbows glued on,
-another the four upper legs, and the hub with its pairs on (0.6 m
-across) a third:
+Daniel's answer of 13 October: nothing travels in the car, everything
+is shipped, and the neighbours can take parcels in. The carriers below
+were checked on their own pages on 13 and 14 October 2026 (the
+research notes are in the session's scratchpad; the links are at the
+end of this section). "Developed length" is length + 2 × width + 2 ×
+height. Prices are for one box, VAT included where the carrier sells to
+individuals, HT where only a trade grid exists.
 
-- Chronopost "Chrono 13": free collection at the flat booked online,
-  next working day before 13:00, 28.80 per box at the 2026 counter rate
-  (less online); the box must be yours. Pickup is also at any post
-  office. https://www.chronopost.fr/fr/particulier/envoyer-un-colis/envoyer-un-gros-colis
-- Mail Boxes Etc., which packs for you and ships by UPS or GLS: six
-  centres in Paris (rue de Clichy 9e, 09 52 22 51 97; rue de Mézières 6e;
-  rue La Boétie 8e; rue Béranger 3e; av. Félix Faure 15e; rue Cardinet
-  17e, 01 40 57 00 99), weekdays only, quotes only; expect 60 to 130 € a
-  box, 1 to 2 days. https://www.mbefrance.fr/fr/localisation-centres
+| Service | Longest side | Developed length | Weight | Pickup at the flat | Packs for you | Delivery | One box, about |
+|---|---|---|---|---|---|---|---|
+| Mail Boxes Etc. Paris, agent for UPS, DHL, FedEx and GLS | the carrier's, UPS 274 cm | the carrier's | the carrier's | ask the centre; a UPS pickup can be booked | yes | 1 to 2 working days | 60 to 130 €, quote only |
+| Chronopost Chrono 13 | 150 cm | 300 cm | 30 kg | free, booked online | no | next working day before 13:00; coastal islands may be +1 day | 19 to 34 € online for 10 to 30 kg; 28.80 to 54 € at a post office |
+| UPS Standard via Boxtal or Packlink | 274 cm (Boxtal 265) | length + girth 400 cm (Boxtal 350) | 70 kg (Boxtal 65) | included | no | next working day, 2 days far from Paris, not guaranteed | 40 to 70 € for a 195 × 22 × 22 box, priced online; UPS adds 13 € over 100 cm and 65.10 € over 300 cm length + girth |
+| FedEx via Boxtal | 274 cm | 330 cm | 68 kg | included | no | next working day | from 11.91 € HT for a small parcel, priced online for a long one |
+| DHL Express Domestic | 120 × 80 × 80 cm; pieces to 300 cm with a surcharge | | 30 kg per piece on the domestic product (the FAQ says 70) | courier pickup | no | 48 h | from 26.95 € HT; the long-piece surcharge is not published, about 80 € reported |
+| DPD Predict via Packlink | 200 cm | 300 cm | 30 kg | yes | no | 24 to 48 h, not guaranteed | priced online |
+| GLS via Packlink | 200 × 80 × 60 cm | 300 cm | 30 kg | no, drop at a relay | no | indicative; 10 days maximum in the terms | priced online, a surcharge over 120 cm |
+| Colissimo | 100 cm | L + W + H 150 cm, 200 cm with 6 € | 30 kg | no | no | 2 days | 17 to 40 € |
+| Pallet, DHL Freight via Boxtal | 100 × 120 × 220 cm | | 800 kg | yes | no | 3 days | from 63.28 € HT |
+| Cocolis or Shiply, a driver's car or van | no limit | | | yes | no | when a driver takes the job | 70 to 200 € for the lot |
+| One-way van, Rent A Car La Rochelle | no limit | | | Daniel drives | no | same day | 350 to 600 € and a train back |
 
-In the Construction section of the page, "Longest piece delivered"
-splits any pipe longer than the chosen length with a coupler and marks
-it in the cut list, so a parcel limit can be designed to.
+TNT's own domestic product takes only 130 cm to a home address (170 cm
+L + W + H), so it is out for anything but the fittings; Mondial Relay
+stops at 120 cm. Only Mail Boxes Etc. packs; everyone else expects a
+closed box. All of them track the parcel and cover a basic value.
+
+### What the limits mean for the parts
+
+The default pose of 14 October in PVC 40 weighs about 33 kg in all: 22
+kg of pipe, 7 kg of fittings, 4 kg of sleeve, hoops and fabric. The
+page's "Longest piece delivered" setting splits every pipe longer than
+the chosen length with a coupler:
+
+- 1.4 m: every pipe piece is 1.3 m or less (the two tall front posts in
+  three, the front legs' segments in two, 35 couplers in all). Three
+  boxes of about 140 × 28 × 28 cm, 10 to 16 kg each: the Ø 50 post and
+  ski pieces in one, the Ø 40 leg pieces and the fittings in another,
+  the hub and the body dressing in a third. Chronopost takes them all
+  with free pickup at the flat: about 70 € online, 110 € at a post
+  office, there the next working day. The pack-for-you version is Mail
+  Boxes Etc. by UPS, about 200 to 400 € for the lot on quote.
+- 2.0 m, the page's default: the longest piece is 1.89 m (the front
+  posts in two, 24 couplers). Boxes of 195 × 22 × 22 cm (developed 283
+  cm) hold 16 pipes each; two of them for the Ø 50, one of 135 cm for
+  the legs, one for the body. Chronopost refuses them; UPS or FedEx via
+  Boxtal or Packlink take them with pickup, about 40 to 70 € a box, so
+  150 to 250 € for the lot. DPD takes a 200 cm box but is not
+  guaranteed.
+- 2.7 m: no gain for this pose, the tallest post (3.78 m) is still in
+  two; it only lets 2 m bars travel uncut.
+- 4.0 m: no parcel carrier takes it. Cocolis, Shiply or the van, or the
+  pipe delivered to the island by the shop (section B) and only the
+  pre-built pieces and the fittings shipped from Paris.
+
+Recommendation: set the page to 1.4 m, glue the knees and the hub in
+Paris, pack three boxes under 1.45 m yourself and book a Chronopost
+pickup; the eleven extra couplers cost about 25 € and the posts take
+two screwed joints each, which a plumb post in compression does not
+mind. If someone else must pack, Mail Boxes Etc.; if the pieces must
+stay 2 m, UPS via Boxtal.
+
+Mail Boxes Etc. in Paris: rue de Clichy 9e (09 52 22 51 97,
+mbe3075@mbefrance.fr), rue de Mézières 6e, rue La Boétie 8e, rue
+Béranger 3e, av. Félix Faure 15e, rue Cardinet 17e (01 40 57 00 99,
+mbe3327@mbefrance.fr); weekdays only; quotes by email with the box
+sizes, the weights and a photo. https://www.mbefrance.fr/fr/localisation-centres
+
+Links: Chronopost gros colis
+https://www.chronopost.fr/fr/particulier/envoyer-un-colis/envoyer-un-gros-colis
+and pickup
+https://www.chronopost.fr/fr/particulier/envoyer-un-colis/envoyer-depuis-chez-soi;
+UPS surcharges
+https://www.ups.com/assets/resources/webcontent/fr_FR/additional-service-charge-fr.pdf;
+UPS, FedEx, DHL Express and DHL Freight via Boxtal
+https://www.boxtal.com/fr/fr/preuves/transporteurs; DPD and GLS via
+Packlink https://www.packlink.com/fr-FR/transporteurs/; DHL Express
+dimensions
+https://www.dhlexpress.fr/docs/dhlexpress_poids_et_dimensions_2024_fr.pdf;
+TNT dimensions
+https://www.tnt.com/express/fr_fr/site/comment/calculer-dimensions-et-poids.html;
+Cocolis https://www.cocolis.fr/transport/colis; Shiply
+https://www.shiply.com/fr/devis-transporteur/; Rent A Car La Rochelle
+https://www.rentacar.fr/agences/v/la-rochelle-17300.
 
 ## Cut list and joint angles
 
