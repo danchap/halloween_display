@@ -117,8 +117,8 @@ export const FACE_KITS = {
     { name: 'red LED pucks IP68, pack of 12 (three in each big eye, one in each small)', qty: 1, price: 12.95 }, // Joycabin, CR2032 fitted
   ],
 };
-export const EYE_OPTIONS = [{ value: 'googly', label: 'Googly eyes (2 × 18 cm, 6 × 7 cm)' }, { value: 'lit', label: 'Lit eyes (red LED domes)' }, { value: 'none', label: 'No eyes' }];
-export const DEFAULT_EYES = 'googly';
+export const EYE_OPTIONS = [{ value: 'none', label: 'No eyes' }, { value: 'googly', label: 'Googly eyes (two big, six small)' }, { value: 'lit', label: 'Lit eyes (red glowing balls)' }];
+export const DEFAULT_EYES = 'none'; // no eyes until Daniel picks (2026-10-14); 'googly' or 'lit' on the page
 
 // Bracing: how the posts are held along the walls (the buildParts option
 // `bracing`). 'frame': every post guyed both ways in the plane of its
