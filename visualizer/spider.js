@@ -358,7 +358,9 @@ export function planeFeet(p, { stance = 2.6, offset = 0.4, wallDistance = 1.47 }
 }
 
 export function spreadPreset(L, options = {}) {
-  const o = { pitch: 45, azimuths: SPREAD_AZIMUTHS, footHeights: [2.6, 2.4, 2.2, 2.0], backBend: 60, bodyHeight: 2.5, along: 6.5, wallDistance: 1.47, walls: null, plane: null, ...options };
+  // The defaults are the page's starting pose (the 45° plane, see DEFAULTS);
+  // `plane: null` gives the fanned pose on the given foot heights instead.
+  const o = { pitch: 45, azimuths: SPREAD_AZIMUTHS, footHeights: [2.6, 2.4, 2.2, 2.0], backBend: 60, bodyHeight: 2.6, along: 6.5, wallDistance: 1.47, walls: null, plane: { stance: 3.0, offset: 0.4 }, ...options };
   const p = briefPreset(L, { backBend: o.backBend, bodyHeight: o.bodyHeight, along: o.along, wallDistance: o.wallDistance });
   p.pitch = o.pitch;
   if (o.plane) Object.assign(o, planeFeet(p, { ...o.plane, wallDistance: o.wallDistance })); // feet on the 45° plane: azimuths and heights from it
@@ -370,7 +372,7 @@ export function spreadPreset(L, options = {}) {
 // on a plane pitched 45° with the body, 0.4 m below its axis, spread over
 // 3.0 m along the slope (the legs splayed); the body 2.6 m up, so the
 // back feet are near 1.3 m and the front ones near 3.4 m.
-export const DEFAULTS = Object.freeze(spreadPreset(0.8, { bodyHeight: 2.6, plane: { stance: 3.0, offset: 0.4 } }));
+export const DEFAULTS = Object.freeze(spreadPreset(0.8)); // the same whether built here or by the page's loadDefaults on the site's walls
 export const BRIEF_DEFAULTS = Object.freeze(briefPreset(0.8)); // the brief's own pose: staggered feet, level
 
 // Parameters saved by earlier versions of the pages, brought up to date:

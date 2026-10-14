@@ -1,0 +1,8 @@
+# The page is a set of ES modules with no build step: a browser that keeps
+# an old app.js next to a new index.html breaks at start-up. Ask browsers
+# to revalidate every file on each load (the files are small; the site's
+# ETags make a revalidation a 304). Honoured only where Apache allows
+# overrides for this directory.
+<IfModule mod_headers.c>
+  Header set Cache-Control "no-cache"
+</IfModule>
