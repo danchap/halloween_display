@@ -141,7 +141,12 @@ function dropBakedDesign() {
   const designs = readDesigns();
   const d = designs[BAKED_FROM];
   if (!d || !d.params) return;
-  if (JSON.stringify(normalizeParams(d.params)) !== JSON.stringify(normalizeParams(clone(DEFAULT_DESIGN.params)))) return;
+  // The baked copy was fitted to the saved one within a few millimetres,
+  // so the match is to the centimetre on the legs and exact on the body.
+  const a = normalizeParams(d.params), b = normalizeParams(clone(DEFAULT_DESIGN.params));
+  const sameBody = Object.keys(b).every(k => k === 'legs' || (typeof b[k] === 'number' ? Math.abs(a[k] - b[k]) < 0.0015 : a[k] === b[k]));
+  const sameLegs = a.legs && a.legs.length === b.legs.length && b.legs.every((q, i) => Object.keys(q).every(k => Math.abs(a.legs[i][k] - q[k]) < 0.02));
+  if (!sameBody || !sameLegs) return;
   delete designs[BAKED_FROM];
   writeDesigns(designs);
   if (state.design === BAKED_FROM) state.design = '';
