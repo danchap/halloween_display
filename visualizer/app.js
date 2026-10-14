@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, bendFactor,
          flatWalls, solveFeetForLength, kneeFromBend, kneeParamsAt, footParamsAt, upgradeParams, legIndex, legOf, legsFromAngles,
          SPREAD_AZIMUTHS, CLIMB_BEND_FACTORS, planAngles, legAngles, solveLegFromKnee, solveLegFromFoot, spreadLegsAt, spreadPreset, faceOf,
-         bodyFrame, bodyUp, kneeRoll, legLengths, legLengthsAll, legPlane, solveFootKeepLengths, solveKneeKeepLengths, poseLegsKeepLengths, resetLegLengths, spiderLegLengths, spreadKeepLengths } from './spider.js';
+         bodyFrame, bodyUp, kneeRoll, legLengths, legLengthsAll, legPlane, solveFootKeepLengths, solveKneeKeepLengths, poseLegsKeepLengths, resetLegLengths, spiderLegLengths, spreadKeepLengths, variedAzimuths, DEFAULT_VARIATION } from './spider.js';
 import { wallsFromSite, insideBuilding } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildBuildMeshes, rebuildFaceMeshes, rebuildExtras, setRoofsVisible,
          setPlantsVisible, showGuide, hideGuide } from './scene.js';
@@ -1072,9 +1072,13 @@ function spreadLegs() {
   updateWalls();
   const lengths = state.keepLengths ? legLengthsAll(p, walls) : null;
   const posed = settle(() => {
+    // The fan carries the default pose's little asymmetry in plan (the
+    // front left leg reaching further), so a spread stays a spider's.
+    const azimuths = variedAzimuths();
+    const bends = CLIMB_BEND_FACTORS.flatMap(f => [f, f]).map((f, j) => Math.max(10, state.backBend * f + DEFAULT_VARIATION[j][2]));
     const r = state.keepLengths
-      ? spreadKeepLengths(p, walls, { azimuths: SPREAD_AZIMUTHS, lengths })
-      : spreadLegsAt(p, { azimuths: SPREAD_AZIMUTHS, footHeights: heights, backBend: state.backBend, bends: CLIMB_BEND_FACTORS.map(f => state.backBend * f), walls });
+      ? spreadKeepLengths(p, walls, { azimuths, lengths })
+      : spreadLegsAt(p, { azimuths, footHeights: heights, backBend: state.backBend, bends, walls });
     p.legs = r.legs;
     return { capped: r.held, stretched: [] };
   });

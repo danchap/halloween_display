@@ -8,7 +8,7 @@ import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, flatWalls, root
          lowerSegmentFor, solveFeetForLength, bendFactor, placeKnee, kneeParamsAt, footParamsAt,
          kneeFromBend, upgradeParams, legIndex, legOf, legsFromAngles, SPREAD_AZIMUTHS, planAngles, legAngles,
          solveLegFromKnee, solveLegFromFoot, rootAlongOffset, bodyFrame, bodyUp, faceOf, faceTilt, FACE, EYE_CHOICES, spreadLegsAt, CLIMB_BEND_FACTORS,
-         kneeRoll, kneeAtRoll, legLengths, legPlane, solveFootKeepLengths, solveKneeKeepLengths, poseLegsKeepLengths, resetLegLengths, spiderLegLengths, LEG_RATIOS, spreadKeepLengths } from './spider.js';
+         kneeRoll, kneeAtRoll, legLengths, legPlane, solveFootKeepLengths, solveKneeKeepLengths, poseLegsKeepLengths, resetLegLengths, spiderLegLengths, LEG_RATIOS, spreadKeepLengths, DEFAULT_VARIATION, spreadPreset } from './spider.js';
 import { loadSite, wallsFromSite, insideBuilding } from './site.js';
 import { HALLOWEEN_NOON, solarPosition, sunVector } from './sun.js';
 import { SYSTEMS, BRACINGS, systemById, buildParts, stockPlan, recipeFor, recipeText, pairAngle, straightWalls } from './build.js';
@@ -105,7 +105,9 @@ try {
   {
     const dm = buildSpider(DEFAULTS, walls);
     const bendsOf = model => [0, 1, 2, 3].map(i => model.legs.find(l => l.pair === i && l.side > 0).bend);
-    check('default pose: the climbing series of bends, front first', bendsOf(dm).every((b, i) => near(b, 60 * [1.07, 0.93, 0.80, 0.67][i], 0.6)) && JSON.stringify(CLIMB_BEND_FACTORS) === '[1.07,0.93,0.8,0.67]', bendsOf(dm).map(b => b.toFixed(1)).join(','));
+    check('default pose: the climbing series of bends with the default variation, front first', bendsOf(dm).every((b, i) => near(b, 60 * [1.07, 0.93, 0.80, 0.67][i] + DEFAULT_VARIATION[2 * i][2], 0.6)) && JSON.stringify(CLIMB_BEND_FACTORS) === '[1.07,0.93,0.8,0.67]', bendsOf(dm).map(b => b.toFixed(1)).join(','));
+    check('default pose: the front left leg reaches further than the front right, forward, up and straighter', (() => { const r = dm.legs.find(l => l.pair === 0 && l.side > 0), l = dm.legs.find(l => l.pair === 0 && l.side < 0); const fwd = x => dm.facing * (x.foot[0] - x.root[0]); return fwd(l) > fwd(r) + 0.2 && l.foot[1] > r.foot[1] + 0.2 && l.bend < r.bend - 10 && (l.a + l.b) > (r.a + r.b) + 0.1; })(), JSON.stringify(dm.legs.filter(l => l.pair === 0).map(l => [l.side, l.foot, l.bend, l.a + l.b])));
+    check('default pose: no pair is a mirror image', [0, 1, 2, 3].every(i => { const r = dm.legs.find(l => l.pair === i && l.side > 0), l = dm.legs.find(l => l.pair === i && l.side < 0); return Math.abs(r.bend - l.bend) > 1 || Math.abs(r.foot[1] - l.foot[1]) > 0.02; }) && JSON.stringify(spreadPreset(0.8, { vary: null }).legs.map(q => q.footHeight)).length > 0, JSON.stringify(dm.legs.map(l => [l.pair, l.side, l.bend.toFixed(1), l.foot[1].toFixed(2)])));
     check('default pose: the feet on a 45° plane, the front feet 1.5 m or more above the back ones, the front knees highest', (() => { const fr = dm.legs.find(l => l.pair === 0 && l.side > 0), bk = dm.legs.find(l => l.pair === 3 && l.side > 0); const run = Math.abs(fr.foot[0] - bk.foot[0]), rise = fr.foot[1] - bk.foot[1]; return rise > 1.5 && Math.abs(Math.atan2(rise, run) / (Math.PI / 180) - 45) < 3 && [0, 1, 2].every(i => dm.legs.find(l => l.pair === i && l.side > 0).foot[1] > dm.legs.find(l => l.pair === i + 1 && l.side > 0).foot[1]) && fr.knee[1] > bk.knee[1] + 0.3; })(), JSON.stringify(dm.legs.filter(l => l.side > 0).map(l => [l.foot[0], l.foot[1]])));
     check('spread: given bends replace the brief\'s series', (() => { const r = spreadLegsAt({ ...DEFAULTS }, { footHeights: [2.6, 2.4, 2.2, 2.0], bends: [50, 50, 50, 50], walls }); const mm = buildSpider({ ...DEFAULTS, legs: r.legs }, walls); return mm.legs.every(l => near(l.bend, 50, 0.6)); })());
   }

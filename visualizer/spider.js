@@ -46,6 +46,22 @@ export const SPREAD_AZIMUTHS = [55, 22, -22, -55];
 // trail, which with the body pitched up reads as climbing (Daniel,
 // 2026-10-13). At 60° on the slider: 64 / 56 / 48 / 40° front to back.
 export const CLIMB_BEND_FACTORS = [1.07, 0.93, 0.80, 0.67];
+// A little asymmetry in the default pose (Daniel, 2026-10-14): the front
+// left leg (the left-hand wall, looking into the alley from the street)
+// reaches further, forward and up and straighter, as if taking the next
+// step; every other leg differs a little from its partner. One entry per
+// leg, right leg first in each pair, front pair first: degrees of plan
+// angle, metres of foot height, degrees of knee bend, added to the pair's.
+export const DEFAULT_VARIATION = [
+  [-3, -0.05, 4], [12, 0.30, -18],
+  [4, 0.04, 3], [-3, -0.06, 6],
+  [-3, 0.03, -4], [4, -0.04, 5],
+  [3, 0.05, -6], [-5, -0.03, 4],
+];
+// A per-pair list (4) as a per-leg one (8); a per-leg list as it is.
+export function perLeg(k) { return k.length === 8 ? k : [0, 1, 2, 3].flatMap(i => [k[i], k[i]]); }
+// The spread's plan angles with the default variation's offsets, per leg.
+export function variedAzimuths(azimuths = SPREAD_AZIMUTHS, vary = DEFAULT_VARIATION) { return perLeg(azimuths).map((v, j) => v + (vary ? vary[j][0] : 0)); }
 
 // Where the four leg roots sit along the visible head (cephalothorax), as
 // fractions of its length measured from the front of the abdomen, front
@@ -375,11 +391,17 @@ export function planeFeet(p, { stance = 2.6, offset = 0.4, wallDistance = 1.47 }
 export function spreadPreset(L, options = {}) {
   // The defaults are the page's starting pose (the 45° plane, see DEFAULTS);
   // `plane: null` gives the fanned pose on the given foot heights instead.
-  const o = { pitch: 45, azimuths: SPREAD_AZIMUTHS, footHeights: [2.6, 2.4, 2.2, 2.0], backBend: 60, bodyHeight: 2.6, along: 6.5, wallDistance: 1.47, walls: null, plane: { stance: 3.0, offset: 0.4 }, ...options };
+  const o = { pitch: 45, azimuths: SPREAD_AZIMUTHS, footHeights: [2.6, 2.4, 2.2, 2.0], backBend: 60, bodyHeight: 2.6, along: 6.5, wallDistance: 1.47, walls: null, plane: { stance: 3.0, offset: 0.4 }, vary: DEFAULT_VARIATION, ...options };
   const p = briefPreset(L, { backBend: o.backBend, bodyHeight: o.bodyHeight, along: o.along, wallDistance: o.wallDistance });
   p.pitch = o.pitch;
   if (o.plane) Object.assign(o, planeFeet(p, { ...o.plane, wallDistance: o.wallDistance })); // feet on the 45° plane: azimuths and heights from it
-  p.legs = spreadLegsAt(p, { azimuths: o.azimuths, footHeights: o.footHeights, backBend: o.backBend, bends: o.bends || CLIMB_BEND_FACTORS.map(f => o.backBend * f), wallDistance: o.wallDistance, walls: o.walls }).legs;
+  let azimuths = perLeg(o.azimuths), footHeights = perLeg(o.footHeights), bends = perLeg(o.bends || CLIMB_BEND_FACTORS.map(f => o.backBend * f));
+  if (o.vary) { // the per-leg offsets: a little asymmetry, the front left leg reaching
+    azimuths = azimuths.map((v, j) => v + o.vary[j][0]);
+    footHeights = footHeights.map((v, j) => Math.max(0.3, v + o.vary[j][1]));
+    bends = bends.map((v, j) => Math.max(10, v + o.vary[j][2]));
+  }
+  p.legs = spreadLegsAt(p, { azimuths, footHeights, backBend: o.backBend, bends, wallDistance: o.wallDistance, walls: o.walls }).legs;
   return p;
 }
 

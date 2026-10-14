@@ -176,6 +176,14 @@ test run before the night.
   its fan angle at its height and the knee bends to suit, a foot out of
   reach held short of the angle.
 
+- 2026-10-14 (evening): the default pose is a little asymmetric
+  (spider.js DEFAULT_VARIATION, one offset per leg of plan angle, foot
+  height and bend, applied by spreadPreset and by the Spread button's
+  fan): the front left leg, on the left-hand wall looking in from the
+  street, reaches further forward (+12°), higher (+0.30 m) and straighter
+  (−18°), as if taking the next step; every other leg differs a little
+  from its partner. `vary: null` gives the symmetric pose.
+
 ## Still open (ask Daniel)
 
 - Absolute size (L), knee bend and leg thickness: the visualizer exists to
