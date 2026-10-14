@@ -288,10 +288,10 @@ export function spreadLegsAt(p, { azimuths = SPREAD_AZIMUTHS, footHeights, backB
   const legs = [];
   const held = [];
   for (let i = 0; i < 4; i++) {
-    const bend = bends ? bends[i] : backBend * bendFactor(i); // bends: one knee bend per pair, front first, instead of the brief's series
-    const unitD = rootToFootDistance(kf, 1 - kf, bend); // root-to-foot distance of a unit leg
     for (const side of [1, -1]) {
       const j = legIndex(i, side);
+      const bend = bends ? (bends.length === 8 ? bends[j] : bends[i]) : backBend * bendFactor(i); // bends: a knee bend per pair (front first) or per leg, instead of the brief's series
+      const unitD = rootToFootDistance(kf, 1 - kf, bend); // root-to-foot distance of a unit leg
       const root = frame.toAlley(rootAlongOffset(p, i), 0, side * p.headWidth / 2);
       const height = footHeights.length === 8 ? footHeights[j] : footHeights[i];
       const dy = height - root[1];
