@@ -48,6 +48,7 @@ import { wallsFromSite } from './site.js';
 import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildBuildMeshes, rebuildFaceMeshes } from './scene.js';
 import { systemById, buildParts, straightWalls, DEFAULT_MAX_PIECE, DEFAULT_BRACING, BRACINGS, DEFAULT_EYES, EYE_OPTIONS } from './build.js';
 import { WALK_DEFAULTS, buildPath, cameraAt } from './walk.js';
+import { DEFAULT_DESIGN } from './design.js';
 import { Muxer, ArrayBufferTarget } from './vendor/mp4-muxer.mjs';
 
 const q = new URLSearchParams(location.search);
@@ -60,8 +61,8 @@ if (q.has('bob')) walk.bob = q.get('bob') !== '0';
 // with the construction choices: the part system, the longest piece to
 // ship, whether the frame alone shows, whether the posts are plumb, the
 // bracing and the eyes.
-let params = { ...DEFAULTS };
-const construction = { system: '', maxPiece: DEFAULT_MAX_PIECE, frameOnly: false, plumbPosts: true, bracing: 'none', eyes: DEFAULT_EYES };
+let params = upgradeParams({ ...DEFAULT_DESIGN.params });
+const construction = { system: DEFAULT_DESIGN.system, maxPiece: DEFAULT_DESIGN.maxPiece, frameOnly: DEFAULT_DESIGN.frameOnly, plumbPosts: true, bracing: 'none', eyes: DEFAULT_DESIGN.eyes };
 try {
   const h = location.hash.slice(1);
   if (h) {

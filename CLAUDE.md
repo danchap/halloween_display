@@ -186,6 +186,15 @@ test run before the night.
   other leg differs a little from its partner. `vary: null` gives the
   symmetric pose.
 
+- 2026-10-14 (night): the body height slider moves the whole spider
+  (app.js moveSpiderTo: every foot and knee shifts with the body, so no
+  leg changes length or angle; the lowest foot stops 0.1 m up). The
+  Designs menu's built-in entry is "default", design.js DEFAULT_DESIGN
+  (params and construction choices; walk.html uses it without a hash);
+  Daniel's saved design "v1" is to be baked into it, after which
+  BAKED_FROM drops the saved copy from the menu so "default" is the only
+  entry on a reload.
+
 ## Still open (ask Daniel)
 
 - Absolute size (L), knee bend and leg thickness: the visualizer exists to

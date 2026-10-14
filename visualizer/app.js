@@ -8,6 +8,7 @@ import { createWorld, loadWorldSite, rebuildSpiderMeshes, rebuildBuildMeshes, re
          setPlantsVisible, showGuide, hideGuide } from './scene.js';
 import { buildPath, cameraAt } from './walk.js';
 import { SYSTEMS, MAX_PIECES, DEFAULT_MAX_PIECE, BRACINGS, DEFAULT_BRACING, EYE_OPTIONS, DEFAULT_EYES, systemById, buildParts, recipeText, straightWalls } from './build.js';
+import { DEFAULT_DESIGN, BAKED_FROM } from './design.js';
 
 // Hosted on claude.ai the page cannot use the URL hash or start downloads;
 // the design is then remembered in the browser instead.
@@ -28,7 +29,7 @@ const SLIDERS = [
   ]},
   { group: 'Body position', open: true, items: [
     ['along', 'Along the alley (from the street)', 0, 45, 0.05],
-    ['bodyHeight', 'Body centre height', 0.5, 5, 0.01],
+    ['bodyHeight', 'Body centre height (the whole spider moves)', 0.5, 5, 0.01],
     ['pitch', 'Pitch of the whole spider, ° (head up is +)', -80, 80, 1],
   ]},
   { group: 'Leg thickness', open: false, items: [
@@ -42,7 +43,7 @@ const state = {
   briefL: 0.8,
   backBend: 60,     // knee bend of the back pair, degrees off straight; the front pair gets half
   hip: 15,          // the upper segment's angle above level where it leaves the body
-  design: '',         // name of the loaded saved design; '' is the brief defaults
+  design: '',         // name of the loaded saved design; '' is "default" (design.js DEFAULT_DESIGN)
   bendLocked: true,   // the bend slider is inert until unlocked
   keepLengths: true,  // the keep-lengths rule (Daniel, 2026-10-14): a leg keeps its two segment lengths and its knee keeps its roll round the hip-to-foot line; was keepSplit, the brief's-leg rule
   plans: null,        // the plan angle wanted for each leg (degrees, + toward the head), kept across capped poses; null: as posed
@@ -126,14 +127,27 @@ function unsavedChanges() { return JSON.stringify(designSnapshot()) !== loadedSn
 
 function refreshDesignList() {
   const sel = document.getElementById('designs');
+  dropBakedDesign();
   const names = Object.keys(readDesigns()).sort((a, b) => a.localeCompare(b));
-  sel.innerHTML = '<option value="">Brief defaults</option>' + names.map(n => `<option value="${n.replace(/"/g, '&quot;')}">${n.replace(/</g, '&lt;')}</option>`).join('');
+  sel.innerHTML = '<option value="">default</option>' + names.map(n => `<option value="${n.replace(/"/g, '&quot;')}">${n.replace(/</g, '&lt;')}</option>`).join('');
   sel.value = names.includes(state.design) ? state.design : '';
   if (sel.value !== state.design) state.design = sel.value;
   document.getElementById('deleteDesign').disabled = !sel.value;
 }
+// The saved design that became the default (design.js BAKED_FROM) leaves
+// the menu once, when it still matches, so "default" is the only entry.
+function dropBakedDesign() {
+  if (!BAKED_FROM) return;
+  const designs = readDesigns();
+  const d = designs[BAKED_FROM];
+  if (!d || !d.params) return;
+  if (JSON.stringify(normalizeParams(d.params)) !== JSON.stringify(normalizeParams(clone(DEFAULT_DESIGN.params)))) return;
+  delete designs[BAKED_FROM];
+  writeDesigns(designs);
+  if (state.design === BAKED_FROM) state.design = '';
+}
 function loadDesign(name) {
-  if (unsavedChanges() && !confirm(`Replace the current parameters with "${name || 'Brief defaults'}"? The changes since "${state.design || 'Brief defaults'}" was loaded are not saved.`)) {
+  if (unsavedChanges() && !confirm(`Replace the current parameters with "${name || 'default'}"? The changes since "${state.design || 'default'}" was loaded are not saved.`)) {
     document.getElementById('designs').value = state.design;
     return;
   }
@@ -158,14 +172,16 @@ function loadDesign(name) {
   markLoaded();
   refreshDesignList();
 }
-// The pose the page starts from (DEFAULTS in spider.js): the brief's body
-// at L = 0.8 m pitched up 45 degrees, the legs fanned out in plan, the feet
-// at 3.0 to 2.0 m from the front pair to the back (Daniel, 2026-10-13).
+// The design the page starts from and the menu's "default" (design.js
+// DEFAULT_DESIGN): every parameter and construction choice of that design,
+// like loading a saved one.
 function loadDefaults() {
-  state.briefL = 0.8; state.backBend = 60; state.hip = 15; state.plans = null; state.design = '';
-  state.params = clone(DEFAULTS);
+  const d = DEFAULT_DESIGN;
+  state.briefL = d.briefL; state.backBend = d.backBend; state.hip = d.hip; state.plans = d.plans ? clone(d.plans) : null; state.design = '';
+  state.system = d.system; state.maxPiece = d.maxPiece; state.frameOnly = d.frameOnly; state.eyes = d.eyes;
+  state.params = normalizeParams(clone(d.params));
   updateWalls();
-  state.params = spreadPreset(state.briefL, { walls }); // the same pose, solved on the walls the page uses
+  if (d.solveOnWalls) state.params = spreadPreset(state.briefL, { walls }); // the generated pose, solved on the walls the page uses
   refreshControls();
   onChange();
 }
@@ -939,7 +955,8 @@ function buildControls() {
     const d = document.createElement('details'); d.open = g.open;
     d.innerHTML = `<summary>${g.group}</summary>`;
     for (const [key, label, min, max, step] of g.items) {
-      const r = sliderRow(key, label, min, max, step, () => state.params[key], v => { state.params[key] = v; });
+      const set = key === 'bodyHeight' ? v => moveSpiderTo(v) : v => { state.params[key] = v; };
+      const r = sliderRow(key, label, min, max, step, () => state.params[key], set);
       rows.push(r); d.appendChild(r);
     }
     root.appendChild(d);
@@ -980,6 +997,22 @@ function onChange() {
   poseNote = '';
   rebuildSpider();
   writeState();
+}
+
+// The body height slider moves the whole spider (Daniel, 2026-10-14): every
+// foot and knee goes up or down with the body, so no leg changes its length
+// or its angles, and the posts follow. The lowest foot stays FOOT_FLOOR
+// above the ground, so the slider stops there.
+const FOOT_FLOOR = 0.1;
+function moveSpiderTo(height) {
+  const p = state.params;
+  const lowest = Math.min(...p.legs.map(l => l.footHeight));
+  const delta = Math.max(height - p.bodyHeight, FOOT_FLOOR - lowest);
+  if (!delta) return;
+  // Added as it is, not rounded: rounding the shifted heights to the mm
+  // would change each leg by a fraction of a millimetre.
+  for (const l of p.legs) { l.footHeight += delta; l.kneeHeight += delta; }
+  p.bodyHeight += delta;
 }
 
 function applyBrief() {
@@ -1262,6 +1295,6 @@ async function main() {
   if (view === 'walk') { orbit.update(); setMode('walk'); }
   else (VIEWS[view] || VIEWS.Street)();
   window.spider = { state, panes, get model() { return model; }, get parts() { return parts; }, get walls() { return walls; }, get realWalls() { return realWalls; }, VIEWS, rebuildSpider, render, walker, setMode, startPath, stepWalker, get mode() { return mode; },
-    pickJoint, startJointDrag, moveJoint, endJointDrag, get jointDrag() { return jointDrag; }, loadDesign, saveDesignAs, applyAngles, spreadLegs, showHelp, camera, world };
+    pickJoint, startJointDrag, moveJoint, endJointDrag, get jointDrag() { return jointDrag; }, loadDesign, saveDesignAs, applyAngles, spreadLegs, moveSpiderTo, showHelp, camera, world };
 }
 main();
