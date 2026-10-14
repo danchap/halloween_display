@@ -50,15 +50,16 @@ export const CLIMB_BEND_FACTORS = [1.07, 0.93, 0.80, 0.67];
 // spider's front left leg, which stands on the right-hand wall looking
 // into the alley from the street (the higher wall), reaches well further,
 // forward and up and nearly straight, as if taking the next hold; every
-// other leg differs a little from its partner. One entry per leg, right
-// leg first in each pair (the right-hand wall), front pair first: degrees
-// of plan angle, metres of foot height, degrees of knee bend, added to
-// the pair's.
+// other leg differs a little from its partner, and among the back legs
+// one of each pair bends its knee a good deal more (Daniel, 2026-10-14),
+// diagonally, as legs mid-stride do. One entry per leg, right leg first
+// in each pair (the right-hand wall), front pair first: degrees of plan
+// angle, metres of foot height, degrees of knee bend, added to the pair's.
 export const DEFAULT_VARIATION = [
   [18, 0.45, -28], [-3, -0.05, 4],
   [-3, -0.06, 6], [4, 0.04, 3],
-  [4, -0.04, 5], [-3, 0.03, -4],
-  [-5, -0.03, 4], [3, 0.05, -6],
+  [4, -0.04, 15], [-3, 0.03, -2],
+  [-5, -0.03, 6], [3, 0.05, 22],
 ];
 // A per-pair list (4) as a per-leg one (8); a per-leg list as it is.
 export function perLeg(k) { return k.length === 8 ? k : [0, 1, 2, 3].flatMap(i => [k[i], k[i]]); }
