@@ -100,6 +100,14 @@ const STAYS = { name: 'reflective polyester guyline 4 mm, 50 m roll', roll: 50, 
 const BALLAST = { sandbag: { name: 'sandbag, empty', price: 2.30 }, sand: { name: 'sand, 25 kg bag (bought locally)', price: 5.00 }, dims: [0.40, 0.12, 0.25], color: '#4a4845', finish: 'matte' }; // dims: along, up, across
 const COMMON_EXTRAS = { zipTies: { name: 'zip ties, pack of 100', price: 8.45 }, tape: { name: 'gaffer tape, roll', price: 14.90 } };
 const PVC_EXTRAS = { ...COMMON_EXTRAS, screws: { name: 'self-drilling screws 4.2 × 16, pack of 100', pack: 100, price: 9.29 }, cement: { name: 'PVC cement, 125 ml', price: 5.00 } };
+// Aluminium tube in the PVC fittings (2026-10-14): cement does not hold
+// aluminium, so the joints the PVC build glues get two M5 bolts through
+// each socket instead; the rest keep the self-drilling screws.
+const ALU_EXTRAS = { ...COMMON_EXTRAS, screws: PVC_EXTRAS.screws, bolts: { name: 'M5 × 50 bolts with nuts and washers, box of 50', pack: 50, price: 9.90 } }; // bolts price estimated
+const ALU_GREY = { color: '#c9ccd1', finish: 'metal' };
+const FOAM_42 = { name: 'black foam sleeve 42 × 13 mm', od: 0.068, kgPerM: 0.07, pricePerM: 2.24, color: '#1b1b1d', finish: 'sheen' }; // 2 m lengths at 4.48, over the leg segments only
+// A plastic insert in the end of a Ø 40 tube (Comment Fer, 0.44 each, 2026-10-14); it sits inside the tube, so no socket.
+const CAP_INSERT_40 = { kind: 'cap', name: 'plastic end cap for Ø 40 tube', size: 'd40', z: 0.003, socket: 0, od: 0.040, kg: 0.01, price: 0.44, color: '#1b1b1d', finish: 'matte' };
 const PAINT = { name: 'black spray paint, 400 ml', coversM: 4, price: 7.00 }; // price estimated
 // The face: the parts of each eye choice (the buildParts option `eyes`;
 // spider.js FACE gives the eyes' sizes as fractions of the head's width
@@ -185,7 +193,7 @@ export const SYSTEMS = [
       d50: { label: 'Ø 50', shape: 'round', od: 0.050, kgPerM: 0.63, stock: [4.0, 2.0], stockPrice: [9.99, 6.00], stockSource: ['store price, estimated', 'store price, estimated'], stockName: 'pipe' },
     },
     members: { leg: { size: 'd40', color: '#e4e2dc', finish: 'matte' }, post: { size: 'd50', ...PVC_WHITE }, ski: { size: 'd50', ...PVC_WHITE } },
-    cover: { name: 'black foam sleeve 42 × 13 mm', od: 0.068, kgPerM: 0.07, pricePerM: 2.24, color: '#1b1b1d', finish: 'sheen' }, // 2 m lengths at 4.48, over the leg segments only
+    cover: FOAM_42,
     fittings: { hip: ELBOWS_40, knee: ELBOWS_40, foot: ELBOWS_40, hub: CROSS_40, ski: TEE_50, reducer: REDUCER_50_40, coupler: { d40: COUPLER_40, d50: COUPLER_50 }, cap: { d40: CAP_40, d50: CAP_50 } },
     hub: { kind: 'crosses', spacing: 0.116 }, // twice a cross's reach (Z 0.031 plus the 0.027 socket): two crosses cannot sit closer; placeHub never lets it drop below that
     body: PVC_BODY,
@@ -194,6 +202,31 @@ export const SYSTEMS = [
     stays: STAYS,
     ballast: BALLAST,
     extras: PVC_EXTRAS,
+    bracing: BRACING,
+  },
+  {
+    // Aluminium tube in the same Ø 40 PVC fittings (Daniel, 2026-10-14):
+    // legs, posts and skis all Ø 40, every piece ordered cut to its length
+    // from Comment Fer (no cutting, no offcuts, delivered to the island),
+    // so there is one size, no reducer and no stock plan. The knee and hub
+    // sockets are bolted (ALU_EXTRAS); the posts are bare aluminium.
+    id: 'alu40',
+    name: 'Aluminium Ø 40 × 1.5 tube cut to length, PVC Ø 40 fittings, black foam',
+    sizes: {
+      d40: { label: 'Ø 40', shape: 'round', od: 0.040, kgPerM: 0.49, stock: [4.0], stockPrice: [56.00], stockSource: ['Comment Fer, cut to length'], stockName: 'aluminium tube',
+        cutToLength: { pricePerM: 14.00, source: 'Comment Fer "tube aluminium sur mesure", 6060, any length to 4 m, cut square and not deburred, custom lengths not returnable; about 14 per metre at 1.5 mm wall, estimated from the stock 40 × 2 mm tube at 18 per metre (2026-10-14)' } },
+    },
+    members: { leg: { size: 'd40', ...ALU_GREY }, post: { size: 'd40', ...ALU_GREY }, ski: { size: 'd40', ...ALU_GREY } },
+    cover: FOAM_42,
+    fittings: { hip: ELBOWS_40, knee: ELBOWS_40, foot: ELBOWS_40, hub: CROSS_40, ski: TEE_40, coupler: { d40: COUPLER_40 }, cap: { d40: CAP_INSERT_40 } },
+    hub: { kind: 'crosses', spacing: 0.116 },
+    body: PVC_BODY,
+    glueJoints: [],
+    boltJoints: ['knee', 'hub'], // two M5 bolts through each socket where the PVC build glues
+    paintLegs: null,
+    stays: STAYS,
+    ballast: BALLAST,
+    extras: ALU_EXTRAS,
     bracing: BRACING,
   },
   {
@@ -597,6 +630,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   const fittings = [];  // { role, kind, name, at, dirs, od, centreToEnd, color, finish, items, sockets, glued, recipe?, leg?, side? }
   const cuts = [];      // { role, sizeKey, leg?|side?, length, pieces }
   const glued = joint => (system.glueJoints || []).includes(joint);
+  const bolted = joint => (system.boltJoints || []).includes(joint); // two bolts through each socket instead of screws
   // Stock that can be shipped: the lengths up to maxPiece, or all of them
   // when none is short enough (the warning says so).
   const usableStock = size => { const ok = size.stock.filter(l => l <= maxPiece + 1e-9); return ok.length ? ok : size.stock; };
@@ -683,7 +717,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     }
     if (spineCap) fittings.push(fitting(spineCap, axisPoint(last), [axisDir], { glued: glued('hub') }), fitting(spineCap, axisPoint(first), [scale(axisDir, -1)], { glued: glued('hub') }));
     for (const st of stations.filter(s => s.pair !== undefined)) {
-      fittings.push(fitting(cross, axisPoint(st.along), [axisDir, scale(axisDir, -1), [0, 0, 1], [0, 0, -1]], { pair: st.pair, glued: glued('hub') }));
+      fittings.push(fitting(cross, axisPoint(st.along), [axisDir, scale(axisDir, -1), [0, 0, 1], [0, 0, -1]], { pair: st.pair, joint: 'hub', glued: glued('hub'), bolted: bolted('hub') }));
     }
     if (hubPlace.maxShift > 0.0005) {
       warnings.push(`the hub crosses need ${hub.length.toFixed(2)} m; the head is ${p.headLength.toFixed(2)} m, the roots were moved up to ${hubPlace.maxShift.toFixed(2)} m and the upper segments are up to ${hubPlace.upperChange.toFixed(2)} m off the design's`);
@@ -838,16 +872,16 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     const lean = Math.abs(foot[2] - bottom[2]);
     legPosts.push({ leg: j, side: l.side, x: postX, top: foot, z: bottom[2], lean });
     const toAxis = unit(sub(axisPoint(pairAlong[l.pair]), root));
-    fittings.push(fitting(hipSpec, root, [toAxis, unit(sub(l.knee, root))], { leg: j, joint: 'hip', glued: glued('hip') }));
-    fittings.push(fitting(kneeSpec, l.knee, [unit(sub(root, l.knee)), unit(sub(foot, l.knee))], { leg: j, joint: 'knee', glued: glued('knee') }));
-    fittings.push(fitting(footSpec, foot, [unit(sub(l.knee, foot)), postDir], { leg: j, joint: 'foot', glued: glued('foot') }));
+    fittings.push(fitting(hipSpec, root, [toAxis, unit(sub(l.knee, root))], { leg: j, joint: 'hip', glued: glued('hip'), bolted: bolted('hip') }));
+    fittings.push(fitting(kneeSpec, l.knee, [unit(sub(root, l.knee)), unit(sub(foot, l.knee))], { leg: j, joint: 'knee', glued: glued('knee'), bolted: bolted('knee') }));
+    fittings.push(fitting(footSpec, foot, [unit(sub(l.knee, foot)), postDir], { leg: j, joint: 'foot', glued: glued('foot'), bolted: bolted('foot') }));
     if (foot[1] < CHILD_REACH) lowFeet++;
     if (postHeight > MAX_POST) tallPosts++;
     if (base.kind === 'frame' && foot[1] > (base.maxStayedFoot || MAX_STAYED_FOOT) + 0.01) highFeet++; // 0.01: a foot placed at the limit lands within a few millimetres of it
     legsAssembly.push({
       leg: j, pair: l.pair, side: l.side > 0 ? 'R' : 'L',
       hip, knee, foot: footFit,
-      joints: { hip: glued('hip') ? 'glued' : 'screwed', knee: glued('knee') ? 'glued' : 'screwed', foot: glued('foot') ? 'glued' : 'screwed' },
+      joints: Object.fromEntries(['hip', 'knee', 'foot'].map(k => [k, glued(k) ? 'glued' : bolted(k) ? 'bolted' : 'screwed'])),
       upper: mm(upper), lower: mm(lower), post: mm(post), postHeight: mm(Math.max(0, postHeight)),
       postLean: { across: mm(lean), deg: deg1(Math.atan2(lean, Math.max(0.001, foot[1] - bottom[1])) / DEG) },
       upperSpan: mm(upperSpan), lowerSpan: mm(lowerSpan),
@@ -1019,7 +1053,8 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     if (!line) { line = { name: it.name, role: f.role, count: 0, kg: 0, cost: 0, unit: it.price || 0 }; fittingLines.push(line); }
     line.count++; line.kg = mm(line.kg + (it.kg || 0)); line.cost = mm(line.cost + (it.price || 0));
   }
-  const screws = fittings.filter(f => !f.glued).reduce((s, f) => s + 2 * (f.sockets || 0), 0);
+  const screws = fittings.filter(f => !f.glued && !f.bolted).reduce((s, f) => s + 2 * (f.sockets || 0), 0);
+  const bolts = fittings.filter(f => f.bolted).reduce((s, f) => s + 2 * (f.sockets || 0), 0); // two per socket
   // Pipe: the pieces as cut, by size and role; the stock plan per size
   // buys them and what is left over is the offcuts.
   const sizeKeys = Object.keys(system.sizes);
@@ -1034,8 +1069,14 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   const stockBySize = sizeKeys.map(sizeKey => {
     const size = system.sizes[sizeKey];
     const pieces = cuts.filter(c => c.sizeKey === sizeKey).flatMap(c => c.pieces);
-    const plan = stockPlan(pieces, usableStock(size), usableStock(size).map(l => size.stockPrice[size.stock.indexOf(l)]));
     const cut = mm(pieces.reduce((s, x) => s + x, 0));
+    if (size.cutToLength) {
+      // Every piece bought at its length: no stock lengths, no offcuts.
+      const c = size.cutToLength;
+      return { sizeKey, label: size.label, stockName: size.stockName, kgPerM: size.kgPerM, pieces: pieces.length, cut, kg: mm(cut * size.kgPerM), offcutKg: 0,
+        cutToLength: true, source: c.source, pricePerM: c.pricePerM, count: pieces.length, metres: cut, waste: 0, cost: mm(cut * c.pricePerM), lengths: [], unplaced: pieces.filter(x => x > Math.max(...size.stock) + 1e-9) };
+    }
+    const plan = stockPlan(pieces, usableStock(size), usableStock(size).map(l => size.stockPrice[size.stock.indexOf(l)]));
     // cut: the pieces' metres; metres (from the plan): the stock bought;
     // each length row names where its price was seen.
     plan.lengths = plan.lengths.map(q => ({ ...q, source: size.stockSource ? size.stockSource[size.stock.indexOf(q.length)] || '' : '' }));
@@ -1084,6 +1125,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   // The parts list in groups: pipe, fittings, covering and body, fixings and stays.
   const lines = [];
   const line = (group, item, qty, unit, cost, extra = {}) => lines.push({ group, item, qty, unit, cost: mm(cost), ...extra });
+  for (const r of stockBySize) if (r.cutToLength) line('pipe', `${r.stockName} ${r.label}, cut to length, ${r.pieces} pieces`, r.cut, r.pricePerM, r.cost, { kg: r.kg, sizeKey: r.sizeKey, cutToLength: true });
   for (const r of stockBySize) for (const q of r.lengths) if (q.count) line('pipe', `${r.stockName} ${r.label}, ${q.length.toFixed(1)} m`, q.count, q.unit, q.cost, { kg: mm(q.count * q.length * r.kgPerM), sizeKey: r.sizeKey, length: q.length });
   for (const r of fittingLines) line('fittings', r.name, r.count, r.unit, r.cost, { kg: r.kg, role: r.role });
   if (hub.plank) line('fittings', hub.plank.name, 1, hub.plank.price || 0, hub.plank.price || 0, { kg: hub.plank.kg || 0 });
@@ -1094,6 +1136,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   if (FACE[eyes] && FACE_KITS[eyes]) for (const k of FACE_KITS[eyes]) line('covering and body', k.name.replace('{cm}', String(Math.round(FACE[eyes][k.size] * model.head.width * 100))), k.qty, k.price, k.qty * k.price, { eyes, cm: Math.round(FACE[eyes][k.size] * model.head.width * 100) });
   const ex = system.extras || {};
   if (ex.screws && screws) { const n = Math.ceil(screws / ex.screws.pack); line('fixings and stays', ex.screws.name, n, ex.screws.price, n * ex.screws.price, { screws }); }
+  if (ex.bolts && bolts) { const n = Math.ceil(bolts / ex.bolts.pack); line('fixings and stays', ex.bolts.name, n, ex.bolts.price, n * ex.bolts.price, { bolts }); }
   if (base.woodScrews && woodScrews) { const n = Math.ceil(woodScrews / base.woodScrews.pack); line('fixings and stays', base.woodScrews.name, n, base.woodScrews.price, n * base.woodScrews.price, { screws: woodScrews }); }
   if (ex.cement && (system.glueJoints || []).length) line('fixings and stays', ex.cement.name, 1, ex.cement.price, ex.cement.price);
   if (ex.zipTies) line('fixings and stays', ex.zipTies.name, 1, ex.zipTies.price, ex.zipTies.price);
@@ -1119,6 +1162,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     cover: system.cover ? { metres: coverMetres, kg: weight.covers, cost: mm(coverMetres * system.cover.pricePerM) } : null,
     hoops: hoopCount,
     screws,
+    bolts,
     glued: (system.glueJoints || []).slice(),
     stays: { count: cords, metres: stayMetres, rolls: cordRolls },
     woodScrews,
@@ -1139,7 +1183,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   };
   if (splitCount) warnings.push(`${splitCount} piece${splitCount > 1 ? 's were' : ' was'} split ${splitNote}`);
   for (const r of stockBySize) {
-    if (r.lengths.some(q => q.length <= maxPiece + 1e-9)) continue;
+    if (r.cutToLength || r.lengths.some(q => q.length <= maxPiece + 1e-9)) continue; // cut to length: any length up to the longest it comes in
     const shortest = Math.min(...r.lengths.map(q => q.length)).toFixed(1);
     if (system.sizes[r.sizeKey].splitBy === 'lap') warnings.push(`${r.stockName}s ${r.label} come in ${shortest} m lengths, longer than the ${maxPiece.toFixed(2)} m to ship: each is cut to ${maxPiece.toFixed(2)} m and the posts and skis are lapped ${(2 * base.lap.z).toFixed(2)} m`);
     else warnings.push(`${r.stockName} ${r.label} comes in ${shortest} m lengths, longer than the ${maxPiece.toFixed(2)} m to ship`);

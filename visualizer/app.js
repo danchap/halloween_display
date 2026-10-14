@@ -881,11 +881,11 @@ function partsTables(parts) {
   h += '</table><div class="muted" style="margin-top:4px">The total weight is the spider\'s (the pieces, not the stock; the sandbags are not in it); the cost is everything bought.</div>';
   for (const note of b.notes || []) h += `<div class="muted" style="margin-top:4px">${esc(note)}.</div>`;
   const splitNote = b.unsplitOver.length ? `; ${b.unsplitOver.length} member${b.unsplitOver.length > 1 ? 's' : ''} split ${esc(b.splitNote)}` : '';
-  const stockNote = b.stock.bySize.map(r => `${esc(r.label)}: ${r.lengths.filter(q => q.count).map(q => `${q.count} × ${fmt(q.length, 1)} m`).join(', ') || 'none'}`).join('; ');
+  const stockNote = b.stock.bySize.map(r => `${esc(r.label)}: ${r.cutToLength ? `${r.pieces} pieces cut to length, ${fmt(r.cut, 2)} m` : r.lengths.filter(q => q.count).map(q => `${q.count} × ${fmt(q.length, 1)} m`).join(', ') || 'none'}`).join('; ');
   // The pipe price note names where the price of each stock length
   // actually bought was seen (build.js sizes: the store's 2 m lengths, the
   // 1 m lots from Amazon).
-  const priceNotes = b.stock.bySize.flatMap(r => r.lengths.filter(q => q.count && q.source).map(q => `${esc(r.stockName)} ${esc(r.label)} ${fmt(q.length, 1)} m: ${esc(q.source)}`));
+  const priceNotes = b.stock.bySize.flatMap(r => r.cutToLength ? [`${esc(r.stockName)} ${esc(r.label)}: ${esc(r.source)}`] : r.lengths.filter(q => q.count && q.source).map(q => `${esc(r.stockName)} ${esc(r.label)} ${fmt(q.length, 1)} m: ${esc(q.source)}`));
   h += `<div class="muted" style="margin-top:4px">Stock: ${stockNote}; ${fmt(b.stock.waste, 2)} m offcuts. Longest piece ${fmt(b.longestPiece, 3)} m${splitNote}. Prices seen on ${b.pricesSeen}${priceNotes.length ? '; ' + priceNotes.join('; ') : ''}.</div>`;
 
   // Cut list: lengths in one table, the fitting recipes in another, so each

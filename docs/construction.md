@@ -215,139 +215,100 @@ neighbours a word, as in the earlier years.
 
 ## Parts
 
-Everything below is ordered to the neighbours' address at Les
-Portes-en-Ré (ask them for the exact address and a phone number the
-carriers can call for the pipe).
+Daniel's choices of 14 October (evening): the legs, the posts and the
+skis in aluminium Ø 40 × 1.5 mm tube, every piece ordered cut to its
+length from Comment Fer, in the same Ø 40 PVC fittings; the hub (four
+crosses, the spine and the stubs) stays PVC and glued, cut from one
+1 m pipe with the ratchet cutter; nothing else is cut. Everything is
+delivered to the neighbours' address at Les Portes-en-Ré. The page's
+"Aluminium Ø 40 × 1.5 tube cut to length" system (Construction section)
+gives the list for any pose; the quantities below are for the default
+design (his v1) with 4.0 m as the longest piece, so each post is one
+piece. Finish the pose before ordering: the cut lengths follow it, and
+Comment Fer does not take custom lengths back.
 
-### A. Amazon.fr, order on Tue 13 or Wed 14 October
+### A. Comment Fer, one order
 
-Fittings, Ø 40 (evacuation; a male-female elbow plugs straight into the
-next fitting, which keeps a pair short). A pair of two M/F elbows ends in
-a spigot, so where a pipe follows the pair (every hip and knee) a Ø 40
-coupler sits between the spigot and the pipe; the page's cut list counts
-these couplers and takes their Z (3 mm each side) off the pipe (dry-fit
-and measure all the same). At the foot the pair's spigot goes straight
-into the reducer; a foot with a single F/F elbow needs a short link of
-pipe from an offcut into the reducer instead, which the cut list gives
-(54 mm, a socket deep at each end). The quantities cover any pose, not
-only the default one: the page recomputes the recipes when the legs
-move, and a pair of 45° elbows makes any angle up to 90°.
+https://www.commentfer.fr/tube-aluminium-rond/2224-tube-aluminium-sur-mesure-3701102737210.html
+("Tube aluminium sur mesure": section 40 mm, wall 1.5 mm if offered,
+else 2 mm, 6060 alloy, cut square, not deburred). Free delivery from
+180 €, 2 to 5 working days. The price per metre of the custom item is
+not published; the stock 40 × 2 mm tube is about 18 € a metre, so
+budget 14 to 18 € a metre, about 600 to 750 € for the 41 m, and ask for
+a quote with the list ("Demander un devis" on the page). Lengths in
+metres, pipe between fittings, from the page's cut list:
 
-| Part | Qty | Listing | Price | Seen delivery (Paris; 17880 at most a day later) |
-|---|---|---|---|---|
-| Elbow 45° M/F, DOJA pack of 5 | 6 packs (30; 19 at the default pose) | https://www.amazon.fr/dp/B0G6DJGLK4 | 9.99 | Sat 17 Oct, Prime |
-| Elbow 67.5° F/F, DOJA pack of 5 | 1 pack (5) | https://www.amazon.fr/dp/B0G6FBRGTD | 9.99 | Sat 17 Oct, Prime; 3 at the default pose |
-| Elbow 87.5° F/F, DOJA pack of 5 | 1 pack (5) | https://www.amazon.fr/dp/B0G6FVQRHD | 9.49 | Sat 17 Oct, Prime |
-| Elbow 20° M/F, Fitt, Castorama online with home delivery (4.90 € for small parcels; the date shows at checkout) | 24 (18 at the default pose) | https://www.castorama.fr/coude-en-pvc-male-femelle-20-x-40-mm-fitt/3396047402042_CAFR.prd | 2.09 | the Nicoll CH2 on Amazon (https://www.amazon.fr/dp/B00B1T3J70, 4.90) is a third-party seller with 9 in stock, Tue 20 Oct: top-up only |
-| Elbow 30° M/F, Nicoll CH3 | 6 (none at the default pose; other poses use them) | https://www.amazon.fr/dp/B00BQH2OUU | 9.32 | Tue 20 Oct, third-party seller (Digital Brico); an order after 14 Oct lands 22 to 23 Oct |
-| Cross PN16 for 40 mm pipe, FLUXI-TECH lot of 2 | 2 lots (4) | https://www.amazon.fr/dp/B0H4WHNQR1 | 14.45 | Sat 17 Oct |
-| Coupler Ø 40 F/F, DOJA pack of 5 | 4 packs (20; 13 at the default pose, about 30 with the 1 m bars of part B) | https://www.amazon.fr/dp/B0G3MV64FQ | 10.99 | Sat 17 Oct, Prime |
-| Cap Ø 40 PN16, FLUXI-TECH pack of 6 | 1 pack | https://www.amazon.fr/dp/B0FFJWG9ML | 13.85 | Sat 17 Oct |
-| Reducer 50/40, Nicoll IJ | 8 | https://www.amazon.fr/dp/B019GTDVBU | 4.87 | Tue 20 Oct, third-party seller, 3 in stock; the FLUXI-TECH reducing rings below cover the rest. It is male Ø 50 / female Ø 40: its Ø 50 end is a spigot that plugs into a Ø 50 coupler on the post, not onto the post pipe |
-| Tee Ø 50 PN16, FLUXI-TECH lot of 3 (ski to post; one for the prop) | 3 lots (9) | https://www.amazon.fr/dp/B0FFJKB94M | 16.99 | Sat 17 Oct |
-| Cap Ø 50, FLUXI-TECH lot of 6 (ski ends and the prop) | 1 lot | https://www.amazon.fr/dp/B0FFJWS2H9 | 14.82 | Sat 17 Oct |
-| Coupler Ø 50 F/F, FLUXI-TECH lot of 4 (8 under the reducers, 6 in the split posts with 2 m bars, 2 spare) | 4 lots (16) | https://www.amazon.fr/dp/B0FFJMLK27 | 17.46 | Sat 17 Oct |
-| Reducing ring 50/40, FLUXI-TECH lot of 6 (sits in a Ø 50 socket and takes a Ø 40 spigot; replaces the Nicoll reducer where it runs out) | 2 lots (12) | https://www.amazon.fr/dp/B0FFJPS7MN | 9.90 | Sat 17 Oct |
+| Piece | Lengths |
+|---|---|
+| Upper legs, 1R to 4L | 1.275, 0.973, 0.777, 0.776, 0.801, 0.723, 0.976, 0.965 |
+| Lower legs, 1R to 4L | 1.286, 0.990, 0.742, 0.788, 0.897, 0.831, 1.239, 1.224 |
+| Posts, 1R to 4L | 3.758, 3.739, 3.101, 2.760, 2.162, 2.140, 1.429, 1.658 |
+| Right ski, street end first | 0.116, 1.232, 0.452, 1.098, 0.116 |
+| Left ski, street end first | 0.116, 0.231, 0.775, 1.117, 0.116 |
+| Plastic end caps for Ø 40 tube, 0.44 each | 4 (the ski ends) |
 
-Covering, body and face:
+34 pieces, 41.4 m, 20 kg. The pieces longer than 1.4 m are the eight
+posts and nothing else, which is why the structure ships direct. The
+alternative is GAL-INDUSTRIAL on Castorama's marketplace, 40 × 1 mm in
+fixed lengths (110 cm at 6.20 €, 200 cm, 40 cm), about a week, every
+piece then trimmed with the wheel cutter: about 250 € instead of 600,
+and 34 cuts.
 
-| Part | Qty | Listing | Price | Seen delivery |
-|---|---|---|---|---|
-| Black foam sleeve for 42 mm pipe, 13 mm wall, 2 m, NMC (plomberie.fr; add it to the pipe order of part B if that goes to plomberie.fr) | 18 | https://plomberie.fr/products/manchon-isolant-mousse-simple-ep-13mm-nmc-pour-tube-o42mm-l-2m | 4.48 | in stock; 18 × 2 m is a bulky parcel, 15.90 shipping, 2 to 3 days (Amazon has only grey 1 m sleeves at 40.76 per 10 plus 29.90 shipping, 20 to 22 Oct: https://www.amazon.fr/dp/B01A6PYG6C) |
-| Pool noodles, lot of 10 (hoops for the body; colour hidden) | 1 lot | https://www.amazon.fr/dp/B0055KCYGI | 59.95 | 15 to 16 Oct |
-| Black stretch fabric 145 cm wide, per unit (check the cut length on the page; 2 m needed) | 2 | https://www.amazon.fr/dp/B0CLLXTT1Q | 17.75 | Sat 17 Oct, Prime |
-| Black bin bags 240 L, 20 | 1 | https://www.amazon.fr/dp/B07HQ9G34F | 22.95 | 16 to 21 Oct, Prime |
-| Black gaffer tape 50 mm × 50 m, Adam Hall | 2 | https://www.amazon.fr/dp/B00KFA8XP4 | 10.52 | Sat 17 Oct, Prime |
-| Black cable ties 300 × 4.8 mm, 100 | 1 | https://www.amazon.fr/dp/B07BMZ5FH1 | 8.45 | Sat 17 Oct, Prime |
-| Googly kit, big eyes: DRERIO 18 cm, lot of 2 (1.8 cm thick, in stock) | 1 | https://www.amazon.fr/dp/B09XGW7H4X | 10.99 | Sat 17 Oct for 17880 (Thu 15 accelerated), shipped by Amazon |
-| Googly kit, small eyes: Zwenjuan 70 mm, lot of 6 (5 left on 13 Oct; the page says to keep them from water, so they go on a disc, see below) | 1 | https://www.amazon.fr/dp/B0DX27N8ZF | 6.59 | Sat 17 Oct for 17880 |
-| Googly kit, insurance if either sells out: Cinvo 18 cm, lot of 2 (2 left) and Prasacco 100/80/50 mm, lot of 6 | 1 each | https://www.amazon.fr/dp/B09GF8RVXJ , https://www.amazon.fr/dp/B0F7RDJL1W | 16.99, 5.69 | Sun 18 Oct for 17880 |
-| Googly kit for a small head: the page draws the big eyes at half the head's width (13 cm at L = 0.8, 18 cm at L = 1.1); for L under 1.0 take CLDURHGE 12.7 cm, lot of 4, instead of the 18 cm pair | 1 | https://www.amazon.fr/dp/B0CHP5HSHT | 9.75 | Sat 17 Oct |
-| Lit kit, big eyes: Rayher clear two-part ball 18 cm (one per listing; sold by Amazon) | 2 | https://www.amazon.fr/dp/B004ZC1MQA | 9.76 | Sat 17 Oct for 17880 |
-| Lit kit, small eyes: QWORK clear two-part balls 5/6/7/8 cm, 20 (use the 7 or 8 cm ones; 8 left) | 1 | https://www.amazon.fr/dp/B0D41LKFFT | 14.98 | Sun 18 Oct for 17880 |
-| Lit kit, light: Joycabin 12 red LED pucks, IP68, 2 × CR2032 fitted, over 100 h; three in each big ball, one in each small | 1 | https://www.amazon.fr/dp/B0H7WPX5XV | 12.95 | Sun 18 Oct for 17880 |
-| Lit kit, optional timer: Wxeadu 6 LED eye units (a pair of 5 mm LEDs on a 75 cm wire, 2 × AA each not included, daily timer, "étanche et scellée") inside the small balls if nobody can switch the pucks each evening | 1 | https://www.amazon.fr/dp/B0H7MK8KXR | 17.99 | Sat 17 Oct for 17880 |
-| Fallback abdomen: PROIRON gym ball 55 cm, black | 1 | https://www.amazon.fr/dp/B0CP255GYP | 21.99 | 19 to 20 Oct, third-party seller (Regent Works), 6 left |
+### B. Amazon.fr, one basket
 
-No ready-made lit eye of 18 cm exists on Amazon.fr: every "yeux
-lumineux Halloween" listing is a pair of 5 mm LEDs on a wire or a
-2.5 cm eyeball, so the lit kit builds each eye from a clear ball lined
-with white tissue paper or a piece of white bin bag (so it glows as an
-orb, not three dots) with sealed pucks inside, the seam taped, hung
-eyelet down. Fixing either face to the fabric: the googly eyes'
-adhesive backs are for flat smooth surfaces and will not hold on
-stretch fabric for a week of rain, so stick each eye onto a disc of
-gaffer tape or a plastic lid first and zip-tie or safety-pin that disc
-through the fabric to a hoop (two ties per big eye), or drill two holes
-in the eye's rim and tie through; the balls hang by their eyelets on
-zip ties to the hoops with a ring of gaffer tape where they meet the
-fabric. Both kits together with the backups are about 95 €, and the
-googly eyes can be stuck on over the lit balls' positions, so both can
-be tried on the body before the night. The pucks have no timer: either
-a neighbour twists them on each evening (100 h is about ten evenings)
-or they are left on for the last four days.
+The Ø 40 PVC fittings for this pose with a few spares, the body
+dressing, the fixings and the cutters. A basket link with these
+quantities is in the session's notes; the plan keeps the list.
 
-Fixings and bracing:
+| Part | Qty | Listing | Price |
+|---|---|---|---|
+| Cross PN16 for 40 mm pipe, FLUXI-TECH lot of 2 | 2 lots (4) | https://www.amazon.fr/dp/B0H4WHNQR1 | 14.45 |
+| Coupler Ø 40 F/F, DOJA pack of 5 | 4 packs (17 needed) | https://www.amazon.fr/dp/B0G3MV64FQ | 10.99 |
+| Elbow 45° M/F, DOJA pack of 5 | 4 packs (17 needed) | https://www.amazon.fr/dp/B0G6DJGLK4 | 9.99 |
+| Elbow 67.5° F/F, DOJA pack of 5 | 2 packs (6 needed) | https://www.amazon.fr/dp/B0G6FBRGTD | 9.99 |
+| Elbow 87.5° F/F, DOJA pack of 5 | 1 pack (1 needed) | https://www.amazon.fr/dp/B0G6FVQRHD | 9.49 |
+| Elbow 30° M/F, Nicoll CH3 (third-party seller) | 3 | https://www.amazon.fr/dp/B00BQH2OUU | 9.32 |
+| Pool noodles, lot of 10 (5 hoops) | 1 | https://www.amazon.fr/dp/B0055KCYGI | 59.95 |
+| Black stretch fabric 145 cm, per unit | 2 | https://www.amazon.fr/dp/B0CLLXTT1Q | 17.75 |
+| Black bin bags 240 L | 1 | https://www.amazon.fr/dp/B07HQ9G34F | 22.95 |
+| Black gaffer tape 50 mm × 50 m | 2 | https://www.amazon.fr/dp/B00KFA8XP4 | 10.52 |
+| Black cable ties 300 × 4.8 mm, 100 | 1 | https://www.amazon.fr/dp/B07BMZ5FH1 | 8.45 |
+| Self-drilling screws 4.2 × 16, black Torx, 100 (188 needed) | 2 | https://www.amazon.fr/dp/B0FB8DNJHG | 8.69 |
+| PVC cement GEB Gebsoblue 250 ml (the hub only) | 1 | https://www.amazon.fr/dp/B00ENIOT2A | 9.85 |
+| Ratchet pipe cutter to 63 mm (the 1 m PVC pipe for the hub) | 1 | https://www.amazon.fr/dp/B0C8S9M3NL | 18.99 |
+| Pipe cutter to 42 mm, Rothenberger (trimming aluminium, if ever) | 1 | https://www.amazon.fr/dp/B003S5PIII | 14.49 |
+| Eye kits, googly or lit (part A of the 13 October list, unchanged) | optional | see the 13 October tables in the repo history | about 95 for both |
 
-| Part | Qty | Listing | Price | Seen delivery |
-|---|---|---|---|---|
-| Self-drilling screws 4.2 × 16, black Torx, 100 | 3 | https://www.amazon.fr/dp/B0FB8DNJHG | 8.69 | Sat 17 Oct, Prime |
-| Ballast: 12 × 25 kg of sand in doubled rubble sacks (sac à gravats; 24 sacks), the sand delivered with the Castorama order of part B (4.99 masonry or 6.99 play sand per 25 kg, https://www.castorama.fr/sable-blanc-pour-maconnerie-25kg-cantillana/5413945079355_CAFR.prd ; never beach sand), or 20 L water containers filled from the tap on site (20 kg each: then two at each end tee as well, 16 in all, strapped over the ski) | 12 | any store or Amazon for the sacks; the Amazon gazebo weights (https://www.amazon.fr/dp/B0FZJRD5Z8, 18.39) are 50 × 20 cm velcro wraps rated 10 kg each and do not hold 25 kg | about 90 for the sand | |
-| Pipe cutter to 42 mm, Rothenberger | 1 | https://www.amazon.fr/dp/B003S5PIII | 14.49 | Sat 17 Oct, Prime |
-| Ratchet pipe cutter to 63 mm, for the Ø 50 (or a hacksaw and mitre box) | 1 | https://www.amazon.fr/dp/B0C8S9M3NL | 18.99 | Sat 17 Oct |
-| Rope tensioners, aluminium, 5 mm hole, 10 (one per cord: 16) | 2 | https://www.amazon.fr/dp/B0D4V26Z7N | 6.99 | Sat 17 Oct |
-| Reflective guyline, braided polyester 4 mm with a reflective tracer, 50 m (tent guy rope; search "corde réfléchissante 4 mm 50 m"; a stated break load above 200 kg, no polypropylene core); 64 m needed | 2 | any brand shipped by Amazon | about 15 each | |
-| PVC cement GEB Gebsoblue 250 ml (sold by Amazon) | 1 | https://www.amazon.fr/dp/B00ENIOT2A | 9.85 | Sat 17 Oct |
-| White or reflective tape for the post bases and the stays' crossings | 1 | with the gaffer, any brand | about 8 | |
-| Drill bits 3, 3.5 and 8 mm and a countersink (the 8 mm holes at the post tops and the ski ends, their edges rounded) | 1 set | any | about 10 | |
+About 380 € without the eyes.
 
-Part A comes to about 760 € with both eye kits: the tables add up to
-about 740 € plus 15.90 shipping for the sleeves.
+### C. Castorama online, home delivery
 
-### B. The pipe, delivered to the door
+| Part | Qty | Price |
+|---|---|---|
+| Elbow 20° M/F Ø 40, Fitt (11 needed) https://www.castorama.fr/coude-en-pvc-male-femelle-20-x-40-mm-fitt/3396047402042_CAFR.prd | 12 | 2.09 |
+| Tee Ø 40 F/F/F, Fitt (the skis' posts) | 8 | about 1.93 |
+| Cap Ø 40, Fitt (the spine's ends) | 2 | about 1.50 |
+| PVC pipe Ø 40 × 1 m, Fitt (the hub's stubs and spine, 16 small pieces) | 1 | about 5 |
+| M5 × 50 bolts with nuts and washers (62 needed: the knees and the hub) | 2 boxes of 50, or 64 loose | about 20 |
+| Drill bits HSS 3 mm and 5.5 mm | 1 each | about 8 |
 
-About 27 m of Ø 40 (the legs, the spine, the stubs and the four 2 m
-liners) and 32 m of Ø 50 (eight posts of 1.95 to 2.55 m and two skis of
-7.1 m) are needed for the default pose; the page's stock plan buys
-15 × 2 m of Ø 40 and 24 × 2 m of Ø 50 when the bars are 2 m long (the
-posts of 2.15 m and more are two pieces with a coupler, and the ski and
-post pieces do not pack two to a bar), or 6 × 4 m and 1 × 2 m of Ø 40 and
-8 × 4 m of Ø 50 when the bars are 4 m long (no coupler in any post). Two ways,
-both verified on 13 October; the first is the certain one, the second
-the cheap one, and the second needs one phone call on Wednesday
-morning.
+About 65 € with the 4.90 delivery.
 
-| Route | What | Price | Delivery | Doubts |
-|---|---|---|---|---|
-| B1 Amazon.fr, Ø 50 | ZENLYS FR lot of 4 bars PN16 Ø 50 × 2 m, 3.7 mm wall, NF EN 1452 | 6 lots (24 bars) at 89.95 = 539.70; 5 lots (20 bars) at 449.75 if the posts are cut 2.0 + 0.55 instead of two equal pieces | https://www.amazon.fr/dp/B0CRZ3WFX5 "Livraison GRATUITE vendredi 16 octobre" for 17880, unconditional (the seller's own rate), in stock, selector to 30 | real stock behind "En stock" is not visible; a 2 m parcel ships by the seller's carrier to the kerb |
-| B1 Amazon.fr, Ø 40 | Wavin NF evacuation tube Ø 40 × 2 m (So Brico), the only 2 m Ø 40 listing with unconditional free delivery | 15 bars at 33.68 = 505.20 | https://www.amazon.fr/dp/B0CFR68LVF "Livraison GRATUITE 16 - 17 octobre" for 17880, in stock, selector to 30 | the page does not print the wall (NF evacuation Ø 40 is 3.0 mm by the standard); dear |
-| B1 cheaper Ø 40 | ZENLYS FR lot of 4 bars PN16 Ø 40 × 1 m, 3 mm wall stated | 7 lots (28 m) at 27.98 = 195.86, plus a Ø 40 coupler in every leg piece over 1 m (about 16 more, two DOJA packs) | https://www.amazon.fr/dp/B0CSG6M2VG "Livraison GRATUITE samedi 17 octobre" for 17880, but tagged "lors de votre première commande": the free delivery is a first-order promotion and the seller's own rate for a repeat customer is not shown (8.99 on its 1 m single, 14.99 on its 3 × 2 m lot). Read the delivery line in the cart before paying; accept up to about 15 € per lot | 1 m pieces: set the page's "Longest piece delivered" to 1.0 m and the cut list adds the couplers |
-| B2 plomberie.fr, both | Tube PVC gris NF 4 m, sold singly: Ø 40 id 38653 (ref opf156027) and Ø 50 id 39059 (ref opf256027), in stock, dispatched in 24 to 48 h | 7 × 13.08 + 9 × 15.48 = 230.88, plus one 15.90 bulky-parcel fee (add the 18 foam sleeves to the same order) | https://plomberie.fr/products/tube-pvc-gris-l-4m-o40mm-nf-vendu-a-l-unite and https://plomberie.fr/products/tube-pvc-gris-l-4m-o50mm-nf-vendu-a-l-unite ; bulky parcels "2 à 3 jours" in metropolitan France, delivered 7:30 to 17:30 on a weekday with someone present; ordered Wed 14 Oct, expect Mon 19 or Tue 20 Oct | phone 05 47 14 00 77 first: does their carrier take 4 m bars to 17880, which carrier, is the wall 3 mm (not printed; NF means 3.0 for Ø 40 and Ø 50), and give the neighbours' phone number. Set the page to 4.0 m |
-| Fallback: Castorama online, home delivery | Fitt Ø 40 × 2 m NF, "Épaisseur du tuyau 3mm" (3396044300044, 6.49) × 15 and Fitt Ø 50 × 2 m (3396040120509, 7.09, 1.37 kg per bar, which is a 3 mm wall by weight) × 24 | 267.51 plus 4.90 (the fee follows the largest single product: under 2 m and 30 kg; 34.90 if the checkout counts exactly 2 m as over) | https://www.castorama.fr/tube-pvc-d-evacuation-fitt-5tb0402mnf-40-mm-longueur-2-m/3396044300044_CAFR.prd and https://www.castorama.fr/tuyau-pvc-50-2-m-pour-le-raccordement-des-evacuations-sanitaire-fitt-/3396040120509_CAFR.prd ; the date shows only at checkout: accept it only if it is on or before 21 Oct | stock at the postcode shows only in the checkout |
+### D. plomberie.fr
 
-Not usable: Brico Dépôt (4 m bars go by crane truck within 15 days, and
-its 2 m pieces cost 39.90 delivery plus 2.50 per km beyond 30 km from
-Andilly), the Amazon Codital and Interplast bars (too few, 2.2 mm, or
-26 to 31 Oct), the Jardibric 2 m bars (wall unknown, 19 to 20 Oct) and
-the FLUXI-TECH 1 m tubes (5 in stock, 19 € per metre). Island backstops
-by phone if a delivery fails: Cedeo Saint-Martin-de-Ré (2 rue Vieux
-Marais, 05 46 09 17 17, Mon to Fri 8 to 17:30, serves private
-customers), Point.P Le Bois-Plage (05 46 09 22 31), Maison et Jardin en
-Ré in Les Portes itself (5 rue Hurlevent, 05 46 29 50 47, Mon to Sat
-9:30 to 12:30 and 15 to 19:30) for a neighbour to collect; none of
-their delivery terms could be read online.
+Black foam sleeve for 42 mm pipe, 13 mm wall, 2 m, NMC: 9 (16 m of
+legs). https://plomberie.fr/products/manchon-isolant-mousse-simple-ep-13mm-nmc-pour-tube-o42mm-l-2m
+4.48 each, 15.90 bulky-parcel delivery, 2 to 3 days: about 56 €.
 
-### C. Tools
+### E. Tools from the house
 
-Pipe cutters (42 mm for the Ø 40, 63 mm or a hacksaw and mitre box for
-the Ø 50), tape measure, marker, deburring knife, cordless drill with
-3, 3.5 and 8 mm bits, a countersink and a TX20 bit, scissors, a printed
-protractor or a phone inclinometer for the elbow twists, two clamps,
-gloves, a bucket and scoop for the sand, a broom (the mairie's
-cleanliness clause), two ladders including one platform ladder with at
-least 1.2 m standing height (the hub is at 2.5 m, the knees at 3.1 m),
-and three adults on day 3. Nothing of this travels: buy what the island
-house lacks with the Amazon order.
+A drill, an 8 mm spanner or socket for the M5 nuts, a flat file for
+the tube ends, a tape measure, a marker, a protractor for the joint
+turns, a step ladder.
+
+The lot comes to about 1,100 € without the eyes at the 14 € a metre
+estimate, 1,250 at 18 €. Weight of the spider: 28.7 kg (20.7 kg of
+tube, 4.4 kg of fittings, 3.6 kg of foam and body).
 
 ## Shipping from Paris
 

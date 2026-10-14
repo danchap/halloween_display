@@ -424,7 +424,7 @@ try {
     check('build: a Ø 50 coupler under every reducer', jointCouplers.filter(f => f.joint === 'foot' && f.name === 'coupler Ø 50').length === 8 && parts.fittings.filter(f => f.role === 'reducer').every(f => f.sockets === 1) && parts.fittings.filter(f => f.role === 'foot').every(f => f.sockets === f.recipe.angles.length && f.out === 'spigot'));
     check('build: the knee coupler sits one Z past the set along the lower leg', parts.legsAssembly.every(a => { const c = jointCouplers.find(f => f.joint === 'knee' && f.leg === a.leg); const l = m.legs[a.leg]; const d = dist(c.at, l.knee); return near(d, zOf(a.knee.recipe) + pvc.fittings.coupler.d40.z, 1e-9) && c.at[1] < l.knee[1]; }));
     const insetFoot = (l, ins) => [l.foot[0], l.foot[1], l.foot[2] - l.side * ins];
-    check('build: four systems in the table, pvc40 first', SYSTEMS.length === 4 && SYSTEMS[0].id === 'pvc40' && SYSTEMS.every(s => s.id && s.sizes && s.members && s.fittings && s.hub && s.body && s.stays && s.ballast));
+    check('build: five systems in the table, pvc40 first, the aluminium-in-PVC-fittings one second', SYSTEMS.length === 5 && SYSTEMS[0].id === 'pvc40' && SYSTEMS[1].id === 'alu40' && SYSTEMS.every(s => s.id && s.sizes && s.members && s.fittings && s.hub && s.body && s.stays && s.ballast));
     check('build: deterministic', JSON.stringify(parts) === JSON.stringify(buildParts(m, p, walls, { system: pvc, bracing: 'frame', maxPiece: 2.0 })));
     // Recipes: one elbow within 2.5 degrees of the need, else a pair with
     // a twist; the pair formula gives the angle back.
