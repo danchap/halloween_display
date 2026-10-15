@@ -340,6 +340,7 @@ function add(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
 function scale(a, s) { return [a[0] * s, a[1] * s, a[2] * s]; }
 function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
 function norm(a) { return Math.sqrt(dot(a, a)); }
+function vcross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
 function unit(a) { const n = norm(a); return n > 0 ? scale(a, 1 / n) : [0, 0, 0]; }
 function mm(v) { return Math.round(v * 1000) / 1000; }
 function mm4(v) { return Math.round(v * 10000) / 10000; }
@@ -808,11 +809,21 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
     // Hip: the angle between the cross branch (straight across) and the
     // upper leg, and the turn of that plane about the branch.
     const hip = { angle: deg1(angleBetween(u, [0, 0, l.side])), roll: deg1(Math.atan2(u[1], f * u[0]) / DEG) };
-    const knee = { bend: deg1(180 - angleBetween(scale(u, -1), v)) };
+    // The roll of a joint's plane about the tube before it, so each joint
+    // can be set on the bench (Daniel, 2026-10-15): the knee's plane (upper,
+    // lower) from the hip's plane (the cross branch, straight across, and
+    // the upper), turned about the upper tube; the foot's plane (lower,
+    // post) from the knee's plane, turned about the lower tube. Positive is
+    // clockwise seen from the hip looking along the tube toward the knee
+    // (the right-hand rule about the tube's direction).
+    const planeNormal = (a, b) => { const n = vcross(a, b); const len = norm(n); return len > 1e-9 ? scale(n, 1 / len) : null; };
+    const rollBetween = (n1, n2, axis) => (n1 && n2) ? deg1(Math.atan2(dot(vcross(n1, n2), axis), dot(n1, n2)) / DEG) : 0;
+    const hipPlane = planeNormal([0, 0, l.side], u), kneePlane = planeNormal(u, v);
+    const knee = { bend: deg1(180 - angleBetween(scale(u, -1), v)), roll: rollBetween(hipPlane, kneePlane, u) };
     // Foot: the angle between the post and the lower leg; the post is
     // turned to the lower segment's plan angle (the leg's, under the
     // brief's-leg rule), as legAngles measures it.
-    const footFit = { angle: deg1(angleBetween(toKnee, postDir)), bend: deg1(180 - angleBetween(toKnee, postDir)), plan: deg1(Math.atan2(f * v[0], l.side * v[2]) / DEG) };
+    const footFit = { angle: deg1(angleBetween(toKnee, postDir)), bend: deg1(180 - angleBetween(toKnee, postDir)), plan: deg1(Math.atan2(f * v[0], l.side * v[2]) / DEG), roll: rollBetween(kneePlane, planeNormal(v, postDir), v) };
     const hipSpec = resolveJoint(system, 'hip', hip.angle);
     const kneeSpec = resolveJoint(system, 'knee', knee.bend);
     const footSpec = resolveJoint(system, 'foot', footFit.bend);

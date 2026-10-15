@@ -902,12 +902,12 @@ function partsTables(parts) {
   const recipe = r => esc(recipeText(r)).replace(' @ ', '<br>@ '); // the twist on its own line, so three recipes fit the panel's width
   for (const a of parts.legsAssembly) {
     h += `<tr><td>${a.pair + 1}${a.side}</td><td>${recipe(a.hip.recipe)}<br><span class="muted">${fmt(a.hip.angle, 0)}°, turn ${fmt(a.hip.roll, 0)}°</span></td>`;
-    h += `<td>${recipe(a.knee.recipe)}<br><span class="muted">${fmt(a.knee.bend, 0)}°</span></td>`;
-    h += `<td>${recipe(a.foot.recipe)}<br><span class="muted">${fmt(a.foot.bend, 0)}°, plan ${fmt(a.foot.plan, 0)}°</span></td></tr>`;
+    h += `<td>${recipe(a.knee.recipe)}<br><span class="muted">${fmt(a.knee.bend, 0)}°<br>roll ${fmt(a.knee.roll, 0)}°</span></td>`;
+    h += `<td>${recipe(a.foot.recipe)}<br><span class="muted">${fmt(a.foot.bend, 0)}°, plan ${fmt(a.foot.plan, 0)}°<br>roll ${fmt(a.foot.roll, 0)}°</span></td></tr>`;
   }
   const joints = parts.legsAssembly.length ? Object.entries(parts.legsAssembly[0].joints).map(([j, how]) => `${j}: ${how}`).join(', ') : '';
   const recipeNote = sys.fittings.knee.angles ? 'Each cell names the elbows ("45 + 20 @ 112°": a 45 and a 20 in series, the second twisted 112° about the first; "45°": one elbow) and under them the angle they make. ' : 'Each cell gives the angle to set at the joint. ';
-  h += `</table><div class="muted" style="margin-top:4px">${recipeNote}Hip: the angle from straight across, and the turn of the joint about the stub (0 toward the head, 90 straight up). Knee: the bend off straight. Foot: the bend from the post, and the plan angle the post is turned to (from straight across, + toward the head). Joints: ${joints}.</div>`;
+  h += `</table><div class="muted" style="margin-top:4px">${recipeNote}Hip: the angle from straight across, and the turn of the joint about the stub (0 toward the head, 90 straight up). Knee: the bend off straight, and the roll of its plane about the upper tube from the hip's plane (0: the knee bends in the plane of the stub and the upper; clockwise positive looking from the hip toward the knee). Foot: the bend from the post, the plan angle the post is turned to (from straight across, + toward the head), and the roll of its plane about the lower tube from the knee's plane, the same way. Joints: ${joints}.</div>`;
   const stubs = parts.cuts.filter(c => c.role === 'stub' && c.joint !== 'foot');
   if (stubs.length) h += `<div class="muted">Hub stubs: ${stubs.length} × ${fmt(stubs[0].length, 3)} m.</div>`;
   const footStubs = parts.cuts.filter(c => c.role === 'stub' && c.joint === 'foot');
