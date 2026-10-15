@@ -301,7 +301,7 @@ cutters) and 120 € to the island (noodles, fabric, bin bags).
 | Tee Ø 40 F/F/F, Fitt (the skis' posts) | 8 | about 1.93 |
 | Cap Ø 40, Fitt (the spine's ends) | 2 | about 1.50 |
 | PVC pipe Ø 40 × 1 m, Fitt (the hub's stubs and spine, 16 small pieces) | 1 | about 5 |
-| M5 × 50 bolts with nuts and washers (62 needed: the knees and the hub) | 2 boxes of 50, or 64 loose | about 20 |
+| M5 × 60 bolts with nuts and washers (22 needed at the knees with the glued hub; 60 mm clears the 46 mm socket, the washer and the nut) | 1 box of 50 | about 10 |
 | Drill bits HSS 3 mm and 5.5 mm | 1 each | about 8 |
 
 About 65 € with the 4.90 delivery; the tees go to the island, the rest

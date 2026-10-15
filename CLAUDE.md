@@ -46,6 +46,10 @@ test run before the night.
   the Construction section's state (system, longest piece delivered,
   frame only, bracing, eyes) travels in the hash, so walk.html shows the
   same build. docs/construction.md is the plan with the shopping list.
+  docs/assembly.md is the assembly manual of 2026-10-15 (Paris build,
+  parcels, island structure, the lift), written from out/dump-v1-alu.html's
+  data for v1 in the alu40 system; its page is built by the scratchpad's
+  md2page.py like the plan's.
 - `sun.js` puts the sun at noon CET on 2026-10-31 over the alley (Daniel's
   choice, 2026-10-05); change HALLOWEEN_NOON there for another moment.
 - `textures.js` draws the village materials on canvases from colours in
