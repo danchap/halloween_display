@@ -142,10 +142,12 @@ function dropBakedDesign() {
   const d = designs[BAKED_FROM];
   if (!d || !d.params) return;
   // The baked copy was fitted to the saved one within a few millimetres,
-  // so the match is to the centimetre on the legs and exact on the body.
+  // so the match is exact on the body; the legs were solved again on
+  // 2026-10-26 for the measured alley and the tubes as cut, which moved
+  // every foot and knee by up to 0.11 m from v1, so the legs match loosely.
   const a = normalizeParams(d.params), b = normalizeParams(clone(DEFAULT_DESIGN.params));
   const sameBody = Object.keys(b).every(k => k === 'legs' || (typeof b[k] === 'number' ? Math.abs(a[k] - b[k]) < 0.0015 : a[k] === b[k]));
-  const sameLegs = a.legs && a.legs.length === b.legs.length && b.legs.every((q, i) => Object.keys(q).every(k => Math.abs(a.legs[i][k] - q[k]) < 0.02));
+  const sameLegs = a.legs && a.legs.length === b.legs.length && b.legs.every((q, i) => Object.keys(q).every(k => Math.abs(a.legs[i][k] - q[k]) < 0.15));
   if (!sameBody || !sameLegs) return;
   delete designs[BAKED_FROM];
   writeDesigns(designs);
@@ -228,7 +230,7 @@ const { scene, alleyGroup } = world;
 const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 500);
 
 let site = null;
-let realWalls = flatWalls(3.0); // the real buildings once the site is loaded; flat 3 m walls only if it is not
+let realWalls = flatWalls(2.85); // the real buildings once the site is loaded; flat walls at Daniel's measured 2.85 m only if it is not
 let walls = realWalls; // what the pose solvers and buildSpider see: realWalls, or straightWalls over them when the posts are plumb and a part system shows (updateWalls)
 let model = null;
 let parts = null; // the real parts of the chosen system (buildParts output), null for the design alone
@@ -790,7 +792,7 @@ function rebuildSpider() {
   // The face sits on the shell, so it goes when the frame alone shows.
   rebuildFaceMeshes(world, state.eyes !== 'none' && !(parts && state.frameOnly) ? faceOf(model, p, state.eyes) : [], state.eyes);
   rebuildBuildMeshes(world, parts, system, { frameOnly: state.frameOnly });
-  rebuildExtras(world, p, { showPerson: false, wallMode: site ? 'site' : 'flat', flatWidth: 3.0 });
+  rebuildExtras(world, p, { showPerson: false, wallMode: site ? 'site' : 'flat', flatWidth: 2.85 });
   updateStats();
   updateHud();
   render();
@@ -1282,7 +1284,7 @@ async function main() {
     document.getElementById('loading').textContent = HOSTED ? 'The site data could not be loaded; showing flat walls.' : 'Site data missing (run site/fetch_site.py); showing flat walls.';
   }
   if (site) document.getElementById('loading').remove();
-  realWalls = site ? wallsFromSite(site) : flatWalls(3.0);
+  realWalls = site ? wallsFromSite(site) : flatWalls(2.85);
   updateWalls();
   buildControls();
   wireUI();

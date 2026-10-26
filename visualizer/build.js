@@ -42,7 +42,8 @@
 // cos(theta) = cos(a) cos(b) - sin(a) sin(b) cos(psi). The pair is then
 // turned in its socket to set the joint's plane and locked with two
 // self-drilling screws per socket. Fitting dimensions follow Nicoll's
-// Ø 40 catalogue: every socket is 27 mm deep and Z is the distance from
+// Ø 40 catalogue: every socket is 27 mm deep (21 mm as Daniel measured his
+// fittings, see SOCKET_40 below) and Z is the distance from
 // the axis intersection to the socket bottom, so the pipe between two
 // fittings is their centre distance less Z at each end (full insertion).
 // An MF elbow plugged into the next puts the two centres Z_a + Z_b apart.
@@ -62,12 +63,25 @@
 
 import { DEFAULTS, FACE, bodyFrame, bodyLength, rootAlongOffset } from './spider.js';
 
-const SOCKET = 0.027;
+// Socket depth. Nicoll's catalogue gives 27 mm for Ø 40; Daniel measured
+// 21 mm on his fittings (2026-10-15: the pipe stops 21 mm in). The fittings
+// are taken to be the catalogue's size outside, so the pipe stops 6 mm
+// short of the catalogue's socket bottom at every Ø 40 socket, and the Z
+// of a Ø 40 fitting here is the catalogue's plus that 6 mm at each socket
+// end: 6 at both ends of a female-female elbow, a cross, a tee, a coupler
+// or a cap, and 3 at each end of a male-female elbow, the average of its
+// socket end and its spigot end (the spigot's 6 mm belongs to the socket
+// it plugs into). The Ø 50 fittings are not measured and keep the
+// catalogue's figures.
+const SOCKET_40 = 0.021; // measured by Daniel; the catalogue says 0.027
+const SOCKET_50 = 0.027;
+const SHORT_40 = 0.006; // how far short of the catalogue's socket bottom the pipe stops
 export const ELBOW_ANGLES = [20, 30, 45, 67.5, 87.5];
-const Z40 = { 20: 0.0065, 30: 0.011, 45: 0.013, 67.5: 0.021, 87.5: 0.031 }; // Nicoll Ø 40
-const Z50 = Object.fromEntries(Object.entries(Z40).map(([a, z]) => [a, mm4(z * 1.25)])); // estimated
 const ENDS_40 = { 20: 'M/F', 30: 'M/F', 45: 'M/F', 67.5: 'F/F', 87.5: 'F/F' }; // what the listings sell (DOJA, Fitt, Nicoll)
 const ENDS_50 = ENDS_40; // assumed the same as Ø 40: not checked
+const Z40_CATALOGUE = { 20: 0.0065, 30: 0.011, 45: 0.013, 67.5: 0.021, 87.5: 0.031 }; // Nicoll Ø 40
+const Z40 = Object.fromEntries(Object.entries(Z40_CATALOGUE).map(([a, z]) => [a, mm4(z + (ENDS_40[a] === 'F/F' ? SHORT_40 : SHORT_40 / 2))]));
+const Z50 = Object.fromEntries(Object.entries(Z40_CATALOGUE).map(([a, z]) => [a, mm4(z * 1.25)])); // estimated
 const ELBOW_PRICE_40 = { 20: 4.90, 30: 9.32, 45: 2.00, 67.5: 2.00, 87.5: 1.90 }; // 20 and 30: Nicoll; the rest DOJA packs of 5
 const ELBOW_PRICE_50 = { 20: 3.00, 30: 3.00, 45: 3.00, 67.5: 3.00, 87.5: 3.00 }; // estimated
 const PVC_GREY = { color: '#b8b7b1', finish: 'matte' };
@@ -79,21 +93,21 @@ const PVC_WHITE = { color: '#f1f0ea', finish: 'matte' };
 // cross's branch; socket the insertion depth; od the fitting's outer
 // diameter for drawing; kg and price per fitting. An elbow set carries
 // its angles with z, price and ends (M/F or F/F) per angle.
-const ELBOWS_40 = { kind: 'elbow', name: 'elbow', size: 'd40', angles: ELBOW_ANGLES, zByAngle: Z40, priceByAngle: ELBOW_PRICE_40, endsByAngle: ENDS_40, socket: SOCKET, od: 0.046, kg: 0.06, ...PVC_GREY };
-const ELBOWS_50 = { kind: 'elbow', name: 'elbow', size: 'd50', angles: ELBOW_ANGLES, zByAngle: Z50, priceByAngle: ELBOW_PRICE_50, endsByAngle: ENDS_50, socket: SOCKET, od: 0.057, kg: 0.09, ...PVC_WHITE };
-const CROSS_40 = { kind: 'cross', name: 'cross Ø 40', size: 'd40', z: 0.031, zBranch: 0.021, socket: SOCKET, od: 0.046, kg: 0.12, price: 7.23, ...PVC_GREY }; // FLUXI-TECH PN16, lot of 2 at 14.45
-const CROSS_50 = { kind: 'cross', name: 'cross Ø 50', size: 'd50', z: 0.03875, zBranch: 0.02625, socket: SOCKET, od: 0.057, kg: 0.18, price: 9.00, ...PVC_WHITE }; // price estimated
-const TEE_40 = { kind: 'tee', name: 'tee Ø 40', size: 'd40', z: 0.031, zBranch: 0.021, socket: SOCKET, od: 0.046, kg: 0.09, price: 1.93, ...PVC_GREY };
-const TEE_50 = { kind: 'tee', name: 'tee Ø 50', size: 'd50', z: 0.03875, zBranch: 0.02625, socket: SOCKET, od: 0.057, kg: 0.135, price: 4.00, ...PVC_WHITE };
-const COUPLER_40 = { kind: 'coupler', name: 'coupler Ø 40', size: 'd40', z: 0.003, socket: SOCKET, od: 0.046, kg: 0.05, price: 1.83, ...PVC_GREY };
-const COUPLER_50 = { kind: 'coupler', name: 'coupler Ø 50', size: 'd50', z: 0.00375, socket: SOCKET, od: 0.057, kg: 0.075, price: 3.00, ...PVC_WHITE };
-const CAP_40 = { kind: 'cap', name: 'cap Ø 40', size: 'd40', z: 0.005, socket: SOCKET, od: 0.046, kg: 0.03, price: 2.31, ...PVC_GREY }; // z estimated: the cap's bottom
-const CAP_50 = { kind: 'cap', name: 'cap Ø 50', size: 'd50', z: 0.006, socket: SOCKET, od: 0.057, kg: 0.045, price: 3.00, ...PVC_WHITE };
+const ELBOWS_40 = { kind: 'elbow', name: 'elbow', size: 'd40', angles: ELBOW_ANGLES, zByAngle: Z40, priceByAngle: ELBOW_PRICE_40, endsByAngle: ENDS_40, socket: SOCKET_40, od: 0.046, kg: 0.06, ...PVC_GREY };
+const ELBOWS_50 = { kind: 'elbow', name: 'elbow', size: 'd50', angles: ELBOW_ANGLES, zByAngle: Z50, priceByAngle: ELBOW_PRICE_50, endsByAngle: ENDS_50, socket: SOCKET_50, od: 0.057, kg: 0.09, ...PVC_WHITE };
+const CROSS_40 = { kind: 'cross', name: 'cross Ø 40', size: 'd40', z: 0.037, zBranch: 0.027, socket: SOCKET_40, od: 0.046, kg: 0.12, price: 7.23, ...PVC_GREY }; // FLUXI-TECH PN16, lot of 2 at 14.45; z and zBranch: the catalogue's 0.031 and 0.021 plus SHORT_40
+const CROSS_50 = { kind: 'cross', name: 'cross Ø 50', size: 'd50', z: 0.03875, zBranch: 0.02625, socket: SOCKET_50, od: 0.057, kg: 0.18, price: 9.00, ...PVC_WHITE }; // price estimated
+const TEE_40 = { kind: 'tee', name: 'tee Ø 40', size: 'd40', z: 0.037, zBranch: 0.027, socket: SOCKET_40, od: 0.046, kg: 0.09, price: 1.93, ...PVC_GREY }; // z and zBranch: the catalogue's 0.031 and 0.021 plus SHORT_40
+const TEE_50 = { kind: 'tee', name: 'tee Ø 50', size: 'd50', z: 0.03875, zBranch: 0.02625, socket: SOCKET_50, od: 0.057, kg: 0.135, price: 4.00, ...PVC_WHITE };
+const COUPLER_40 = { kind: 'coupler', name: 'coupler Ø 40', size: 'd40', z: 0.009, socket: SOCKET_40, od: 0.046, kg: 0.05, price: 1.83, ...PVC_GREY };
+const COUPLER_50 = { kind: 'coupler', name: 'coupler Ø 50', size: 'd50', z: 0.00375, socket: SOCKET_50, od: 0.057, kg: 0.075, price: 3.00, ...PVC_WHITE };
+const CAP_40 = { kind: 'cap', name: 'cap Ø 40', size: 'd40', z: 0.011, socket: SOCKET_40, od: 0.046, kg: 0.03, price: 2.31, ...PVC_GREY }; // z estimated: the cap's bottom (0.005) plus SHORT_40
+const CAP_50 = { kind: 'cap', name: 'cap Ø 50', size: 'd50', z: 0.006, socket: SOCKET_50, od: 0.057, kg: 0.045, price: 3.00, ...PVC_WHITE };
 // The reducer at the top of a Ø 50 post (Nicoll IJ): a Ø 40 socket toward
 // the foot elbows and a Ø 50 spigot below, which plugs into a Ø 50
 // coupler on the post. 0.045 from its centre to each end, so the foot
 // side loses 0.018 of pipe and the post side 0.018 plus the coupler.
-const REDUCER_50_40 = { kind: 'reducer', name: 'reducer 50/40', size: 'd50', sizeTo: 'd40', z: 0.018, socket: SOCKET, od: 0.057, odTo: 0.046, kg: 0.08, price: 4.87, out: 'spigot', ...PVC_WHITE };
+const REDUCER_50_40 = { kind: 'reducer', name: 'reducer 50/40', size: 'd50', sizeTo: 'd40', z: 0.024, socket: SOCKET_40, od: 0.057, odTo: 0.046, kg: 0.08, price: 4.87, out: 'spigot', ...PVC_WHITE }; // its Ø 40 socket is taken as measured, 21 mm deep in the catalogue's 45 mm half length, so z is 0.045 less 0.021
 const PVC_BODY = { kind: 'fabricOverHoops', hoopOd: 0.065, color: '#141416', finish: 'sheen', hoop: { name: 'pool noodle (hoop)', kg: 0.25, price: 6.00 }, fabric: { name: 'stretch fabric, 2 m', kg: 1.2, price: 35.50 } };
 const PLANK_HUB = { kind: 'plank', name: 'plank 0.60 × 0.10 × 0.027', length: 0.60, width: 0.10, thickness: 0.027, spacing: 0.05, kg: 1.0, price: 6, color: '#101012', finish: 'paint' }; // spacing: the hip fittings are 0.05 wide, so the pairs sit at least that far apart along the plank
 const STAYS = { name: 'reflective polyester guyline 4 mm, 50 m roll', roll: 50, price: 15.00, od: 0.004, color: '#d6d6cc', maxSlope: 70, allowance: 0.5, tensioner: { name: 'rope tensioners, pack of 10', pack: 10, price: 6.99 } }; // reflective, not black: a child running along the wall at night must see the cords (structural check, 2026-10-13); maxSlope: a cord steeper than this (degrees from horizontal) holds little; allowance: extra metres per cord for the knots and the tensioner; tensioner: one per cord; price estimated
@@ -103,7 +117,7 @@ const PVC_EXTRAS = { ...COMMON_EXTRAS, screws: { name: 'self-drilling screws 4.2
 // Aluminium tube in the PVC fittings (2026-10-14): cement does not hold
 // aluminium, so the joints the PVC build glues get two M5 bolts through
 // each socket instead; the rest keep the self-drilling screws.
-const ALU_EXTRAS = { ...COMMON_EXTRAS, screws: PVC_EXTRAS.screws, bolts: { name: 'M5 × 50 bolts with nuts and washers, box of 50', pack: 50, price: 9.90 } }; // bolts price estimated
+const ALU_EXTRAS = { ...COMMON_EXTRAS, screws: PVC_EXTRAS.screws, bolts: { name: 'M5 × 60 bolts with nuts and washers, box of 50', pack: 50, price: 9.90 } }; // bolts price estimated; 60 mm: a 46 mm socket plus a washer and a nut needs 52 (the manual, 2026-10-15)
 const ALU_GREY = { color: '#c9ccd1', finish: 'metal' };
 const FOAM_42 = { name: 'black foam sleeve 42 × 13 mm', od: 0.068, kgPerM: 0.07, pricePerM: 2.24, color: '#1b1b1d', finish: 'sheen' }; // 2 m lengths at 4.48, over the leg segments only
 // A plastic insert in the end of a Ø 40 tube (Comment Fer, 0.44 each, 2026-10-14); it sits inside the tube, so no socket.
@@ -301,6 +315,35 @@ export const SYSTEMS = [
     extras: COMMON_EXTRAS,
     bracing: BRACING,
   },
+  {
+    // The spider as built (2026-10-26): the aluminium Ø 40 × 1.5 leg tubes
+    // of alu40 in Ø 40 PVC fittings, the hub of Ø 40 PVC pipe with Fitt
+    // socket caps, cemented, and the Ø 50 PVC posts and skis of pvc40, cut
+    // on the island, with the 50/40 reducer and a Ø 50 coupler at each
+    // post top. Knees bolted, hips and feet screwed, the elbow pairs and
+    // the hub cemented. The leg tubes exist (cut to the v1 lengths), so
+    // the design is solved to them (design.js).
+    id: 'alu40pvc50',
+    name: 'As built: aluminium Ø 40 legs in PVC fittings, PVC hub, PVC Ø 50 posts and skis',
+    sizes: {
+      d40: { label: 'Ø 40', shape: 'round', od: 0.040, kgPerM: 0.49, stock: [4.0], stockPrice: [56.00], stockSource: ['Comment Fer, cut to length'], stockName: 'aluminium tube',
+        cutToLength: { pricePerM: 14.00, source: 'Comment Fer "tube aluminium sur mesure", 6060, cut to length (the legs are cut already)' } },
+      d40pvc: { label: 'Ø 40 PVC', shape: 'round', od: 0.040, kgPerM: 0.50, stock: [1.0, 2.0], stockPrice: [7.00, 4.75], stockSource: ['Castorama, Fitt 1 m', 'store price'], stockName: 'pipe' },
+      d50: { label: 'Ø 50', shape: 'round', od: 0.050, kgPerM: 0.63, stock: [4.0, 2.0], stockPrice: [9.99, 6.00], stockSource: ['store price, estimated', 'store price, estimated'], stockName: 'pipe' },
+    },
+    members: { leg: { size: 'd40', ...ALU_GREY }, hub: { size: 'd40pvc', ...PVC_GREY }, post: { size: 'd50', ...PVC_WHITE }, ski: { size: 'd50', ...PVC_WHITE } },
+    cover: FOAM_42,
+    fittings: { hip: ELBOWS_40, knee: ELBOWS_40, foot: ELBOWS_40, hub: CROSS_40, ski: TEE_50, reducer: REDUCER_50_40, coupler: { d40: COUPLER_40, d40pvc: COUPLER_40, d50: COUPLER_50 }, cap: { d40: CAP_40, d40pvc: CAP_40, d50: CAP_50 } },
+    hub: { kind: 'crosses', spacing: 0.116 },
+    body: PVC_BODY,
+    glueJoints: ['hub'],
+    boltJoints: ['knee'],
+    paintLegs: null,
+    stays: STAYS,
+    ballast: BALLAST,
+    extras: { ...ALU_EXTRAS, cement: PVC_EXTRAS.cement },
+    bracing: BRACING,
+  },
 ];
 export const BRACINGS = Object.values(BRACING).map(b => ({ value: b.kind, label: b.label }));
 export const DEFAULT_BRACING = 'none';
@@ -350,7 +393,7 @@ function angleBetween(a, b) { return Math.acos(Math.max(-1, Math.min(1, dot(unit
 // Thickness of a size (round: od; square: size).
 function thickness(size) { return size.od !== undefined ? size.od : size.size; }
 function sizeOf(system, memberRole) { return system.sizes[system.members[memberRole].size]; }
-const MEMBER_ROLE = { upper: 'leg', lower: 'leg', spine: 'leg', stub: 'leg', link: 'leg', liner: 'leg', post: 'post', ski: 'ski' }; // link: the short pipe a female-female elbow needs into a fitting's socket, or between two of them
+const MEMBER_ROLE = { upper: 'leg', lower: 'leg', spine: 'hub', stub: 'hub', link: 'hub', liner: 'leg', post: 'post', ski: 'ski' }; // link: the short pipe a female-female elbow needs into a fitting's socket, or between two of them; hub: the spine, the stubs and the links are the system's hub member when it has one (the as-built system's PVC pipe), else its leg member
 
 // ---------------------------------------------------------------- elbow recipes
 
@@ -578,7 +621,7 @@ function placeHub(model, system) {
   // each), and the spine's end piece must hold a cross and a cap.
   const reach = spec => spec ? (spec.z || 0) + (spec.socket || 0) : 0;
   const crossReach = hub.kind === 'crosses' ? reach(system.fittings.hub) : 0;
-  const capReach = hub.kind === 'crosses' ? reach(system.fittings.cap[system.members.leg.size]) : 0;
+  const capReach = hub.kind === 'crosses' ? reach(system.fittings.cap[(system.members.hub || system.members.leg).size]) : 0;
   const spacing = Math.max(hub.spacing || 0, 2 * crossReach);
   const overhang = Math.max(SPINE_OVERHANG, crossReach + capReach);
   const avg = a => a.reduce((s, v) => s + v, 0) / a.length;
@@ -647,7 +690,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   // `ends` are [spec, port] pairs or a resolved spec (run port).
   const pipe = (role, a, b, ends, extra = {}) => {
     const memberRole = MEMBER_ROLE[role];
-    const part = system.members[memberRole];
+    const part = system.members[memberRole] || system.members.leg;
     const sizeKey = part.size, size = system.sizes[sizeKey];
     const lost = ends.map(e => Array.isArray(e) ? allowance(e[0], e[1]) : allowance(e));
     const span = norm(sub(b, a));
@@ -709,7 +752,7 @@ export function buildParts(model, params, walls, { system, maxPiece = DEFAULT_MA
   // the stubs are made there too.
   const cross = system.hub.kind === 'crosses' ? resolvePlain(system.fittings.hub, 'cross') : null;
   if (cross) {
-    const spineCap = capFor(system.members.leg.size);
+    const spineCap = capFor((system.members.hub || system.members.leg).size);
     const first = hubPlace.front, last = hubPlace.back;
     // The spine: cap, cross, cross, cross, cross, cap; a piece between each pair.
     const stations = [{ spec: spineCap || NONE, along: last }, ...[3, 2, 1, 0].map(i => ({ spec: cross, along: pairAlong[i], pair: i })), { spec: spineCap || NONE, along: first }];

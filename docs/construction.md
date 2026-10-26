@@ -1,5 +1,7 @@
 # Building the spider
 
+> Superseded in part on 2026-10-26: the alley measured 2.85 m between the walls and the leg tubes were cut, so the legs were solved again. The leg angles, the twists, the knee and foot positions, the post lengths and the ski pieces are now in docs/build-sheet.md (and its PDF); the support structure is PVC Ø 50 cut on the island. The methods in this plan (sources, shipping, the structural check) still apply.
+
 Written 2026-10-13 for the 2026-10-31 display, and rewritten the same
 night after Daniel's answers (everything shipped to the island, no hooks
 in the walls, the bench can be moved, the pose is not final, both faces

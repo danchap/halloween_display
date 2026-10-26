@@ -1,0 +1,86 @@
+{
+ "walls": {
+  "R": 1.425,
+  "L": -1.425
+ },
+ "lWallCorner": 2.07,
+ "body": {
+  "along": 6.5,
+  "length": 0.8,
+  "width": 0.3952
+ },
+ "skis": [
+  {
+   "side": "R",
+   "z": 1.392,
+   "from": 4.281,
+   "to": 7.649,
+   "tees": [
+    {
+     "leg": "1R",
+     "x": 4.431,
+     "post": 3.667,
+     "postHeight": 3.809,
+     "footHeight": 3.8588
+    },
+    {
+     "leg": "2R",
+     "x": 5.747,
+     "post": 3.01,
+     "postHeight": 3.146,
+     "footHeight": 3.1956
+    },
+    {
+     "leg": "3R",
+     "x": 6.296,
+     "post": 2.03,
+     "postHeight": 2.102,
+     "footHeight": 2.1524
+    },
+    {
+     "leg": "4R",
+     "x": 7.499,
+     "post": 1.31,
+     "postHeight": 1.38,
+     "footHeight": 1.4303
+    }
+   ]
+  },
+  {
+   "side": "L",
+   "z": -1.391,
+   "from": 5.545,
+   "to": 8.241,
+   "tees": [
+    {
+     "leg": "1L",
+     "x": 5.695,
+     "post": 3.658,
+     "postHeight": 3.8,
+     "footHeight": 3.8498
+    },
+    {
+     "leg": "2L",
+     "x": 5.979,
+     "post": 2.587,
+     "postHeight": 2.712,
+     "footHeight": 2.7624
+    },
+    {
+     "leg": "3L",
+     "x": 6.899,
+     "post": 2.009,
+     "postHeight": 2.091,
+     "footHeight": 2.141
+    },
+    {
+     "leg": "4L",
+     "x": 8.091,
+     "post": 1.554,
+     "postHeight": 1.636,
+     "footHeight": 1.6861
+    }
+   ]
+  }
+ ]
+}

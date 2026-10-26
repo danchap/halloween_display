@@ -12,6 +12,7 @@ import { LOCKED, DEFAULTS, briefPreset, buildSpider, bodyLength, flatWalls, root
 import { loadSite, wallsFromSite, insideBuilding } from './site.js';
 import { HALLOWEEN_NOON, solarPosition, sunVector } from './sun.js';
 import { SYSTEMS, BRACINGS, systemById, buildParts, stockPlan, recipeFor, recipeText, pairAngle, straightWalls } from './build.js';
+import { DEFAULT_DESIGN } from './design.js';
 
 const out = [];
 let failed = 0;
@@ -415,8 +416,8 @@ try {
     // foot, whose Ø 50 spigot gets a Ø 50 coupler on the post.
     const endsOf = a => pvc.fittings.knee.endsByAngle[a];
     const outZ = r => endsOf(r.angles[r.angles.length - 1]) === 'M/F' ? 2 * pvc.fittings.coupler.d40.z : 0; // the coupler after a spigot
-    const linkOf = r => r.angles.length === 2 && endsOf(r.angles[0]) === 'F/F' ? 2 * 0.027 : 0;
-    const footLink = r => endsOf(r.angles[r.angles.length - 1]) === 'F/F' ? 2 * 0.027 : 0; // a socket-ended foot set needs a link into the reducer
+    const linkOf = r => r.angles.length === 2 && endsOf(r.angles[0]) === 'F/F' ? 2 * pvc.fittings.knee.socket : 0;
+    const footLink = r => endsOf(r.angles[r.angles.length - 1]) === 'F/F' ? 2 * pvc.fittings.knee.socket : 0; // a socket-ended foot set needs a link into the reducer
     check('build: elbow ends from the listings', endsOf(45) === 'M/F' && endsOf(20) === 'M/F' && endsOf(30) === 'M/F' && endsOf(67.5) === 'F/F' && endsOf(87.5) === 'F/F' && parts.bom.fittings.some(r => r.name === 'elbow 45° M/F Ø 40') && !parts.bom.fittings.some(r => /elbow .*F\/F/.test(r.name)));
     check('build: a pair puts the M/F elbow first', JSON.stringify(recipeFor(100, pvc, 'knee').angles) === '[45,67.5]' && JSON.stringify(recipeFor(130, pvc, 'knee').angles) === '[45,87.5]' && JSON.stringify(recipeFor(60, pvc, 'knee').angles) === '[45,20]', JSON.stringify(recipeFor(100, pvc, 'knee')));
     const jointCouplers = parts.fittings.filter(f => f.role === 'coupler' && f.joint);
@@ -432,7 +433,7 @@ try {
       const rf = buildParts(buildSpider(flat, flatWalls(3.0)), flat, flatWalls(3.0), { system: SYSTEMS[0], maxPiece: 4.0 });
       check('joint rolls: a level leg straight across has its knee in the hip\'s plane (roll 0 or 180)', rf.legsAssembly.every(a => Math.abs(a.knee.roll) < 1 || Math.abs(Math.abs(a.knee.roll) - 180) < 1), JSON.stringify(rf.legsAssembly.map(a => a.knee.roll)));
     }
-    check('build: five systems in the table, pvc40 first, the aluminium-in-PVC-fittings one second', SYSTEMS.length === 5 && SYSTEMS[0].id === 'pvc40' && SYSTEMS[1].id === 'alu40' && SYSTEMS.every(s => s.id && s.sizes && s.members && s.fittings && s.hub && s.body && s.stays && s.ballast));
+    check('build: six systems in the table, pvc40 first, the aluminium-in-PVC-fittings one second, the as-built one last', SYSTEMS.length === 6 && SYSTEMS[0].id === 'pvc40' && SYSTEMS[1].id === 'alu40' && SYSTEMS[5].id === 'alu40pvc50' && SYSTEMS.every(s => s.id && s.sizes && s.members && s.fittings && s.hub && s.body && s.stays && s.ballast));
     check('build: deterministic', JSON.stringify(parts) === JSON.stringify(buildParts(m, p, walls, { system: pvc, bracing: 'frame', maxPiece: 2.0 })));
     // Recipes: one elbow within 2.5 degrees of the need, else a pair with
     // a twist; the pair formula gives the angle back.
@@ -449,7 +450,7 @@ try {
     check('build: the recipes make the angles within 2.5 degrees', parts.legsAssembly.every(a => near(made(a.hip.recipe), a.hip.angle, 2.6) && near(made(a.knee.recipe), a.knee.bend, 2.6) && near(made(a.foot.recipe), a.foot.bend, 2.6)), parts.legsAssembly.map(a => `${a.knee.bend}:${recipeText(a.knee.recipe)}`).join(' '));
     check('build: no joint is out of reach', !parts.warnings.some(w => /reaches/.test(w)) && parts.fittings.every(f => f.items.length > 0));
     // Cut allowances: the Z of the elbows at each end (a pair adds both).
-    check('build: a 45 + 20 end loses 0.0195 m', near(zOf({ angles: [45, 20] }), 0.0195, 1e-9) && parts.legsAssembly.some(a => a.hip.recipe.angles.length === 2 && near(zOf(a.hip.recipe), 0.0195, 1e-9)));
+    check('build: a 45 + 20 end loses the two elbows\' Z (0.0255 m with the measured sockets)', near(zOf({ angles: [45, 20] }), Z[45] + Z[20], 1e-9) && near(Z[45] + Z[20], 0.0255, 1e-9) && parts.legsAssembly.some(a => a.hip.recipe.angles.length === 2 && near(zOf(a.hip.recipe), Z[45] + Z[20], 1e-9)));
     for (const a of parts.legsAssembly) {
       const l = m.legs[a.leg], j = a.leg;
       const upper = cutOf(parts, 'upper', j), lower = cutOf(parts, 'lower', j);
@@ -509,7 +510,7 @@ try {
     check('build: 8 hips, knees, feet, tees and reducers, 4 crosses, 6 caps, 30 couplers', fc.hip === 8 && fc.knee === 8 && fc.foot === 8 && fc.tee === 8 && fc.cross === 4 && fc.reducer === 8 && fc.cap === 6 && fc.coupler === 8 + 8 + 8 + 6, JSON.stringify(fc)); // couplers: hips, knees, under the reducers, and the 6 splits
     check('build: the parts table counts elbows per angle, ends and size', parts.bom.fittings.filter(r => /^elbow .*Ø 40$/.test(r.name)).reduce((s, r) => s + r.count, 0) === parts.fittings.filter(f => ['hip', 'knee', 'foot'].includes(f.role)).reduce((s, f) => s + f.recipe.angles.length, 0) && parts.bom.fittings.some(r => r.name === 'elbow 45° M/F Ø 40' && r.count > 8), JSON.stringify(parts.bom.fittings.map(r => `${r.name}:${r.count}`)));
     check('build: 8 stubs and 5 spine pieces', parts.cuts.filter(c => c.role === 'stub').length === 8 && parts.cuts.filter(c => c.role === 'spine').length === 5);
-    check('build: no pipe shorter than its two sockets', !parts.warnings.some(w => /shorter than the two sockets/.test(w)) && parts.cuts.every(c => c.length >= 0.054 - 1e-9), JSON.stringify(parts.warnings));
+    check('build: no pipe shorter than its two sockets', !parts.warnings.some(w => /shorter than the two sockets/.test(w)) && parts.cuts.every(c => c.length >= 2 * pvc.fittings.knee.socket - 1e-9), JSON.stringify(parts.warnings));
     // The hub: the crosses are pushed apart to the spacing (at least their
     // reach: Z plus the socket, twice) and the roots move with them, by at
     // most the stated amount. (With the table's 0.10 m and Nicoll's 31 mm
@@ -552,8 +553,8 @@ try {
     const level = buildSpider(withLeg(p, 0, 1, { footHeight: leg(m, 0, 1).knee[1] }), walls);
     const levelParts = buildParts(level, p, walls, { system: pvc, bracing: 'frame', maxPiece: 2.0 });
     const lf = levelParts.legsAssembly[0].foot, levelLink = levelParts.cuts.find(c => c.role === 'link' && c.leg === 0);
-    check('build: an F/F foot elbow gets a link into the reducer', JSON.stringify(lf.recipe.angles) === '[87.5]' && levelLink && levelLink.joint === 'foot' && near(levelLink.length, 0.054, 1e-9) && near(level.legs[0].foot[1] - fitOf(levelParts, 'reducer', 0).at[1], Z[87.5] + 0.054 + pvc.fittings.reducer.z, 1e-9) && levelParts.members.some(x => x.role === 'link' && x.leg === 0) && fitOf(levelParts, 'foot', 0).sockets === 2 && fitOf(levelParts, 'foot', 0).out === 'socket', JSON.stringify([lf, levelLink]));
-    check('build: an F/F link is in the pipe metres and the parts table', levelParts.bom.members.some(r => r.role === 'link' && r.pieces === 1 && near(r.metres, 0.054, 1e-9)) && levelParts.bom.stock.bySize.find(r => r.sizeKey === 'd40').pieces === parts.bom.stock.bySize.find(r => r.sizeKey === 'd40').pieces + 1);
+    check('build: an F/F foot elbow gets a link into the reducer', JSON.stringify(lf.recipe.angles) === '[87.5]' && levelLink && levelLink.joint === 'foot' && near(levelLink.length, 2 * pvc.fittings.knee.socket, 1e-9) && near(level.legs[0].foot[1] - fitOf(levelParts, 'reducer', 0).at[1], Z[87.5] + 2 * pvc.fittings.knee.socket + pvc.fittings.reducer.z, 1e-9) && levelParts.members.some(x => x.role === 'link' && x.leg === 0) && fitOf(levelParts, 'foot', 0).sockets === 2 && fitOf(levelParts, 'foot', 0).out === 'socket', JSON.stringify([lf, levelLink]));
+    check('build: an F/F link is in the pipe metres and the parts table', levelParts.bom.members.some(r => r.role === 'link' && r.pieces === 1 && near(r.metres, 2 * pvc.fittings.knee.socket, 1e-9)) && levelParts.bom.stock.bySize.find(r => r.sizeKey === 'd40').pieces === parts.bom.stock.bySize.find(r => r.sizeKey === 'd40').pieces + 1);
     // Two F/F elbows (a bend past 135 degrees) have a link between them, inside the pair.
     const ffPair = recipeFor(150, pvc, 'knee');
     check('build: two F/F elbows need a link between them', JSON.stringify(ffPair.angles) === '[87.5,67.5]' && near(pairAngle(87.5, 67.5, ffPair.twist), 150, 0.1), JSON.stringify(ffPair));
@@ -763,6 +764,15 @@ try {
   check('real-site plumb: the legs still reach', plumb.legs.every(l => l.status === 'ok') && plumb.legs.every((l, i) => Math.abs(l.a + l.b - real.legs[i].a - real.legs[i].b) < 0.1));
   check('real-site plumb: off, everything is as before', JSON.stringify(buildParts(real, DEFAULTS, sw, { system: systemById('pvc40'), maxPiece: 2.0, realWalls: null })) === JSON.stringify(realParts));
   check('real-site plumb: the default build is posts and skis only', plumbParts.bracing === 'none' && plumbParts.bom.stays.count === 0 && plumbParts.bom.sandbags === 0 && !plumbParts.members.some(x => x.role === 'stay' || x.role === 'ballast'));
+  // The alley width calibration (site.js MEASURED_ALLEY, Daniel's 2.85 m of
+  // 2026-10-26): each side moved a few centimetres at most, and the lines
+  // the construction straightens the walls to for the default design are
+  // exactly 1.425 m from the axis on each side.
+  const cal = site.calibration;
+  check('calibration: recorded, a small shift per side', cal && cal.width === 2.85 && Math.abs(cal.shift.R) < 0.1 && Math.abs(cal.shift.L) < 0.1 && cal.measured.R > 1.3 && cal.measured.L < -1.3, JSON.stringify(cal));
+  const defaultLine = straightWalls(sw, DEFAULT_DESIGN.params).stretch.line;
+  check('calibration: the default design stands on walls 2.85 m apart', near(defaultLine.R, 1.425) && near(defaultLine.L, -1.425), JSON.stringify(defaultLine));
+  check('calibration: the real walls at the default feet are no closer than the lines', [4.5, 5.8, 6.3, 7.4].every(xx => sw(xx, 1, 0) >= 1.425 - 1e-9 && sw(xx, -1, 0) <= -1.425 + 1e-9), JSON.stringify([4.5, 5.8, 6.3, 7.4].map(xx => [sw(xx, 1, 0), sw(xx, -1, 0)])));
   out.push('real-site plumb warnings: ' + plumbParts.warnings.join(' | '));
   for (const br of ['none', 'frame', 'rigid']) {
     const bp = buildParts(plumb, DEFAULTS, straightSite, { system: systemById('pvc40'), maxPiece: 2.0, bracing: br, realWalls: sw });

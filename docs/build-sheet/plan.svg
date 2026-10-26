@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="776" height="483" viewBox="0 0 776 483" font-family='system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' font-size="12">
+<rect id="plan-bg" width="776" height="483" fill="#fff"/>
+<text x="28" y="17" font-size="14" font-weight="bold">Plan view, looking down: the street to the left, the dead end to the right</text>
+<text x="748" y="17" font-size="12" text-anchor="end" fill="#666">dimensions in metres</text>
+<line x1="28" y1="221" x2="748" y2="221" stroke="#999" stroke-width="0.8" stroke-linecap="butt" stroke-dasharray="6 4"/>
+<line x1="28" y1="50" x2="748" y2="50" stroke="#000" stroke-width="5" stroke-linecap="butt"/>
+<line x1="28" y1="392" x2="748" y2="392" stroke="#000" stroke-width="5" stroke-linecap="butt"/>
+<text x="748" y="42" font-size="12" text-anchor="end">L wall: the east house (the plaque at its street corner, x = 2.07)</text>
+<text x="748" y="432" font-size="12" text-anchor="end">R wall: the garage side</text>
+<line x1="88" y1="394.5" x2="88" y2="401" stroke="#000" stroke-width="1" stroke-linecap="butt"/>
+<text x="88" y="413" font-size="11" text-anchor="middle" fill="#666">x = 4</text>
+<line x1="208" y1="394.5" x2="208" y2="401" stroke="#000" stroke-width="1" stroke-linecap="butt"/>
+<text x="208" y="413" font-size="11" text-anchor="middle" fill="#666">5</text>
+<line x1="328" y1="394.5" x2="328" y2="401" stroke="#000" stroke-width="1" stroke-linecap="butt"/>
+<text x="328" y="413" font-size="11" text-anchor="middle" fill="#666">6</text>
+<line x1="448" y1="394.5" x2="448" y2="401" stroke="#000" stroke-width="1" stroke-linecap="butt"/>
+<text x="448" y="413" font-size="11" text-anchor="middle" fill="#666">7</text>
+<line x1="568" y1="394.5" x2="568" y2="401" stroke="#000" stroke-width="1" stroke-linecap="butt"/>
+<text x="568" y="413" font-size="11" text-anchor="middle" fill="#666">8</text>
+<line x1="688" y1="394.5" x2="688" y2="401" stroke="#000" stroke-width="1" stroke-linecap="butt"/>
+<text x="688" y="413" font-size="11" text-anchor="middle" fill="#666">9</text>
+<text x="36" y="225" font-size="13">← street</text>
+<text x="622" y="225" font-size="13" text-anchor="end">dead end →</text>
+<rect x="340" y="197.29" width="96" height="47.42" fill="#eee" stroke="#000" stroke-width="1" rx="23.71"/>
+<circle cx="350.8" cy="221" r="3" fill="#000" stroke="none" stroke-width="1"/>
+<text x="395.2" y="225" font-size="12" text-anchor="middle">body</text>
+<rect x="121.72" y="385.04" width="404.16" height="6" fill="#ddd" stroke="#000" stroke-width="1"/>
+<rect x="134.72" y="383.04" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<text x="139.72" y="377.04" font-size="13" text-anchor="middle" font-weight="bold">1R</text>
+<rect x="292.64" y="383.04" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<text x="297.64" y="377.04" font-size="13" text-anchor="middle" font-weight="bold">2R</text>
+<rect x="358.52" y="383.04" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<text x="363.52" y="377.04" font-size="13" text-anchor="middle" font-weight="bold">3R</text>
+<rect x="502.88" y="383.04" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<text x="507.88" y="377.04" font-size="13" text-anchor="middle" font-weight="bold">4R</text>
+<line x1="121.72" y1="385.04" x2="121.72" y2="268.04" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="139.72" y1="385.04" x2="139.72" y2="348.04" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="297.64" y1="385.04" x2="297.64" y2="328.04" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="363.52" y1="385.04" x2="363.52" y2="308.04" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="507.88" y1="385.04" x2="507.88" y2="288.04" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="525.88" y1="385.04" x2="525.88" y2="268.04" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="121.72" y1="352.04" x2="139.72" y2="352.04" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<line x1="107.72" y1="352.04" x2="121.72" y2="352.04" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<line x1="139.72" y1="352.04" x2="153.72" y2="352.04" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="121.72,352.04 114.72,354.84 114.72,349.24" fill="#000" stroke="none"/>
+<polygon points="139.72,352.04 146.72,349.24 146.72,354.84" fill="#000" stroke="none"/>
+<text x="130.72" y="348.04" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">0.150</text>
+<line x1="121.72" y1="332.04" x2="297.64" y2="332.04" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="121.72,332.04 128.72,329.24 128.72,334.84" fill="#000" stroke="none"/>
+<polygon points="297.64,332.04 290.64,334.84 290.64,329.24" fill="#000" stroke="none"/>
+<text x="209.68" y="328.04" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">1.466</text>
+<line x1="121.72" y1="312.04" x2="363.52" y2="312.04" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="121.72,312.04 128.72,309.24 128.72,314.84" fill="#000" stroke="none"/>
+<polygon points="363.52,312.04 356.52,314.84 356.52,309.24" fill="#000" stroke="none"/>
+<text x="242.62" y="308.04" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">2.015</text>
+<line x1="121.72" y1="292.04" x2="507.88" y2="292.04" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="121.72,292.04 128.72,289.24 128.72,294.84" fill="#000" stroke="none"/>
+<polygon points="507.88,292.04 500.88,294.84 500.88,289.24" fill="#000" stroke="none"/>
+<text x="314.8" y="288.04" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">3.218</text>
+<line x1="121.72" y1="272.04" x2="525.88" y2="272.04" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="121.72,272.04 128.72,269.24 128.72,274.84" fill="#000" stroke="none"/>
+<polygon points="525.88,272.04 518.88,274.84 518.88,269.24" fill="#000" stroke="none"/>
+<text x="323.8" y="268.04" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">3.368 overall</text>
+<rect x="273.4" y="51.08" width="323.52" height="6" fill="#ddd" stroke="#000" stroke-width="1"/>
+<rect x="286.4" y="49.08" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<text x="291.4" y="75.08" font-size="13" text-anchor="middle" font-weight="bold">1L</text>
+<rect x="320.48" y="49.08" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<text x="325.48" y="75.08" font-size="13" text-anchor="middle" font-weight="bold">2L</text>
+<rect x="430.88" y="49.08" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<text x="435.88" y="75.08" font-size="13" text-anchor="middle" font-weight="bold">3L</text>
+<rect x="573.92" y="49.08" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<text x="578.92" y="75.08" font-size="13" text-anchor="middle" font-weight="bold">4L</text>
+<line x1="273.4" y1="57.08" x2="273.4" y2="174.08" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="291.4" y1="57.08" x2="291.4" y2="94.08" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="325.48" y1="57.08" x2="325.48" y2="114.08" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="435.88" y1="57.08" x2="435.88" y2="134.08" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="578.92" y1="57.08" x2="578.92" y2="154.08" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="596.92" y1="57.08" x2="596.92" y2="174.08" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="273.4" y1="90.08" x2="291.4" y2="90.08" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<line x1="259.4" y1="90.08" x2="273.4" y2="90.08" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<line x1="291.4" y1="90.08" x2="305.4" y2="90.08" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="273.4,90.08 266.4,92.88 266.4,87.28" fill="#000" stroke="none"/>
+<polygon points="291.4,90.08 298.4,87.28 298.4,92.88" fill="#000" stroke="none"/>
+<text x="282.4" y="104.08" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">0.150</text>
+<line x1="273.4" y1="110.08" x2="325.48" y2="110.08" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="273.4,110.08 280.4,107.28 280.4,112.88" fill="#000" stroke="none"/>
+<polygon points="325.48,110.08 318.48,112.88 318.48,107.28" fill="#000" stroke="none"/>
+<text x="299.44" y="124.08" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">0.434</text>
+<line x1="273.4" y1="130.08" x2="435.88" y2="130.08" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="273.4,130.08 280.4,127.28 280.4,132.88" fill="#000" stroke="none"/>
+<polygon points="435.88,130.08 428.88,132.88 428.88,127.28" fill="#000" stroke="none"/>
+<text x="354.64" y="144.08" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">1.354</text>
+<line x1="273.4" y1="150.08" x2="578.92" y2="150.08" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="273.4,150.08 280.4,147.28 280.4,152.88" fill="#000" stroke="none"/>
+<polygon points="578.92,150.08 571.92,152.88 571.92,147.28" fill="#000" stroke="none"/>
+<text x="426.16" y="164.08" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">2.546</text>
+<line x1="273.4" y1="170.08" x2="596.92" y2="170.08" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="273.4,170.08 280.4,167.28 280.4,172.88" fill="#000" stroke="none"/>
+<polygon points="596.92,170.08 589.92,172.88 589.92,167.28" fill="#000" stroke="none"/>
+<text x="435.16" y="184.08" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">2.696 overall</text>
+<line x1="525.88" y1="388.04" x2="652" y2="388.04" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="596.92" y1="54.08" x2="652" y2="54.08" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="646" y1="54.08" x2="646" y2="388.04" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="646,54.08 648.8,61.08 643.2,61.08" fill="#000" stroke="none"/>
+<polygon points="646,388.04 643.2,381.04 648.8,381.04" fill="#000" stroke="none"/>
+<text x="641" y="221.06" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" transform="rotate(-90 641 221.06)">2.783 between the ski centres</text>
+<line x1="706" y1="50" x2="706" y2="392" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="706,50 708.8,57 703.2,57" fill="#000" stroke="none"/>
+<polygon points="706,392 703.2,385 708.8,385" fill="#000" stroke="none"/>
+<text x="701" y="221" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" transform="rotate(-90 701 221)">2.850 between the walls</text>
+<line x1="273.4" y1="68.08" x2="233.4" y2="68.08" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="233.4,68.08 240.4,65.28 240.4,70.88" fill="#000" stroke="none"/>
+<text x="227.4" y="72.08" font-size="12" text-anchor="end">3.475 m to the plaque</text>
+<text x="227.4" y="86.08" font-size="12" text-anchor="end">corner at x = 2.07</text>
+<text x="28" y="454" font-size="11.5" fill="#666">Ski dimensions run from the ski’s street end to each tee’s centre; the last one is the ski’s length. The tees carry the</text>
+<text x="28" y="468.5" font-size="11.5" fill="#666">posts. The black dot is the head end of the body. x: metres along the alley from the street mouth, as on the page.</text>
+</svg>

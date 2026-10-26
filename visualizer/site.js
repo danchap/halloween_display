@@ -12,6 +12,8 @@
 
 import * as THREE from 'three';
 import { villageMaterials, WINDOW_SIZE, SHUTTER_SIZE, DOOR_SIZE, PLAQUE_SIZE, GARAGE_SIZE, SHOPFRONT_SIZE, CLIMBER_SIZE } from './textures.js';
+import { straightWalls } from './build.js';
+import { DEFAULT_DESIGN } from './design.js';
 
 // Corrections to the IGN data from what Daniel knows of the place, by the
 // end of the building id: the garage on the south-west corner of the alley
@@ -19,6 +21,20 @@ import { villageMaterials, WINDOW_SIZE, SHUTTER_SIZE, DOOR_SIZE, PLAQUE_SIZE, GA
 const OVERRIDES = {
   '292742702': { floors: 2, eaveHeight: 5.6 },
 };
+
+// Daniel measured the alley on 2026-10-26: 2.85 m between the walls where
+// the posts stand. The IGN footprints put the lines the feet and skis stand
+// on (build.js straightWalls: the innermost wall per side over the stretch
+// the feet occupy, plus 1.6 m each way for the skis) 2.887 m apart. The
+// measurement goes into the model here, not into a control on the page:
+// calibrateAlley moves each side's buildings across the alley so that the
+// default design's lines (design.js) land at exactly z = +1.425 and
+// z = -1.425, whatever stretch that design occupies (tests.html checks
+// this). The right wall (the garage side) is innermost at the garage's
+// corner near x = 4.13 and moves about 3 mm; the left wall (the east
+// house) runs closer to the axis toward the dead end, is innermost at the
+// stretch's end and moves about 35 mm.
+const MEASURED_ALLEY = { width: 2.85 };
 
 export async function loadSite(url = './site/site.json') {
   const res = await fetch(url);
@@ -45,8 +61,18 @@ export async function loadSite(url = './site/site.json') {
       return [sx + x * along[0] + z * right[0], sy + x * along[1] + z * right[1]];
     },
   };
-  // Every building edge in alley-frame coordinates, for wall finding, and
-  // bounding boxes in site coordinates, for walking collisions.
+  // The IGN walls are indexed, measured and moved to Daniel's width, then
+  // indexed again as moved.
+  indexBuildings(site);
+  calibrateAlley(site, MEASURED_ALLEY);
+  indexBuildings(site);
+  return site;
+}
+
+// Every building edge in alley-frame coordinates, for wall finding, and
+// bounding boxes in site coordinates, for walking collisions, from the
+// polygons as they are now.
+function indexBuildings(site) {
   site.edges = [];
   for (const b of site.buildings) {
     b.bbox = [Infinity, Infinity, -Infinity, -Infinity];
@@ -64,7 +90,67 @@ export async function loadSite(url = './site/site.json') {
       }
     }
   }
-  return site;
+}
+
+// The innermost wall on one side over x in [from, to]: the z nearest the
+// axis that the wall function returns, or null when it finds no wall. The
+// samples are build.js straightWalls' (every 0.01 m, both ends included),
+// so over the same stretch both find the same wall at the same sample.
+function innermostWall(walls, from, to, side) {
+  const n = Math.max(1, Math.ceil((to - from) / 0.01));
+  let best = null;
+  for (let i = 0; i <= n; i++) {
+    const z = walls(from + (to - from) * i / n, side, 0);
+    if (z === null || z === undefined) continue;
+    if (best === null || Math.abs(z) < Math.abs(best)) best = z;
+  }
+  return best;
+}
+
+// Which side of the alley a building stands on: the sign of z, in the
+// alley frame, of the centroid of its outer rings (+1 right, -1 left, 0 on
+// the axis or for a building with no area).
+function buildingSide(site, b) {
+  let area = 0, ce = 0, cn = 0;
+  for (const poly of b.polygons) {
+    const ring = poly.outer;
+    let a = 0, se = 0, sn = 0;
+    for (let i = 0; i + 1 < ring.length; i++) {
+      const [e0, n0] = ring[i], [e1, n1] = ring[i + 1];
+      const cross = e0 * n1 - e1 * n0;
+      a += cross; se += (e0 + e1) * cross; sn += (n0 + n1) * cross;
+    }
+    if (Math.abs(a) < 1e-12) continue;
+    const w = Math.abs(a) / 2; // the ring's area; its centroid is (se, sn) / (3 a)
+    ce += w * se / (3 * a); cn += w * sn / (3 * a); area += w;
+  }
+  if (!area) return 0;
+  const [, z] = site.frame.toAlley(ce / area, cn / area);
+  return Math.sign(z);
+}
+
+// Apply MEASURED_ALLEY: move each side's buildings across the alley so the
+// innermost wall over the measured stretch is width / 2 from the axis. The
+// move is along site.frame.right, the unit vector of +z in site
+// coordinates; the rings are replaced, so the edges and bounding boxes
+// must be indexed again afterwards. site.calibration records the wall
+// measured and the shift applied per side, for the tests.
+function calibrateAlley(site, { width }) {
+  const lines = straightWalls(wallsFromSite(site), DEFAULT_DESIGN.params);
+  const { from, to } = lines.stretch;
+  const measured = { 1: lines.stretch.line.R, [-1]: lines.stretch.line.L }, shift = {};
+  for (const side of [1, -1]) shift[side] = measured[side] === null || measured[side] === undefined ? 0 : side * width / 2 - measured[side];
+  const [re, rn] = site.frame.right;
+  for (const b of site.buildings) {
+    const dz = shift[buildingSide(site, b)] || 0;
+    if (dz === 0) continue;
+    const move = ([e, n]) => [e + dz * re, n + dz * rn];
+    for (const poly of b.polygons) {
+      poly.outer = poly.outer.map(move);
+      poly.holes = poly.holes.map(h => h.map(move));
+    }
+  }
+  site.calibration = { width, from, to, measured: { R: measured[1], L: measured[-1] }, shift: { R: shift[1], L: shift[-1] } };
 }
 
 // Wall finder for buildSpider: the nearest building edge across the alley
@@ -310,7 +396,8 @@ export function buildSiteMeshes(site, textureLoader, opts = {}) {
       bench.add(leg);
     }
     bench.traverse(o => { o.castShadow = true; });
-    const [be, bn] = site.frame.toSite(7.8, -1.28);
+    const wallZ = wallsFromSite(site)(7.8, -1, 0); // the seat's back 0.01 m off the east wall
+    const [be, bn] = site.frame.toSite(7.8, wallZ === null ? -1.28 : wallZ + 0.21);
     bench.position.copy(V(be, 0, bn));
     bench.rotation.y = site.frame.yaw;
     bench.name = 'facade';

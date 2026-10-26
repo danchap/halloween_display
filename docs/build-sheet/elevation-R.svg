@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="788" height="688.06" viewBox="0 0 788 688.06" font-family='system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' font-size="12">
+<rect id="elevation-R-bg" width="788" height="688.06" fill="#fff"/>
+<text x="40" y="17" font-size="14" font-weight="bold">R wall (the garage side) seen from the alley: the street is on the right</text>
+<text x="760" y="17" font-size="12" text-anchor="end" fill="#666">dimensions in metres</text>
+<line x1="700" y1="38" x2="700" y2="555.06" stroke="#e2e2e2" stroke-width="0.8" stroke-linecap="butt"/>
+<line x1="580" y1="38" x2="580" y2="555.06" stroke="#e2e2e2" stroke-width="0.8" stroke-linecap="butt"/>
+<line x1="460" y1="38" x2="460" y2="555.06" stroke="#e2e2e2" stroke-width="0.8" stroke-linecap="butt"/>
+<line x1="340" y1="38" x2="340" y2="555.06" stroke="#e2e2e2" stroke-width="0.8" stroke-linecap="butt"/>
+<line x1="220" y1="38" x2="220" y2="555.06" stroke="#e2e2e2" stroke-width="0.8" stroke-linecap="butt"/>
+<line x1="100" y1="38" x2="100" y2="555.06" stroke="#e2e2e2" stroke-width="0.8" stroke-linecap="butt"/>
+<line x1="760" y1="435.06" x2="40" y2="435.06" stroke="#e2e2e2" stroke-width="0.8" stroke-linecap="butt"/>
+<text x="35" y="439.06" font-size="11" text-anchor="end" fill="#666">1 m</text>
+<line x1="760" y1="315.06" x2="40" y2="315.06" stroke="#e2e2e2" stroke-width="0.8" stroke-linecap="butt"/>
+<text x="35" y="319.06" font-size="11" text-anchor="end" fill="#666">2 m</text>
+<line x1="760" y1="195.06" x2="40" y2="195.06" stroke="#e2e2e2" stroke-width="0.8" stroke-linecap="butt"/>
+<text x="35" y="199.06" font-size="11" text-anchor="end" fill="#666">3 m</text>
+<line x1="760" y1="75.06" x2="40" y2="75.06" stroke="#e2e2e2" stroke-width="0.8" stroke-linecap="butt"/>
+<text x="35" y="79.06" font-size="11" text-anchor="end" fill="#666">4 m</text>
+<text x="700" y="569.06" font-size="11" text-anchor="middle" fill="#666" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">x = 4</text>
+<text x="580" y="569.06" font-size="11" text-anchor="middle" fill="#666" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">5</text>
+<text x="460" y="569.06" font-size="11" text-anchor="middle" fill="#666" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">6</text>
+<text x="340" y="569.06" font-size="11" text-anchor="middle" fill="#666" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">7</text>
+<text x="220" y="569.06" font-size="11" text-anchor="middle" fill="#666" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">8</text>
+<text x="100" y="569.06" font-size="11" text-anchor="middle" fill="#666" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">9</text>
+<line x1="760" y1="555.06" x2="40" y2="555.06" stroke="#000" stroke-width="3" stroke-linecap="butt"/>
+<text x="44" y="547.06" font-size="13">← dead end</text>
+<text x="756" y="547.06" font-size="13" text-anchor="end">street →</text>
+<rect x="262.12" y="549.06" width="404.16" height="6" fill="#ddd" stroke="#000" stroke-width="1"/>
+<rect x="645.28" y="92" width="6" height="457.06" fill="#c8c8c8" stroke="#000" stroke-width="1"/>
+<rect x="643.28" y="544.06" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<circle cx="648.28" cy="92" r="4" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<rect x="487.36" y="171.58" width="6" height="377.47" fill="#c8c8c8" stroke="#000" stroke-width="1"/>
+<rect x="485.36" y="544.06" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<circle cx="490.36" cy="171.58" r="4" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<rect x="421.48" y="296.77" width="6" height="252.29" fill="#c8c8c8" stroke="#000" stroke-width="1"/>
+<rect x="419.48" y="544.06" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<circle cx="424.48" cy="296.77" r="4" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<rect x="277.12" y="383.42" width="6" height="165.64" fill="#c8c8c8" stroke="#000" stroke-width="1"/>
+<rect x="275.12" y="544.06" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<circle cx="280.12" cy="383.42" r="4" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<text x="657.28" y="90" font-size="13" font-weight="bold" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">1R</text>
+<text x="657.28" y="104" font-size="12" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">post 3.667 m</text>
+<text x="657.28" y="118" font-size="12" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">foot at 3.859 m</text>
+<text x="499.36" y="169.58" font-size="13" font-weight="bold" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">2R</text>
+<text x="499.36" y="183.58" font-size="12" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">post 3.010 m</text>
+<text x="499.36" y="197.58" font-size="12" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">foot at 3.196 m</text>
+<text x="415.48" y="294.77" font-size="13" text-anchor="end" font-weight="bold" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">3R</text>
+<text x="415.48" y="308.77" font-size="12" text-anchor="end" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">post 2.030 m</text>
+<text x="415.48" y="322.77" font-size="12" text-anchor="end" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">foot at 2.152 m</text>
+<text x="289.12" y="381.42" font-size="13" font-weight="bold" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">4R</text>
+<text x="289.12" y="395.42" font-size="12" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">post 1.310 m</text>
+<text x="289.12" y="409.42" font-size="12" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">foot at 1.430 m</text>
+<line x1="666.28" y1="549.06" x2="666.28" y2="625.06" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="648.28" y1="549.06" x2="648.28" y2="625.06" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="490.36" y1="549.06" x2="490.36" y2="625.06" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="424.48" y1="549.06" x2="424.48" y2="625.06" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="280.12" y1="549.06" x2="280.12" y2="625.06" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="262.12" y1="549.06" x2="262.12" y2="625.06" stroke="#555" stroke-width="0.7" stroke-linecap="butt"/>
+<line x1="648.28" y1="593.06" x2="666.28" y2="593.06" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="648.28,593.06 641.28,595.86 641.28,590.26" fill="#000" stroke="none"/>
+<polygon points="666.28,593.06 673.28,590.26 673.28,595.86" fill="#000" stroke="none"/>
+<text x="657.28" y="589.06" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">0.150</text>
+<line x1="490.36" y1="593.06" x2="648.28" y2="593.06" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="490.36,593.06 497.36,590.26 497.36,595.86" fill="#000" stroke="none"/>
+<polygon points="648.28,593.06 641.28,595.86 641.28,590.26" fill="#000" stroke="none"/>
+<text x="569.32" y="607.06" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">1.316</text>
+<line x1="424.48" y1="593.06" x2="490.36" y2="593.06" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="424.48,593.06 431.48,590.26 431.48,595.86" fill="#000" stroke="none"/>
+<polygon points="490.36,593.06 483.36,595.86 483.36,590.26" fill="#000" stroke="none"/>
+<text x="457.42" y="607.06" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">0.549</text>
+<line x1="280.12" y1="593.06" x2="424.48" y2="593.06" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="280.12,593.06 287.12,590.26 287.12,595.86" fill="#000" stroke="none"/>
+<polygon points="424.48,593.06 417.48,595.86 417.48,590.26" fill="#000" stroke="none"/>
+<text x="352.3" y="607.06" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">1.203</text>
+<line x1="262.12" y1="593.06" x2="280.12" y2="593.06" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="262.12,593.06 255.12,595.86 255.12,590.26" fill="#000" stroke="none"/>
+<polygon points="280.12,593.06 287.12,590.26 287.12,595.86" fill="#000" stroke="none"/>
+<text x="271.12" y="589.06" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">0.150</text>
+<line x1="262.12" y1="621.06" x2="666.28" y2="621.06" stroke="#000" stroke-width="0.9" stroke-linecap="butt"/>
+<polygon points="262.12,621.06 269.12,618.26 269.12,623.86" fill="#000" stroke="none"/>
+<polygon points="666.28,621.06 659.28,623.86 659.28,618.26" fill="#000" stroke="none"/>
+<text x="464.2" y="635.06" font-size="12" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">3.368 overall (the ski)</text>
+<text x="40" y="659.06" font-size="11.5" fill="#666">Post: the pipe’s cut length. Foot: the top of the foot set above the lane. Spacings are between tee centres along the ski,</text>
+<text x="40" y="673.56" font-size="11.5" fill="#666">from its street end to its far end.</text>
+</svg>

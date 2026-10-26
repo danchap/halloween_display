@@ -20,7 +20,10 @@ test run before the night.
   installed on feta; the page is three.js (vendored) with no build step.
 - `spider.js` is the geometry (pure functions, tested by `tests.html`);
   `site.js` the site model; `app.js` the UI. Site data comes from IGN open
-  services via `site/fetch_site.py` and is cached in `site/`.
+  services via `site/fetch_site.py` and is cached in `site/`. The alley
+  width is calibrated in `site.js` (MEASURED_ALLEY) to Daniel's measurement
+  of 2.85 m on 2026-10-26: each side's buildings are shifted across so the
+  walls at the spider's stretch are 1.425 m from the axis.
 - `walk.js` + `walk.html` are "the path": the scripted camera walk and its
   MP4 recorder (WebCodecs + mp4-muxer, vendored). `scene.js` holds the
   world shared by both pages. Headless recording: launch Chrome with the
@@ -35,8 +38,12 @@ test run before the night.
   warnings. No swivelling elbow exists in PVC, so recipeFor makes each
   joint from fixed elbows (20, 30, 45, 67.5, 87.5), one or a pair with a
   twist (cos θ = cos a cos b − sin a sin b cos ψ); pipe lengths use
-  Nicoll's 27 mm sockets and Z values; elbow ends (M/F or F/F) decide
-  where a coupler or a link of pipe is needed. pvc40 (the default) has
+  Nicoll's Z values with the socket depth Daniel measured on his Ø 40
+  fittings, 21 mm instead of the catalogue's 27 (build.js SOCKET_40 and
+  SHORT_40, 2026-10-26: 6 mm more Z at every Ø 40 socket end, 3 at each
+  end of a male-female elbow; the Ø 50 fittings keep the catalogue);
+  elbow ends (M/F or F/F) decide where a coupler or a link of pipe is
+  needed. pvc40 has
   Ø 50 posts and skis with a 50/40 reducer and a Ø 50 coupler at each
   post top; knees and hub glued, the rest screwed; two cord stays per
   post to the ski, which runs 1.5 m past the end posts, twelve sandbags
@@ -48,8 +55,16 @@ test run before the night.
   same build. docs/construction.md is the plan with the shopping list.
   docs/assembly.md is the assembly manual of 2026-10-15 (Paris build,
   parcels, island structure, the lift), written from out/dump-v1-alu.html's
-  data for v1 in the alu40 system; its page is built by the scratchpad's
-  md2page.py like the plan's.
+  data for v1 in the alu40 system; its page is built by tools/md2page.py.
+  docs/build-sheet.md (2026-10-26) is the build sheet for the legs as cut
+  and the PVC Ø 50 structure on the alley as measured, written by
+  tools/build_sheet.py from out/solve-v2.html's report (the leg
+  re-solve: fixed tube lengths, exact single elbows, pairs inside their
+  reach, Levenberg-Marquardt on the four angles of each leg), with the
+  diagrams from tools/structure_diagrams.py and the PDF from
+  tools/page2pdf.sh; the system 'alu40pvc50' in build.js is the spider as
+  built (aluminium legs, a PVC hub through the hub member role, Ø 50
+  posts and skis) and the page's default.
 - `sun.js` puts the sun at noon CET on 2026-10-31 over the alley (Daniel's
   choice, 2026-10-05); change HALLOWEEN_NOON there for another moment.
 - `textures.js` draws the village materials on canvases from colours in
@@ -96,7 +111,13 @@ test run before the night.
   `google-chrome --headless=new --no-sandbox --use-angle=swiftshader
   --enable-unsafe-swiftshader --virtual-time-budget=15000 --dump-dom
   http://127.0.0.1:8765/tests.html` and look for ALL PASSED; the same flags
-  with `--screenshot` render the page.
+  with `--screenshot` render the page. Put `env -u XDG_CONFIG_HOME -u
+  DISPLAY` in front of every Chrome command: this harness sets
+  XDG_CONFIG_HOME to an unreadable directory, which crashes Chrome at
+  start (SIGTRAP, crashpad errors), and with DISPLAY set ANGLE asks the X
+  server and the page gets no WebGL (2026-10-26). A page that awaits
+  things should POST its result to /upload?name=<file> (the server saves
+  out/<file>) and be polled, since --dump-dom can print before it ends.
 
 ## Settled by Daniel (do not add controls for these)
 
@@ -199,7 +220,21 @@ test run before the night.
   the Numbers panel he photographed: every pipe length within 1 mm,
   every joint angle within 0.5°, the same elbow recipes, 612 €, 34.2 kg;
   his own link would make it exact), and BAKED_FROM drops the saved
-  copy from the menu so "default" is the only entry on a reload.
+  copy from the menu so "default" is the only entry on a reload (the
+  match is within 0.15 m per leg parameter since the 2026-10-26
+  re-solve moved the legs).
+
+- 2026-10-26: the alley is 2.85 m between the walls where the posts
+  stand (Daniel's tape; site.js MEASURED_ALLEY), the sixteen leg tubes
+  are cut to the manual's v1 lengths, the hub is built, and the hip,
+  knee and foot angles are whatever the elbows bought make. The default
+  design is the re-solve of v1 to those tubes (design.js, baked by
+  tools/bake_design.py from out/solve-v2.html): every single elbow at
+  its exact angle, every pair inside its reach and clear of the page's
+  single-elbow windows, 2L's knee a 45 + 45 pair from the spares, feet
+  and knees as near v1's as that allows. The structure is PVC Ø 50 cut
+  on the island (the as-built system alu40pvc50); the aluminium Comment
+  Fer structure stays as an alternative in docs/build-sheet.md.
 
 ## Still open (ask Daniel)
 

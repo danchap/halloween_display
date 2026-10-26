@@ -1,5 +1,7 @@
 # Alley Spider Assembly
 
+> Superseded in part on 2026-10-26: the alley measured 2.85 m between the walls and the leg tubes were cut, so the legs were solved again. The leg angles, the twists, the knee and foot positions, the post lengths and the ski pieces are now in docs/build-sheet.md (and its PDF); the support structure is PVC Ø 50 cut on the island. The methods in this manual (marking, cementing, packing, the lift) still apply.
+
 This is the assembly manual for the giant spider that hangs over Impasse du Rossignol, Les Portes-en-Ré, for Halloween 2026. It is written to be read on a phone in the alley by Daniel and one or two helpers. Every number in it comes from the v1 design on the page at https://danielsknowledge.com/halloween/ (Construction section, aluminium system, pieces of 4.0 m), where the design, the cut list and the parts list live.
 
 Contents:

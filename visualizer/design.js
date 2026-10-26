@@ -1,10 +1,14 @@
 // The design the page starts from, and the "default" entry of its Designs
 // menu (Daniel, 2026-10-14: his saved design "v1" is the default; nothing
 // else is offered on a reload). walk.html shows the same design when its
-// link carries no state. The parameters are v1 as fitted on 2026-10-14 to
-// the Numbers panel Daniel photographed (cut list, joint angles and post
-// heights, to the millimetre and the half degree); his own link would make
-// them exact.
+// link carries no state. The body is v1 as fitted on 2026-10-14 to the
+// Numbers panel Daniel photographed. The legs were solved again on
+// 2026-10-26 (out/solve-v2.html, baked by tools/bake_design.py) for the
+// alley as measured, 2.85 m between the walls, with the sixteen tubes as
+// cut to v1's lengths and the elbow sets as bought: every single elbow
+// makes its joint's angle exactly, every pair stays inside its reach
+// (2L's knee became a 45 + 45 pair), and each foot and knee stays as near
+// v1's as that allows. The part system is the spider as built.
 import { DEFAULT_MAX_PIECE, DEFAULT_EYES } from './build.js';
 
 export const DEFAULT_DESIGN = Object.freeze({
@@ -25,21 +29,21 @@ export const DEFAULT_DESIGN = Object.freeze({
     upperDiameter: 0.048,
     lowerDiameter: 0.036,
     legs: [
-      { footAlong: 2.304, footHeight: 2.0383, kneeAlong: 1.4023, kneeHeight: 2.8398, kneeOut: 0.8184 },
-      { footAlong: 1.408, footHeight: 2.9078, kneeAlong: 0.8055, kneeHeight: 3.3065, kneeOut: 0.6765 },
-      { footAlong: 0.9225, footHeight: 2.487, kneeAlong: 0.625, kneeHeight: 2.88, kneeOut: 0.772 },
-      { footAlong: 0.4988, footHeight: 2.4135, kneeAlong: 0.4126, kneeHeight: 2.9711, kneeOut: 0.822 },
-      { footAlong: -0.114, footHeight: 2.178, kneeAlong: 0.0445, kneeHeight: 2.963, kneeOut: 0.903 },
-      { footAlong: -0.5281, footHeight: 2.5705, kneeAlong: -0.1095, kneeHeight: 2.9659, kneeOut: 0.7707 },
-      { footAlong: -1.4535, footHeight: 2.4783, kneeAlong: -0.602, kneeHeight: 3.175, kneeOut: 0.764 },
-      { footAlong: -1.703, footHeight: 3.0632, kneeAlong: -0.647, kneeHeight: 3.1393, kneeOut: 0.732 },
+      { footAlong: 2.3512, footHeight: 2.0277, kneeAlong: 1.4025, kneeHeight: 2.8211, kneeOut: 0.8184 },
+      { footAlong: 1.451, footHeight: 2.9153, kneeAlong: 0.7983, kneeHeight: 3.3321, kneeOut: 0.6677 },
+      { footAlong: 0.9514, footHeight: 2.4897, kneeAlong: 0.5734, kneeHeight: 2.9185, kneeOut: 0.8001 },
+      { footAlong: 0.4808, footHeight: 2.3476, kneeAlong: 0.2943, kneeHeight: 3.0023, kneeOut: 0.8579 },
+      { footAlong: -0.1741, footHeight: 2.1398, kneeAlong: -0.041, kneeHeight: 2.9697, kneeOut: 0.9215 },
+      { footAlong: -0.609, footHeight: 2.5586, kneeAlong: -0.0672, kneeHeight: 2.9759, kneeOut: 0.8063 },
+      { footAlong: -1.5354, footHeight: 2.4799, kneeAlong: -0.6692, kneeHeight: 3.1814, kneeOut: 0.7622 },
+      { footAlong: -1.7732, footHeight: 3.0795, kneeAlong: -0.6522, kneeHeight: 3.1835, kneeOut: 0.7556 },
     ],
   },
   briefL: 0.8,
   backBend: 60,
   hip: 15,
   plans: null,
-  system: 'pvc40',
+  system: 'alu40pvc50',
   maxPiece: DEFAULT_MAX_PIECE,
   frameOnly: false,
   eyes: DEFAULT_EYES,

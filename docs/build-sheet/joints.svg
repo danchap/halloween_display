@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="590" viewBox="0 0 820 590" font-family='system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' font-size="12">
+<rect id="joints-bg" width="820" height="590" fill="#fff"/>
+<text x="24" y="20" font-size="14" font-weight="bold">One leg, seen from the street: the three joints and the sign of each angle</text>
+<line x1="430" y1="352" x2="640" y2="352" stroke="#000" stroke-width="3" stroke-linecap="butt"/>
+<rect x="462" y="346" width="112" height="6" fill="#ddd" stroke="#000" stroke-width="1"/>
+<rect x="516.69" y="341" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<text x="518" y="370" font-size="12" text-anchor="middle" fill="#666">ski on the lane, with the tee</text>
+<line x1="222" y1="268" x2="288" y2="268" stroke="#777" stroke-width="0.9" stroke-linecap="butt" stroke-dasharray="5 4"/>
+<line x1="335.9" y1="122.22" x2="376.53" y2="70.21" stroke="#777" stroke-width="0.9" stroke-linecap="butt" stroke-dasharray="5 4"/>
+<line x1="521.69" y1="208.85" x2="581.51" y2="236.75" stroke="#777" stroke-width="0.9" stroke-linecap="butt" stroke-dasharray="5 4"/>
+<line x1="112" y1="268" x2="222" y2="268" stroke="#333" stroke-width="6" stroke-linecap="round"/>
+<line x1="222" y1="268" x2="335.9" y2="122.22" stroke="#333" stroke-width="6" stroke-linecap="round"/>
+<line x1="335.9" y1="122.22" x2="521.69" y2="208.85" stroke="#333" stroke-width="6" stroke-linecap="round"/>
+<line x1="521.69" y1="208.85" x2="521.69" y2="346" stroke="#333" stroke-width="6" stroke-linecap="round"/>
+<circle cx="112" cy="268" r="15" fill="#fff" stroke="#000" stroke-width="1.5"/>
+<circle cx="112" cy="268" r="4" fill="#000" stroke="none" stroke-width="1"/>
+<circle cx="222" cy="268" r="7.5" fill="#fff" stroke="#000" stroke-width="1.5"/>
+<circle cx="335.9" cy="122.22" r="7.5" fill="#fff" stroke="#000" stroke-width="1.5"/>
+<circle cx="521.69" cy="208.85" r="7.5" fill="#fff" stroke="#000" stroke-width="1.5"/>
+<polyline points="266,268 265.89,264.93 265.57,261.88 265.04,258.85 264.3,255.87 263.35,252.95 262.2,250.1 260.85,247.34 259.31,244.68 257.6,242.14 255.71,239.72 253.65,237.44 251.44,235.3 249.09,233.33" fill="none" stroke="#000" stroke-width="1" stroke-linejoin="round"/>
+<polygon points="249.09,233.33 255.23,235.35 252.14,239.02" fill="#000" stroke="none"/>
+<polyline points="359.29,92.27 361.35,94 363.28,95.87 365.07,97.87 366.72,100 368.22,102.23 369.55,104.56 370.71,106.99 371.7,109.48 372.51,112.05 373.14,114.66 373.58,117.31 373.83,119.99 373.89,122.67 373.77,125.36 373.45,128.02 372.95,130.66 372.26,133.26 371.39,135.8 370.34,138.28" fill="none" stroke="#000" stroke-width="1" stroke-linejoin="round"/>
+<polygon points="370.34,138.28 370.47,131.82 374.89,133.69" fill="#000" stroke="none"/>
+<polyline points="556.13,224.91 554.91,227.31 553.51,229.62 551.96,231.82 550.26,233.91 548.41,235.87 546.43,237.7 544.33,239.38 542.11,240.9 539.79,242.27 537.37,243.47 534.88,244.49 532.32,245.34 529.71,246 527.06,246.47 524.38,246.76 521.69,246.85" fill="none" stroke="#000" stroke-width="1" stroke-linejoin="round"/>
+<polygon points="521.69,246.85 527.6,244.24 527.77,249.04" fill="#000" stroke="none"/>
+<polyline points="161,248 162.17,248.38 163.3,249.52 164.33,251.37 165.24,253.86 165.99,256.89 166.54,260.35 166.88,264.1 167,268 166.88,271.9 166.54,275.65 165.99,279.11 165.24,282.14 164.33,284.63 163.3,286.48 162.17,287.62 161,288" fill="none" stroke="#000" stroke-width="1" stroke-linejoin="round" stroke-dasharray="3 3"/>
+<polyline points="161,288 160.21,287.83 159.43,287.31 158.68,286.45 157.98,285.27 157.32,283.79 156.73,282.04 156.21,280.04 155.78,277.84 155.43,275.46 155.19,272.95 155.04,270.35 155,267.72 155.06,265.09 155.23,262.51 155.5,260.02 155.86,257.67 156.31,255.51 156.85,253.56 157.46,251.86 158.12,250.45" fill="none" stroke="#000" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="158.12,250.45 157.67,257.97 152.6,255.58" fill="#000" stroke="none"/>
+<polyline points="283.69,156.56 284.71,155.87 286.3,155.68 288.4,156 290.92,156.82 293.77,158.1 296.83,159.79 300,161.83 303.14,164.14 306.15,166.63 308.89,169.21 311.28,171.78 313.21,174.23 314.61,176.48 315.42,178.43 315.63,180.02 315.21,181.18" fill="none" stroke="#000" stroke-width="1" stroke-linejoin="round" stroke-dasharray="3 3"/>
+<polyline points="315.21,181.18 314.59,181.7 313.7,181.99 312.56,182.05 311.2,181.89 309.63,181.49 307.88,180.88 305.99,180.06 303.98,179.04 301.9,177.85 299.77,176.5 297.64,175.01 295.53,173.42 293.5,171.75 291.57,170.03 289.78,168.29 288.15,166.56 286.72,164.87 285.52,163.25 284.55,161.73 283.85,160.33" fill="none" stroke="#000" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="283.85,160.33 289.5,165.32 284.5,167.84" fill="#000" stroke="none"/>
+<polyline points="466.97,161.27 467.87,162.12 468.41,163.62 468.57,165.74 468.34,168.37 467.74,171.44 466.78,174.8 465.5,178.35 463.96,181.93 462.21,185.42 460.31,188.68 458.35,191.58 456.39,194.01 454.51,195.88 452.79,197.12 451.29,197.67 450.07,197.52" fill="none" stroke="#000" stroke-width="1" stroke-linejoin="round" stroke-dasharray="3 3"/>
+<polyline points="450.07,197.52 449.43,197.03 448.94,196.23 448.62,195.14 448.48,193.77 448.51,192.16 448.71,190.32 449.09,188.29 449.63,186.1 450.32,183.8 451.16,181.43 452.13,179.01 453.2,176.61 454.37,174.25 455.61,171.98 456.91,169.84 458.23,167.87 459.55,166.1 460.86,164.56 462.13,163.28 463.33,162.28" fill="none" stroke="#000" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="463.33,162.28 459.74,168.9 456.16,164.6" fill="#000" stroke="none"/>
+<text x="90" y="272" font-size="12" text-anchor="end" font-style="italic" fill="#666">hub</text>
+<text x="136" y="302" font-size="12" font-style="italic" fill="#666">stub, straight across the alley</text>
+<text x="212" y="256" font-size="12" text-anchor="end" font-style="italic" fill="#666">hip set</text>
+<text x="251" y="213.52" font-size="12" text-anchor="end" font-style="italic" fill="#666">upper</text>
+<text x="323.9" y="114.22" font-size="12" text-anchor="end" font-style="italic" fill="#666">knee set</text>
+<text x="395.64" y="136.21" font-size="12" text-anchor="middle" font-style="italic" fill="#666">lower</text>
+<text x="533.69" y="199.85" font-size="12" font-style="italic" fill="#666">foot set</text>
+<text x="531.69" y="312" font-size="12" font-style="italic" fill="#666">post, plumb</text>
+<circle cx="278.53" cy="244.33" r="8" fill="#000" stroke="none" stroke-width="1"/>
+<text x="278.53" y="248.33" font-size="11" text-anchor="middle" font-weight="bold" fill="#fff">1</text>
+<text x="290.53" y="248.33" font-size="12" font-weight="600" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">hip angle</text>
+<circle cx="121" cy="232" r="8" fill="#000" stroke="none" stroke-width="1"/>
+<text x="121" y="236" font-size="11" text-anchor="middle" font-weight="bold" fill="#fff">2</text>
+<text x="133" y="236" font-size="12" font-weight="600" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">hip turn</text>
+<circle cx="394.46" cy="110.08" r="8" fill="#000" stroke="none" stroke-width="1"/>
+<text x="394.46" y="114.08" font-size="11" text-anchor="middle" font-weight="bold" fill="#fff">3</text>
+<text x="406.46" y="114.08" font-size="12" font-weight="600" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">knee bend</text>
+<circle cx="197.45" cy="156.87" r="8" fill="#000" stroke="none" stroke-width="1"/>
+<text x="197.45" y="160.87" font-size="11" text-anchor="middle" font-weight="bold" fill="#fff">4</text>
+<text x="209.45" y="160.87" font-size="12" font-weight="600" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">knee roll</text>
+<circle cx="556.56" cy="251.02" r="8" fill="#000" stroke="none" stroke-width="1"/>
+<text x="556.56" y="255.02" font-size="11" text-anchor="middle" font-weight="bold" fill="#fff">5</text>
+<text x="568.56" y="255.02" font-size="12" font-weight="600" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">foot bend</text>
+<circle cx="446.52" cy="141.4" r="8" fill="#000" stroke="none" stroke-width="1"/>
+<text x="446.52" y="145.4" font-size="11" text-anchor="middle" font-weight="bold" fill="#fff">6</text>
+<text x="458.52" y="145.4" font-size="12" font-weight="600" paint-order="stroke" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">foot roll</text>
+<line x1="630" y1="106" x2="630" y2="60" stroke="#000" stroke-width="1.2" stroke-linecap="butt"/>
+<polygon points="630,60 632.8,67 627.2,67" fill="#000" stroke="none"/>
+<text x="638" y="68" font-size="12">up</text>
+<circle cx="630" cy="132" r="7" fill="#fff" stroke="#000" stroke-width="1.2"/>
+<circle cx="630" cy="132" r="2" fill="#000" stroke="none" stroke-width="1"/>
+<text x="642" y="136" font-size="12">toward the head and the street:</text>
+<text x="642" y="150" font-size="12">out of the page, toward you</text>
+<circle cx="32" cy="404" r="8" fill="#000" stroke="none" stroke-width="1"/>
+<text x="32" y="408" font-size="11" text-anchor="middle" font-weight="bold" fill="#fff">1</text>
+<text x="48" y="408" font-size="12">hip angle: between the stub and the upper</text>
+<circle cx="32" cy="424" r="8" fill="#000" stroke="none" stroke-width="1"/>
+<text x="32" y="428" font-size="11" text-anchor="middle" font-weight="bold" fill="#fff">2</text>
+<text x="48" y="428" font-size="12">hip turn: the upper’s plane turned about the stub, 0 = toward the head, positive = up</text>
+<circle cx="32" cy="444" r="8" fill="#000" stroke="none" stroke-width="1"/>
+<text x="32" y="448" font-size="11" text-anchor="middle" font-weight="bold" fill="#fff">3</text>
+<text x="48" y="448" font-size="12">knee bend: the lower turned off the upper’s line</text>
+<circle cx="32" cy="464" r="8" fill="#000" stroke="none" stroke-width="1"/>
+<text x="32" y="468" font-size="11" text-anchor="middle" font-weight="bold" fill="#fff">4</text>
+<text x="48" y="468" font-size="12">knee roll: the knee’s plane turned about the upper, from the hip’s plane, positive = clockwise seen from the</text>
+<text x="48" y="485" font-size="12">hip looking toward the knee</text>
+<circle cx="32" cy="501" r="8" fill="#000" stroke="none" stroke-width="1"/>
+<text x="32" y="505" font-size="11" text-anchor="middle" font-weight="bold" fill="#fff">5</text>
+<text x="48" y="505" font-size="12">foot bend: between the lower and the post</text>
+<circle cx="32" cy="521" r="8" fill="#000" stroke="none" stroke-width="1"/>
+<text x="32" y="525" font-size="11" text-anchor="middle" font-weight="bold" fill="#fff">6</text>
+<text x="48" y="525" font-size="12">foot roll: the foot’s plane about the lower, from the knee’s plane, same sense</text>
+<text x="24" y="580" font-size="11.5" fill="#666">The three joints are drawn in one plane; the turns move them out of it. Each ring arrow shows the positive sense of its turn, as seen from this side.</text>
+</svg>
