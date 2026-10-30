@@ -236,6 +236,12 @@ test run before the night.
   on the island (the as-built system alu40pvc50); the aluminium Comment
   Fer structure stays as an alternative in docs/build-sheet.md.
 
+- 2026-10-30: the orange knee and foot markers (the drag handles) are
+  hidden when the page opens (app.js state showJoints false; Daniel:
+  "Don't show the orange balls on the joints"); the "Mark knees and feet"
+  checkbox shows them for editing, and old links that carry showJoints
+  true still show them. walk.html never drew them.
+
 ## Still open (ask Daniel)
 
 - Absolute size (L), knee bend and leg thickness: the visualizer exists to

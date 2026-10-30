@@ -47,7 +47,7 @@ const state = {
   bendLocked: true,   // the bend slider is inert until unlocked
   keepLengths: true,  // the keep-lengths rule (Daniel, 2026-10-14): a leg keeps its two segment lengths and its knee keeps its roll round the hip-to-foot line; was keepSplit, the brief's-leg rule
   plans: null,        // the plan angle wanted for each leg (degrees, + toward the head), kept across capped poses; null: as posed
-  showJoints: true,
+  showJoints: false,  // the orange knee and foot markers are off until "Mark knees and feet" is ticked (Daniel, 2026-10-30: "Don't show the orange balls on the joints")
   plants: true,
   system: 'pvc40',    // the part system shown (build.js SYSTEMS id), '' for the design alone
   maxPiece: DEFAULT_MAX_PIECE, // the longest piece that can be shipped, metres (build.js MAX_PIECES; any positive number from an old link); longer pipes are split with couplers
